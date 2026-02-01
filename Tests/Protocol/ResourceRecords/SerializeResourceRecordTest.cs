@@ -1,13 +1,16 @@
 ﻿using System;
 using Xunit;
-using DNS.Protocol;
-using DNS.Protocol.ResourceRecords;
+using Charon.Dns.Lib.Protocol;
+using Charon.Dns.Lib.Protocol.ResourceRecords;
 
-namespace DNS.Tests.Protocol.ResourceRecords {
+namespace DNS.Tests.Protocol.ResourceRecords
+{
 
-    public class SerializeResourceRecordTest {
+    public class SerializeResourceRecordTest
+    {
         [Fact]
-        public void BasicResourceRecordWithEmptyDomain() {
+        public void BasicResourceRecordWithEmptyDomain()
+        {
             byte[] content = Helper.ReadFixture("ResourceRecord", "empty-domain_basic");
 
             Domain domain = new Domain(Helper.GetArray<string>());
@@ -18,7 +21,8 @@ namespace DNS.Tests.Protocol.ResourceRecords {
         }
 
         [Fact]
-        public void BasicResourceRecordWithMultipleLabelDomain() {
+        public void BasicResourceRecordWithMultipleLabelDomain()
+        {
             byte[] content = Helper.ReadFixture("ResourceRecord", "www.google.com_basic");
 
             Domain domain = new Domain(Helper.GetArray("www", "google", "com"));
@@ -29,7 +33,8 @@ namespace DNS.Tests.Protocol.ResourceRecords {
         }
 
         [Fact]
-        public void DataResourceRecordWithEmptyDomain() {
+        public void DataResourceRecordWithEmptyDomain()
+        {
             byte[] content = Helper.ReadFixture("ResourceRecord", "empty-domain_data");
 
             byte[] data = Helper.GetArray<byte>(1, 1);
@@ -41,7 +46,8 @@ namespace DNS.Tests.Protocol.ResourceRecords {
         }
 
         [Fact]
-        public void CNameResourceRecordWithEmptyDomain() {
+        public void CNameResourceRecordWithEmptyDomain()
+        {
             byte[] content = Helper.ReadFixture("ResourceRecord", "empty-domain_cname");
 
             Domain domain = new Domain(Helper.GetArray<string>());
@@ -52,7 +58,8 @@ namespace DNS.Tests.Protocol.ResourceRecords {
         }
 
         [Fact]
-        public void AnyResourceRecordWithEmptyDomain() {
+        public void AnyResourceRecordWithEmptyDomain()
+        {
             byte[] content = Helper.ReadFixture("ResourceRecord", "empty-domain_any");
 
             Domain domain = new Domain(Helper.GetArray<string>());
@@ -63,7 +70,8 @@ namespace DNS.Tests.Protocol.ResourceRecords {
         }
 
         [Fact]
-        public void TtlResourceRecordWithEmptyDomain() {
+        public void TtlResourceRecordWithEmptyDomain()
+        {
             byte[] content = Helper.ReadFixture("ResourceRecord", "empty-domain_ttl");
 
             Domain domain = new Domain(Helper.GetArray<string>());
@@ -74,7 +82,8 @@ namespace DNS.Tests.Protocol.ResourceRecords {
         }
 
         [Fact]
-        public void AllSetResourceRecordWithMultipleLabelDomain() {
+        public void AllSetResourceRecordWithMultipleLabelDomain()
+        {
             byte[] content = Helper.ReadFixture("ResourceRecord", "www.google.com_all");
 
             byte[] data = Helper.GetArray<byte>(1, 1);
@@ -86,7 +95,8 @@ namespace DNS.Tests.Protocol.ResourceRecords {
         }
 
         [Fact]
-        public void SrvResourceRecordWithEmptyDomain() {
+        public void SrvResourceRecordWithEmptyDomain()
+        {
             byte[] content = Helper.ReadFixture("ResourceRecord", "empty-domain_srv");
 
             Domain domain = new Domain(Helper.GetArray<string>());

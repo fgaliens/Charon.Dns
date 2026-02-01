@@ -1,14 +1,17 @@
 using System;
 using Xunit;
-using DNS.Protocol;
+using Charon.Dns.Lib.Protocol;
 using System.Linq;
 using System.Collections.Generic;
 
-namespace DNS.Tests.Protocol {
+namespace DNS.Tests.Protocol
+{
 
-    public class ParseCharacterStringTest {
+    public class ParseCharacterStringTest
+    {
         [Fact]
-        public void EmptyCharacterString() {
+        public void EmptyCharacterString()
+        {
             int endOffset = 0;
             byte[] content = Helper.ReadFixture("CharacterString", "empty-string");
             CharacterString characterString = CharacterString.FromArray(content, 0, out endOffset);
@@ -19,7 +22,8 @@ namespace DNS.Tests.Protocol {
         }
 
         [Fact]
-        public void SimpleCharacterString() {
+        public void SimpleCharacterString()
+        {
             int endOffset = 0;
             byte[] content = Helper.ReadFixture("CharacterString", "www-string");
             CharacterString characterString = CharacterString.FromArray(content, 0, out endOffset);
@@ -30,7 +34,8 @@ namespace DNS.Tests.Protocol {
         }
 
         [Fact]
-        public void CharacterStringWithWrongLengthUnder() {
+        public void CharacterStringWithWrongLengthUnder()
+        {
             var fixture = new byte[] { 0x01, (byte)'f', (byte)'o' };
             var result = CharacterString.FromArray(fixture, 0, out var endOffset);
 
@@ -40,25 +45,29 @@ namespace DNS.Tests.Protocol {
         }
 
         [Fact]
-        public void CharacterStringWithWrongLengthOver() {
+        public void CharacterStringWithWrongLengthOver()
+        {
             var fixture = new byte[] { 0x03, (byte)'f', (byte)'o' };
             Assert.Throws<ArgumentException>(() => CharacterString.FromArray(fixture, 0));
         }
 
         [Fact]
-        public void CharacterStringWithWrongOffset() {
+        public void CharacterStringWithWrongOffset()
+        {
             var fixture = new byte[] { 0x03, (byte)'f', (byte)'o', (byte)'o' };
             Assert.Throws<IndexOutOfRangeException>(() => CharacterString.FromArray(fixture, 4));
         }
 
         [Fact]
-        public void CharacterStringWithEmptyData() {
-            var fixture = new byte[] {};
+        public void CharacterStringWithEmptyData()
+        {
+            var fixture = new byte[] { };
             Assert.Throws<ArgumentException>(() => CharacterString.FromArray(fixture, 0));
         }
 
         [Fact]
-        public void MultipleCharacterStrings() {
+        public void MultipleCharacterStrings()
+        {
             int endOffset = 0;
             byte[] content = Helper.ReadFixture("CharacterString", "www.google.com-string");
             IList<CharacterString> characterStrings = CharacterString.GetAllFromArray(content, 0, out endOffset);
@@ -83,13 +92,15 @@ namespace DNS.Tests.Protocol {
         }
 
         [Fact]
-        public void CharacterStringFromEmptyString() {
+        public void CharacterStringFromEmptyString()
+        {
             var result = CharacterString.FromString("");
             Assert.Empty(result);
         }
 
         [Fact]
-        public void CharacterStringFromSimpleString() {
+        public void CharacterStringFromSimpleString()
+        {
             var result = CharacterString.FromString("www");
 
             Assert.Equal(1, result.Count);
@@ -101,12 +112,13 @@ namespace DNS.Tests.Protocol {
         }
 
         [Fact]
-        public void CharacterStringFromLongString() {
+        public void CharacterStringFromLongString()
+        {
             var result = CharacterString.FromString(new string('a', 512));
 
             Assert.Equal(3, result.Count);
-            Assert.Equal(new []{256, 256, 3}, result.Select(x => x.Size));
-            Assert.Equal(new []{255, 255, 2}, result.Select(x => (int) x.ToArray()[0]));
+            Assert.Equal(new[] { 256, 256, 3 }, result.Select(x => x.Size));
+            Assert.Equal(new[] { 255, 255, 2 }, result.Select(x => (int)x.ToArray()[0]));
         }
     }
 }

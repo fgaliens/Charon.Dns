@@ -1,0 +1,77 @@
+{
+  "LogLevel": "Debug",
+  "Server": {
+    "ListenOn": [
+      {
+        "Address": "0.0.0.0",
+        "Port": 53,
+        "DebugOnly": true
+      },
+      {
+        "Address": "127.0.0.1",
+        "Port": 53,
+        "DebugOnly": true
+      },
+      {
+        "Address": "10.0.0.53",
+        "Port": 53
+      }
+    ],
+    "DnsChain": {
+      "DefaultServers": [
+        "77.88.8.8",
+        "1.0.0.1",
+        "8.8.4.4"
+      ],
+      "SecuredServers": [
+        "1.1.1.1",
+        "8.8.8.8"
+      ]
+    },
+    "DnsRecords": {
+      "A": [
+      {
+        "Name": "my.home",
+        "Address": "10.11.1.2"
+      }
+    ]
+}
+  },
+  "Routing": {
+    "InterfaceToRouteThrough": "wg0",
+    "IpV4RoutingSubnet": 32,
+    "IpV6RoutingSubnet": 96,
+    "HostNames": {
+      "ByFullMatch": [
+        "whoer.net",
+        "rutracker.net"
+      ],
+      "BySubstring": [
+        "youtube",
+        "ggpht.cn",
+        "ggpht.com",
+        "googlevideo.com",
+        "youtu.be",
+        "yt.be",
+        "ytimg.com",
+        "yt3.googleusercontent.com",
+        "insta",
+        "bookstagram.com",
+        "carstagram.com",
+        "chickstagram.com",
+        "ig.me",
+        "igcdn.com",
+        "igsonar.com",
+        "igtv.com",
+        "imstagram.com",
+        "imtagram.com",
+        "instgram.com",
+        "intagram.com",
+        "intagrm.com",
+        "intgram.com",
+        "kingstagram.com",
+        "lnstagram-help.com"
+      ]
+    }
+  }
+}

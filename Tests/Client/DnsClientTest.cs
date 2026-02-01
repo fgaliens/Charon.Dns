@@ -4,16 +4,19 @@ using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
-using DNS.Client;
-using DNS.Client.RequestResolver;
-using DNS.Protocol;
-using DNS.Protocol.ResourceRecords;
+using Charon.Dns.Lib.Client;
+using Charon.Dns.Lib.Client.RequestResolver;
+using Charon.Dns.Lib.Protocol;
+using Charon.Dns.Lib.Protocol.ResourceRecords;
 
-namespace DNS.Tests.Client {
+namespace DNS.Tests.Client
+{
 
-    public class DnsClientTest {
+    public class DnsClientTest
+    {
         [Fact]
-        public async Task ClientLookup() {
+        public async Task ClientLookup()
+        {
             DnsClient client = new DnsClient(new IPAddressRequestResolver());
             IList<IPAddress> ips = await client.Lookup("google.com").ConfigureAwait(false);
 
@@ -22,7 +25,8 @@ namespace DNS.Tests.Client {
         }
 
         [Fact]
-        public async Task ClientReverse() {
+        public async Task ClientReverse()
+        {
             DnsClient client = new DnsClient(new PointerRequestResolver());
             string domain = await client.Reverse("192.168.0.1").ConfigureAwait(false);
 
@@ -30,16 +34,20 @@ namespace DNS.Tests.Client {
         }
 
         [Fact]
-        public async Task ClientNameError() {
+        public async Task ClientNameError()
+        {
             DnsClient client = new DnsClient(new NameErrorRequestResolver());
 
-            await Assert.ThrowsAsync<ResponseException>(() => {
+            await Assert.ThrowsAsync<ResponseException>(() =>
+            {
                 return client.Lookup("google.com");
             }).ConfigureAwait(false);
         }
 
-        private class IPAddressRequestResolver : IRequestResolver {
-            public Task<IResponse> Resolve(IRequest request, CancellationToken cancellationToken = default(CancellationToken)) {
+        private class IPAddressRequestResolver : IRequestResolver
+        {
+            public Task<IResponse> Resolve(IRequest request, CancellationToken cancellationToken = default(CancellationToken))
+            {
                 IResponse response = Response.FromRequest(request);
                 IResourceRecord record = new IPAddressResourceRecord(
                     new Domain("google.com"),
@@ -50,8 +58,10 @@ namespace DNS.Tests.Client {
             }
         }
 
-        private class PointerRequestResolver : IRequestResolver {
-            public Task<IResponse> Resolve(IRequest request, CancellationToken cancellationToken = default(CancellationToken)) {
+        private class PointerRequestResolver : IRequestResolver
+        {
+            public Task<IResponse> Resolve(IRequest request, CancellationToken cancellationToken = default(CancellationToken))
+            {
                 IResponse response = Response.FromRequest(request);
                 IResourceRecord record = new PointerResourceRecord(
                     IPAddress.Parse("192.168.0.1"),
@@ -62,8 +72,10 @@ namespace DNS.Tests.Client {
             }
         }
 
-        private class NameErrorRequestResolver : IRequestResolver {
-            public Task<IResponse> Resolve(IRequest request, CancellationToken cancellationToken = default(CancellationToken)) {
+        private class NameErrorRequestResolver : IRequestResolver
+        {
+            public Task<IResponse> Resolve(IRequest request, CancellationToken cancellationToken = default(CancellationToken))
+            {
                 IResponse response = Response.FromRequest(request);
                 response.ResponseCode = ResponseCode.NameError;
                 return Task.FromResult(response);

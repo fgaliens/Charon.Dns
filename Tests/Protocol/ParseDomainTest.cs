@@ -1,12 +1,15 @@
 ﻿using System;
 using Xunit;
-using DNS.Protocol;
+using Charon.Dns.Lib.Protocol;
 
-namespace DNS.Tests.Protocol {
+namespace DNS.Tests.Protocol
+{
 
-    public class ParseDomainTest {
+    public class ParseDomainTest
+    {
         [Fact]
-        public void EmptyDomain() {
+        public void EmptyDomain()
+        {
             int endOffset = 0;
             byte[] content = Helper.ReadFixture("Domain", "empty-label");
             Domain domain = Domain.FromArray(content, 0, out endOffset);
@@ -17,7 +20,8 @@ namespace DNS.Tests.Protocol {
         }
 
         [Fact]
-        public void DomainWithSingleLabel() {
+        public void DomainWithSingleLabel()
+        {
             int endOffset = 0;
             byte[] content = Helper.ReadFixture("Domain", "www-label");
             Domain domain = Domain.FromArray(content, 0, out endOffset);
@@ -28,7 +32,8 @@ namespace DNS.Tests.Protocol {
         }
 
         [Fact]
-        public void DomainWithMultipleLabels() {
+        public void DomainWithMultipleLabels()
+        {
             int endOffset = 0;
             byte[] content = Helper.ReadFixture("Domain", "www.google.com-label");
             Domain domain = Domain.FromArray(content, 0, out endOffset);
@@ -39,7 +44,8 @@ namespace DNS.Tests.Protocol {
         }
 
         [Fact]
-        public void DomainWithMultipleLabelsPreceededByHeader() {
+        public void DomainWithMultipleLabelsPreceededByHeader()
+        {
             int endOffset = 0;
             byte[] content = Helper.ReadFixture("Domain", "empty-header_www.google.com-label");
             Domain domain = Domain.FromArray(content, 12, out endOffset);
@@ -50,7 +56,8 @@ namespace DNS.Tests.Protocol {
         }
 
         [Fact]
-        public void EmptyPointerDomain() {
+        public void EmptyPointerDomain()
+        {
             int endOffset = 0;
             byte[] content = Helper.ReadFixture("Domain", "empty-pointer");
             Domain domain = Domain.FromArray(content, 1, out endOffset);
@@ -61,7 +68,8 @@ namespace DNS.Tests.Protocol {
         }
 
         [Fact]
-        public void PointerDomainWithSingleLabel() {
+        public void PointerDomainWithSingleLabel()
+        {
             int endOffset = 0;
             byte[] content = Helper.ReadFixture("Domain", "www-pointer");
             Domain domain = Domain.FromArray(content, 5, out endOffset);
@@ -72,7 +80,8 @@ namespace DNS.Tests.Protocol {
         }
 
         [Fact]
-        public void PointerDomainWithMultipleLabels() {
+        public void PointerDomainWithMultipleLabels()
+        {
             int endOffset = 0;
             byte[] content = Helper.ReadFixture("Domain", "www.google.com-pointer");
             Domain domain = Domain.FromArray(content, 16, out endOffset);
@@ -83,7 +92,8 @@ namespace DNS.Tests.Protocol {
         }
 
         [Fact]
-        public void PointerDomainWithMultipleLabelsPreceededByHeader() {
+        public void PointerDomainWithMultipleLabelsPreceededByHeader()
+        {
             int endOffset = 0;
             byte[] content = Helper.ReadFixture("Domain", "empty-header_www.google.com-pointer");
             Domain domain = Domain.FromArray(content, 28, out endOffset);
@@ -94,7 +104,8 @@ namespace DNS.Tests.Protocol {
         }
 
         [Fact]
-        public void PointerDomainLoopDetection() {
+        public void PointerDomainLoopDetection()
+        {
             int endOffset = 0;
             byte[] content = Helper.ReadFixture("Domain", "pointer-loop");
             Assert.Throws<ArgumentException>(() => Domain.FromArray(content, 16, out endOffset));

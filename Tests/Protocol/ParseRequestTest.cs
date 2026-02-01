@@ -1,13 +1,16 @@
 ﻿using System;
 using Xunit;
-using DNS.Protocol;
-using DNS.Protocol.ResourceRecords;
+using Charon.Dns.Lib.Protocol;
+using Charon.Dns.Lib.Protocol.ResourceRecords;
 
-namespace DNS.Tests.Protocol {
+namespace DNS.Tests.Protocol
+{
 
-    public class ParseRequestTest {
+    public class ParseRequestTest
+    {
         [Fact]
-        public void BasicQuestionRequestWithEmptyHeader() {
+        public void BasicQuestionRequestWithEmptyHeader()
+        {
             byte[] content = Helper.ReadFixture("Request", "empty-header_basic-question");
             Request request = Request.FromArray(content);
 
@@ -24,7 +27,8 @@ namespace DNS.Tests.Protocol {
         }
 
         [Fact]
-        public void SingleQuestionRequestWithHeader() {
+        public void SingleQuestionRequestWithHeader()
+        {
             byte[] content = Helper.ReadFixture("Request", "id-rd_www.google.com-cname");
 
             Request request = Request.FromArray(content);
@@ -42,7 +46,8 @@ namespace DNS.Tests.Protocol {
         }
 
         [Fact]
-        public void RequestWithMultipleQuestions() {
+        public void RequestWithMultipleQuestions()
+        {
             byte[] content = Helper.ReadFixture("Request", "multiple-questions");
 
             Request request = Request.FromArray(content);
@@ -66,7 +71,8 @@ namespace DNS.Tests.Protocol {
         }
 
         [Fact]
-        public void RequestWithAdditionalRecords() {
+        public void RequestWithAdditionalRecords()
+        {
             byte[] content = Helper.ReadFixture("Request", "edns-test");
 
             Request request = Request.FromArray(content);
@@ -88,7 +94,7 @@ namespace DNS.Tests.Protocol {
             Assert.Equal("", record.Name.ToString());
             Assert.Equal(Helper.GetArray<byte>(), record.Data);
             Assert.Equal(RecordType.OPT, record.Type);
-            Assert.Equal(4096, (int) record.Class);
+            Assert.Equal(4096, (int)record.Class);
             Assert.Equal(TimeSpan.FromSeconds(0), record.TimeToLive);
         }
     }
