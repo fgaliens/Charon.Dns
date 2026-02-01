@@ -4,32 +4,39 @@ using System.Threading.Tasks;
 using System.Net;
 using System.Net.Sockets;
 using Xunit;
-using DNS.Server;
-using DNS.Client.RequestResolver;
-using DNS.Protocol;
-using DNS.Protocol.ResourceRecords;
+using Charon.Dns.Lib.Server;
+using Charon.Dns.Lib.Client.RequestResolver;
+using Charon.Dns.Lib.Protocol;
+using Charon.Dns.Lib.Protocol.ResourceRecords;
 
-namespace DNS.Tests.Server {
+namespace DNS.Tests.Server
+{
 
-    public class DnsServerTest {
+    public class DnsServerTest
+    {
         private const int PORT = 64646;
 
         [Fact]
-        public async Task ServerLookup() {
-            await Create(new IPAddressRequestResolver(), async server => {
+        public async Task ServerLookup()
+        {
+            await Create(new IPAddressRequestResolver(), async server =>
+            {
                 DnsServer.RequestedEventArgs requestedEvent = null;
                 DnsServer.RespondedEventArgs respondedEvent = null;
                 DnsServer.ErroredEventArgs erroredEvent = null;
 
-                server.Requested += (sender, e) => {
+                server.Requested += (sender, e) =>
+                {
                     requestedEvent = e;
                 };
 
-                server.Responded += (sender, e) => {
+                server.Responded += (sender, e) =>
+                {
                     respondedEvent = e;
                 };
 
-                server.Errored += (sender, e) => {
+                server.Errored += (sender, e) =>
+                {
                     erroredEvent = e;
                 };
 
@@ -96,17 +103,24 @@ namespace DNS.Tests.Server {
             }).ConfigureAwait(false);
         }
 
-        private async static Task Create(IRequestResolver requestResolver, Func<DnsServer, Task> action) {
+        private async static Task Create(IRequestResolver requestResolver, Func<DnsServer, Task> action)
+        {
             TaskCompletionSource<object> tcs = new TaskCompletionSource<object>();
             DnsServer server = new DnsServer(requestResolver);
 
-            server.Listening += async (sender, _) => {
-                try {
+            server.Listening += async (sender, _) =>
+            {
+                try
+                {
                     await action(server).ConfigureAwait(false);
                     tcs.SetResult(null);
-                } catch(Exception e) {
+                }
+                catch (Exception e)
+                {
                     tcs.SetException(e);
-                } finally {
+                }
+                finally
+                {
                     server.Dispose();
                 }
             };
@@ -114,8 +128,10 @@ namespace DNS.Tests.Server {
             await Task.WhenAll(server.Listen(PORT), tcs.Task).ConfigureAwait(false);
         }
 
-        private async static Task<IResponse> Resolve(IRequest request) {
-            using (UdpClient udp = new UdpClient()) {
+        private async static Task<IResponse> Resolve(IRequest request)
+        {
+            using (UdpClient udp = new UdpClient())
+            {
                 IPEndPoint endPoint = new IPEndPoint(IPAddress.Parse("127.0.0.1"), PORT);
 
                 await udp.SendAsync(request.ToArray(), request.Size, endPoint).ConfigureAwait(false);
@@ -124,8 +140,10 @@ namespace DNS.Tests.Server {
             }
         }
 
-        private class IPAddressRequestResolver : IRequestResolver {
-            public Task<IResponse> Resolve(IRequest request, CancellationToken cancellationToken = default(CancellationToken)) {
+        private class IPAddressRequestResolver : IRequestResolver
+        {
+            public Task<IResponse> Resolve(IRequest request, CancellationToken cancellationToken = default(CancellationToken))
+            {
                 IResponse response = Response.FromRequest(request);
                 IResourceRecord record = new IPAddressResourceRecord(
                     new Domain("google.com"),

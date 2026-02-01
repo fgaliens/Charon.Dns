@@ -1,23 +1,26 @@
 ﻿using System;
 using Xunit;
-using DNS.Protocol;
-using DNS.Protocol.ResourceRecords;
+using Charon.Dns.Lib.Protocol;
+using Charon.Dns.Lib.Protocol.ResourceRecords;
 
-namespace DNS.Tests.Protocol.ResourceRecords {
-    
-    public class SerializeResponseTest {
+namespace DNS.Tests.Protocol.ResourceRecords
+{
+
+    public class SerializeResponseTest
+    {
         [Fact]
-        public void BasicQuestionResponseWithEmptyHeader() {
+        public void BasicQuestionResponseWithEmptyHeader()
+        {
             Header header = new Header();
             header.Response = true;
 
             Domain domain = new Domain(Helper.GetArray<string>());
             Question question = new Question(domain, RecordType.A, RecordClass.IN);
-            ResourceRecord record = new ResourceRecord(domain, Helper.GetArray<byte>(0, 0, 0, 0), 
+            ResourceRecord record = new ResourceRecord(domain, Helper.GetArray<byte>(0, 0, 0, 0),
                 RecordType.A, RecordClass.IN, new TimeSpan());
 
             Response response = new Response(header,
-                Helper.GetList(question), 
+                Helper.GetList(question),
                 Helper.GetList<IResourceRecord>(record),
                 Helper.GetList<IResourceRecord>(record),
                 Helper.GetList<IResourceRecord>(record));
@@ -28,7 +31,8 @@ namespace DNS.Tests.Protocol.ResourceRecords {
         }
 
         [Fact]
-        public void RequestWithHeaderAndResourceRecords() {
+        public void RequestWithHeaderAndResourceRecords()
+        {
             Header header = new Header();
             header.Response = true;
 

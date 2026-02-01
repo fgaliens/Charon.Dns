@@ -1,11 +1,14 @@
 ﻿using Xunit;
-using DNS.Protocol;
+using Charon.Dns.Lib.Protocol;
 
-namespace DNS.Tests.Protocol {
+namespace DNS.Tests.Protocol
+{
 
-    public class SerializeHeaderTest {
+    public class SerializeHeaderTest
+    {
         [Fact]
-        public void EmptyHeader() {
+        public void EmptyHeader()
+        {
             Header header = new Header();
             byte[] content = Helper.ReadFixture("Header", "empty");
 
@@ -13,7 +16,8 @@ namespace DNS.Tests.Protocol {
         }
 
         [Fact]
-        public void HeaderWithId() {
+        public void HeaderWithId()
+        {
             Header header = new Header();
             header.Id = 1;
             byte[] content = Helper.ReadFixture("Header", "id");
@@ -22,7 +26,8 @@ namespace DNS.Tests.Protocol {
         }
 
         [Fact]
-        public void HeaderWithQueryResponseFlag() {
+        public void HeaderWithQueryResponseFlag()
+        {
             Header header = new Header();
             header.Response = true;
             byte[] content = Helper.ReadFixture("Header", "qr");
@@ -31,7 +36,8 @@ namespace DNS.Tests.Protocol {
         }
 
         [Fact]
-        public void HeaderWithOperationCode() {
+        public void HeaderWithOperationCode()
+        {
             Header header = new Header();
             header.OperationCode = OperationCode.Status;
             byte[] content = Helper.ReadFixture("Header", "opcode");
@@ -40,7 +46,8 @@ namespace DNS.Tests.Protocol {
         }
 
         [Fact]
-        public void HeaderWithAuthorativeAnswerFlag() {
+        public void HeaderWithAuthorativeAnswerFlag()
+        {
             Header header = new Header();
             header.AuthorativeServer = true;
             byte[] content = Helper.ReadFixture("Header", "aa");
@@ -49,7 +56,8 @@ namespace DNS.Tests.Protocol {
         }
 
         [Fact]
-        public void HeaderWithTruncatedFlag() {
+        public void HeaderWithTruncatedFlag()
+        {
             Header header = new Header();
             header.Truncated = true;
             byte[] content = Helper.ReadFixture("Header", "tc");
@@ -58,7 +66,8 @@ namespace DNS.Tests.Protocol {
         }
 
         [Fact]
-        public void HeaderWithRecusionDesiredFlag() {
+        public void HeaderWithRecusionDesiredFlag()
+        {
             Header header = new Header();
             header.RecursionDesired = true;
             byte[] content = Helper.ReadFixture("Header", "rd");
@@ -67,7 +76,8 @@ namespace DNS.Tests.Protocol {
         }
 
         [Fact]
-        public void HeaderWithRecusionAvailableFlag() {
+        public void HeaderWithRecusionAvailableFlag()
+        {
             Header header = new Header();
             header.RecursionAvailable = true;
             byte[] content = Helper.ReadFixture("Header", "ra");
@@ -76,7 +86,8 @@ namespace DNS.Tests.Protocol {
         }
 
         [Fact]
-        public void HeaderWithAuthenticDataFlag() {
+        public void HeaderWithAuthenticDataFlag()
+        {
             Header header = new Header();
             header.AuthenticData = true;
             byte[] content = Helper.ReadFixture("Header", "ad");
@@ -85,7 +96,8 @@ namespace DNS.Tests.Protocol {
         }
 
         [Fact]
-        public void HeaderWithCheckingDisabledFlag() {
+        public void HeaderWithCheckingDisabledFlag()
+        {
             Header header = new Header();
             header.CheckingDisabled = true;
             byte[] content = Helper.ReadFixture("Header", "cd");
@@ -94,7 +106,8 @@ namespace DNS.Tests.Protocol {
         }
 
         [Fact]
-        public void HeaderWithResponseCode() {
+        public void HeaderWithResponseCode()
+        {
             Header header = new Header();
             header.ResponseCode = ResponseCode.ServerFailure;
             byte[] content = Helper.ReadFixture("Header", "rcode");
@@ -103,7 +116,8 @@ namespace DNS.Tests.Protocol {
         }
 
         [Fact]
-        public void HeaderWithQuestionCount() {
+        public void HeaderWithQuestionCount()
+        {
             Header header = new Header();
             header.QuestionCount = 1;
             byte[] content = Helper.ReadFixture("Header", "qdcount");
@@ -112,7 +126,8 @@ namespace DNS.Tests.Protocol {
         }
 
         [Fact]
-        public void HeaderWithAnswerRecordCount() {
+        public void HeaderWithAnswerRecordCount()
+        {
             Header header = new Header();
             header.AnswerRecordCount = 1;
             byte[] content = Helper.ReadFixture("Header", "ancount");
@@ -121,7 +136,8 @@ namespace DNS.Tests.Protocol {
         }
 
         [Fact]
-        public void HeaderWithAuthorityRecordCount() {
+        public void HeaderWithAuthorityRecordCount()
+        {
             Header header = new Header();
             header.AuthorityRecordCount = 1;
             byte[] content = Helper.ReadFixture("Header", "nscount");
@@ -130,7 +146,8 @@ namespace DNS.Tests.Protocol {
         }
 
         [Fact]
-        public void HeaderWithAdditionalRecordCount() {
+        public void HeaderWithAdditionalRecordCount()
+        {
             Header header = new Header();
             header.AdditionalRecordCount = 1;
             byte[] content = Helper.ReadFixture("Header", "arcount");
@@ -139,7 +156,8 @@ namespace DNS.Tests.Protocol {
         }
 
         [Fact]
-        public void HeaderWithAllSet() {
+        public void HeaderWithAllSet()
+        {
             Header header = new Header();
             header.Id = 1;
             header.Response = true;

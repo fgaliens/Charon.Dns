@@ -1,17 +1,21 @@
 ﻿using System;
 using System.Threading.Tasks;
-using DNS.Client;
-using DNS.Server;
+using Charon.Dns.Lib.Client;
+using Charon.Dns.Lib.Server;
 
-namespace Examples.ClientServer {
-    class ClientServerExample {
+namespace Examples.ClientServer
+{
+    class ClientServerExample
+    {
         private const int PORT = 53535;
 
-        public static void Main(string[] args) {
+        public static void Main(string[] args)
+        {
             MainAsync().Wait();
         }
 
-        public async static Task MainAsync() {
+        public async static Task MainAsync()
+        {
             MasterFile masterFile = new MasterFile();
             DnsServer server = new DnsServer(masterFile, "8.8.8.8");
 
@@ -22,7 +26,8 @@ namespace Examples.ClientServer {
             server.Errored += (sender, e) => Console.WriteLine("Errored: {0}", e.Exception.Message);
             server.Listening += (sender, e) => Console.WriteLine("Listening");
 
-            server.Listening += async (sender, e) => {
+            server.Listening += async (sender, e) =>
+            {
                 DnsClient client = new DnsClient("127.0.0.1", PORT);
 
                 await client.Lookup("google.com").ConfigureAwait(false);
