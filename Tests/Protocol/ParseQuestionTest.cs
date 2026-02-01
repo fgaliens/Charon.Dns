@@ -1,12 +1,15 @@
 ﻿using System.Collections.Generic;
 using Xunit;
-using DNS.Protocol;
+using Charon.Dns.Lib.Protocol;
 
-namespace DNS.Tests.Protocol {
-    
-    public class ParseQuestionTest {
+namespace DNS.Tests.Protocol
+{
+
+    public class ParseQuestionTest
+    {
         [Fact]
-        public void BasicQuestionWithEmptyDomain() {
+        public void BasicQuestionWithEmptyDomain()
+        {
             int endOffset = 0;
             byte[] content = Helper.ReadFixture("Question", "empty-domain_basic");
             Question question = Question.FromArray(content, 0, out endOffset);
@@ -19,7 +22,8 @@ namespace DNS.Tests.Protocol {
         }
 
         [Fact]
-        public void BasicQuestionWithMultipleLabelDomain() {
+        public void BasicQuestionWithMultipleLabelDomain()
+        {
             int endOffset = 0;
             byte[] content = Helper.ReadFixture("Question", "www.google.com_basic");
             Question question = Question.FromArray(content, 0, out endOffset);
@@ -32,7 +36,8 @@ namespace DNS.Tests.Protocol {
         }
 
         [Fact]
-        public void CNameQuestionWithEmptyDomain() {
+        public void CNameQuestionWithEmptyDomain()
+        {
             int endOffset = 0;
             byte[] content = Helper.ReadFixture("Question", "empty-domain_cname");
             Question question = Question.FromArray(content, 0, out endOffset);
@@ -45,7 +50,8 @@ namespace DNS.Tests.Protocol {
         }
 
         [Fact]
-        public void AnyQuestionWithEmptyDomain() {
+        public void AnyQuestionWithEmptyDomain()
+        {
             int endOffset = 0;
             byte[] content = Helper.ReadFixture("Question", "empty-domain_any");
             Question question = Question.FromArray(content, 0, out endOffset);
@@ -58,7 +64,8 @@ namespace DNS.Tests.Protocol {
         }
 
         [Fact]
-        public void AllSetQuestionWithMultipleLabelDomains() {
+        public void AllSetQuestionWithMultipleLabelDomains()
+        {
             int endOffset = 0;
             byte[] content = Helper.ReadFixture("Question", "www.google.com_all");
             Question question = Question.FromArray(content, 0, out endOffset);
@@ -71,7 +78,8 @@ namespace DNS.Tests.Protocol {
         }
 
         [Fact]
-        public void MultipleQuestions() {
+        public void MultipleQuestions()
+        {
             int endOffset = 0;
             byte[] content = Helper.ReadFixture("Question", "multiple");
             IList<Question> questions = Question.GetAllFromArray(content, 0, 3, out endOffset);

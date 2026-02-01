@@ -1,12 +1,15 @@
 ﻿using System.Net;
 using Xunit;
-using DNS.Protocol;
+using Charon.Dns.Lib.Protocol;
 
-namespace DNS.Tests.Protocol {
-    
-    public class ReverseDomainTest {
+namespace DNS.Tests.Protocol
+{
+
+    public class ReverseDomainTest
+    {
         [Fact]
-        public void AllZeroIPv4() {
+        public void AllZeroIPv4()
+        {
             IPAddress ip = IPAddress.Parse("0.0.0.0");
             Domain domain = Domain.PointerName(ip);
 
@@ -14,7 +17,8 @@ namespace DNS.Tests.Protocol {
         }
 
         [Fact]
-        public void IPv4() {
+        public void IPv4()
+        {
             IPAddress ip = IPAddress.Parse("173.194.69.100");
             Domain domain = Domain.PointerName(ip);
 
@@ -22,7 +26,8 @@ namespace DNS.Tests.Protocol {
         }
 
         [Fact]
-        public void AllZeroIPv6() {
+        public void AllZeroIPv6()
+        {
             IPAddress ip = IPAddress.Parse("0000:0000:0000:0000:0000:0000:0000:0000");
             Domain domain = Domain.PointerName(ip);
 
@@ -30,7 +35,8 @@ namespace DNS.Tests.Protocol {
         }
 
         [Fact]
-        public void IPv6() {
+        public void IPv6()
+        {
             IPAddress ip = IPAddress.Parse("2001:0db8:0000:0000:0000:0000:0567:89ab");
             Domain domain = Domain.PointerName(ip);
 

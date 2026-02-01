@@ -3,20 +3,23 @@ using System.Collections.Generic;
 using System.Net;
 using System.Text;
 using System.Threading.Tasks;
-using DNS.Protocol;
-using DNS.Protocol.ResourceRecords;
-using DNS.Server;
+using Charon.Dns.Lib.Protocol;
+using Charon.Dns.Lib.Protocol.ResourceRecords;
+using Charon.Dns.Lib.Server;
 using Xunit;
 
-namespace DNS.Tests.Server {
+namespace DNS.Tests.Server
+{
 
-    public class MasterFileTest {
+    public class MasterFileTest
+    {
         [Theory]
         [InlineData(RecordType.A, "google.com")]
         [InlineData(RecordType.A, "gooGLE.com")]
         [InlineData(RecordType.ANY, "google.com")]
         [InlineData(RecordType.ANY, "gooGLE.com")]
-        public async Task ResolveRecord(RecordType recordType, string domain) {
+        public async Task ResolveRecord(RecordType recordType, string domain)
+        {
             MasterFile masterFile = new MasterFile();
             masterFile.AddIPAddressResourceRecord("google.com", "192.168.0.1");
 
@@ -43,7 +46,7 @@ namespace DNS.Tests.Server {
             IResourceRecord clientResponseAnswer = clientResponse.AnswerRecords[0];
             Assert.Equal(RecordType.A, clientResponseAnswer.Type);
             Assert.Equal("google.com", clientResponseAnswer.Name.ToString());
-            Assert.Equal("192.168.0.1", ((IPAddressResourceRecord) clientResponseAnswer).IPAddress.ToString());
+            Assert.Equal("192.168.0.1", ((IPAddressResourceRecord)clientResponseAnswer).IPAddress.ToString());
         }
     }
 }

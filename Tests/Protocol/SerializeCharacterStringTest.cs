@@ -1,11 +1,14 @@
 using Xunit;
-using DNS.Protocol;
+using Charon.Dns.Lib.Protocol;
 
-namespace DNS.Tests.Protocol {
+namespace DNS.Tests.Protocol
+{
 
-    public class SerializeCharacterStringTest {
+    public class SerializeCharacterStringTest
+    {
         [Fact]
-        public void EmptyCharacterString() {
+        public void EmptyCharacterString()
+        {
             CharacterString characterString = new CharacterString(new byte[0]);
             byte[] content = Helper.ReadFixture("CharacterString", "empty-string");
 
@@ -14,7 +17,8 @@ namespace DNS.Tests.Protocol {
         }
 
         [Fact]
-        public void SimpleCharacterString() {
+        public void SimpleCharacterString()
+        {
             CharacterString characterString = new CharacterString("www");
             byte[] content = Helper.ReadFixture("CharacterString", "www-string");
 

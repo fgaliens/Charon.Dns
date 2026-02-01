@@ -1,17 +1,21 @@
 using Xunit;
-using DNS.Protocol;
+using Charon.Dns.Lib.Protocol;
 
-namespace DNS.Tests.Protocol {
+namespace DNS.Tests.Protocol
+{
 
-    public class CompareDomainTest {
+    public class CompareDomainTest
+    {
         [Fact]
-        public void SameDomainInstance() {
+        public void SameDomainInstance()
+        {
             Domain domain = new Domain(Helper.GetArray("www"));
             Assert.Equal(0, domain.CompareTo(domain));
         }
 
         [Fact]
-        public void SameDomainsWithSingleLabelDifferentCasing() {
+        public void SameDomainsWithSingleLabelDifferentCasing()
+        {
             Domain a = new Domain(Helper.GetArray("www"));
             Domain b = new Domain(Helper.GetArray("WWW"));
 
@@ -20,7 +24,8 @@ namespace DNS.Tests.Protocol {
         }
 
         [Fact]
-        public void SameDomainsWithSingleLabelNonAlphabeticCodes() {
+        public void SameDomainsWithSingleLabelNonAlphabeticCodes()
+        {
             Domain a = new Domain(Helper.GetArray<byte[]>(
                 Helper.GetArray<byte>(119, 0, 119)
             ));
@@ -33,7 +38,8 @@ namespace DNS.Tests.Protocol {
         }
 
         [Fact]
-        public void SameDomainsWithMultipleLabels() {
+        public void SameDomainsWithMultipleLabels()
+        {
             Domain a = new Domain(Helper.GetArray<byte[]>(
                 Helper.GetArray<byte>(119, 119, 119),
                 Helper.GetArray<byte>(103, 111, 111, 103, 108, 101),
@@ -50,7 +56,8 @@ namespace DNS.Tests.Protocol {
         }
 
         [Fact]
-        public void DifferentDomainsWithSingleLabelSameLength() {
+        public void DifferentDomainsWithSingleLabelSameLength()
+        {
             Domain a = new Domain(Helper.GetArray("aww"));
             Domain b = new Domain(Helper.GetArray("www"));
 
@@ -60,7 +67,8 @@ namespace DNS.Tests.Protocol {
         }
 
         [Fact]
-        public void DifferentDomainsWithSingleLabelDifferentLength() {
+        public void DifferentDomainsWithSingleLabelDifferentLength()
+        {
             Domain a = new Domain(Helper.GetArray("ww"));
             Domain b = new Domain(Helper.GetArray("www"));
 
@@ -70,7 +78,8 @@ namespace DNS.Tests.Protocol {
         }
 
         [Fact]
-        public void DifferentDomainsWithSingleLabelNonAlphabeticCodes() {
+        public void DifferentDomainsWithSingleLabelNonAlphabeticCodes()
+        {
             Domain a = new Domain(Helper.GetArray<byte[]>(
                 Helper.GetArray<byte>(119, 0, 119)
             ));
@@ -84,7 +93,8 @@ namespace DNS.Tests.Protocol {
         }
 
         [Fact]
-        public void DifferentDomainsWithMultipleLabelsDifferentAmount() {
+        public void DifferentDomainsWithMultipleLabelsDifferentAmount()
+        {
             Domain a = new Domain(Helper.GetArray("www"));
             Domain b = new Domain(Helper.GetArray("www", "google"));
 

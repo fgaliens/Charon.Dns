@@ -1,13 +1,16 @@
 ﻿using System;
 using Xunit;
-using DNS.Protocol;
-using DNS.Protocol.ResourceRecords;
+using Charon.Dns.Lib.Protocol;
+using Charon.Dns.Lib.Protocol.ResourceRecords;
 
-namespace DNS.Tests.Protocol {
+namespace DNS.Tests.Protocol
+{
 
-    public class ParseResponseTest {
+    public class ParseResponseTest
+    {
         [Fact]
-        public void BasicQuestionResponseWithEmptyHeader() {
+        public void BasicQuestionResponseWithEmptyHeader()
+        {
             byte[] content = Helper.ReadFixture("Response", "empty-header_basic");
             Response response = Response.FromArray(content);
 
@@ -51,7 +54,8 @@ namespace DNS.Tests.Protocol {
         }
 
         [Fact]
-        public void RequestWithHeaderAndResourceRecords() {
+        public void RequestWithHeaderAndResourceRecords()
+        {
             byte[] content = Helper.ReadFixture("Response", "id-ra_all");
             Response response = Response.FromArray(content);
 
@@ -95,7 +99,8 @@ namespace DNS.Tests.Protocol {
         }
 
         [Fact]
-        public void ResponseWithoutQuestion() {
+        public void ResponseWithoutQuestion()
+        {
             byte[] content = Helper.ReadFixture("Response", "no-question");
             Response response = Response.FromArray(content);
 

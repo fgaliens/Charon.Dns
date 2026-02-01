@@ -2,13 +2,16 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
-using DNS.Protocol.Utils;
+using Charon.Dns.Lib.Protocol.Utils;
 
-namespace DNS.Tests.Utils {
+namespace DNS.Tests.Utils
+{
 
-    public class TaskExtensionsTest {
+    public class TaskExtensionsTest
+    {
         [Fact]
-        public async Task WithoutCancellation() {
+        public async Task WithoutCancellation()
+        {
             object obj = new object();
             CancellationTokenSource cts = new CancellationTokenSource();
             TaskCompletionSource<object> tcs = new TaskCompletionSource<object>();
@@ -21,7 +24,8 @@ namespace DNS.Tests.Utils {
         }
 
         [Fact]
-        public async Task WithCancellation() {
+        public async Task WithCancellation()
+        {
             CancellationTokenSource cts = new CancellationTokenSource();
             TaskCompletionSource<object> tcs = new TaskCompletionSource<object>();
             Task resultTask = tcs.Task.WithCancellation(cts.Token);
@@ -34,7 +38,8 @@ namespace DNS.Tests.Utils {
         }
 
         [Fact]
-        public async Task WithoutCancellationTimeout() {
+        public async Task WithoutCancellationTimeout()
+        {
             object obj = new object();
             TaskCompletionSource<object> tcs = new TaskCompletionSource<object>();
             Task<object> resultTask = tcs.Task.WithCancellationTimeout(TimeSpan.FromMilliseconds(60000));
@@ -46,7 +51,8 @@ namespace DNS.Tests.Utils {
         }
 
         [Fact(Timeout = 30000)]
-        public async Task WithoutCancellationTimeoutAndCancellationToken() {
+        public async Task WithoutCancellationTimeoutAndCancellationToken()
+        {
             CancellationTokenSource cts = new CancellationTokenSource();
             TaskCompletionSource<object> tcs = new TaskCompletionSource<object>();
             Task<object> resultTask = tcs.Task.WithCancellationTimeout(TimeSpan.FromMilliseconds(60000), cts.Token);
@@ -57,7 +63,8 @@ namespace DNS.Tests.Utils {
         }
 
         [Fact]
-        public async Task WithCancellationTimeout() {
+        public async Task WithCancellationTimeout()
+        {
             TaskCompletionSource<object> tcs = new TaskCompletionSource<object>();
             Task resultTask = tcs.Task.WithCancellationTimeout(TimeSpan.FromMilliseconds(100));
 
