@@ -28,8 +28,17 @@ namespace Charon.Dns.RequestResolving
                 return true;
             }
 
-            return routingSettings.MatchedBySubstringHostNames.Any(
-                hostNameSubstring => domainAsString.Contains(hostNameSubstring, StringComparison.OrdinalIgnoreCase));
+            foreach (var hostNameSubstring in routingSettings.MatchedBySubstringHostNames)
+            {
+                if (domainAsString.Contains(hostNameSubstring, StringComparison.OrdinalIgnoreCase))
+                {
+                    logger.Debug("Host name '{Host}' should be secured because it contains {Substring}", 
+                        domain, hostNameSubstring);
+                    return true;
+                }
+            }
+
+            return false;
         }
     }
 }
