@@ -1,4 +1,5 @@
 using System.Collections.Frozen;
+using Charon.Dns.Extensions;
 using Charon.Dns.Lib.Protocol;
 using Charon.Dns.Settings;
 using Serilog;
@@ -9,8 +10,8 @@ namespace Charon.Dns.RequestResolving
         RoutingSettings routingSettings,
         ILogger logger) : IHostNameAnalyzer
     {
-        private readonly FrozenSet<string> _fullyMatchedHostnames = 
-            routingSettings.FullyMatchedHostNames.ToFrozenSet(StringComparer.OrdinalIgnoreCase);
+        private readonly FrozenSet<string> _domainMatchedHostnames = 
+            routingSettings.MatchedByDomainHostNames.ToFrozenSet(DomainNameComparer.Instance);
 
         public bool ShouldBeSecured(Domain domain)
         {
@@ -23,8 +24,10 @@ namespace Charon.Dns.RequestResolving
         {
             var domainAsString = domain.ToString();
 
-            if (_fullyMatchedHostnames.Contains(domainAsString))
+            if (_domainMatchedHostnames.Contains(domainAsString))
             {
+                logger.Debug("Host name '{Host}' should be secured because it is matched by domain", domain);
+                
                 return true;
             }
 

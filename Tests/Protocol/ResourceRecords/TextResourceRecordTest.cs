@@ -1,11 +1,11 @@
 using System;
-using System.Text;
 using System.Collections.Generic;
-using Xunit;
-using Charon.Dns.Lib.Protocol.ResourceRecords;
+using System.Text;
 using Charon.Dns.Lib.Protocol;
+using Charon.Dns.Lib.Protocol.ResourceRecords;
+using Xunit;
 
-namespace DNS.Tests.Protocol.ResourceRecords
+namespace Tests.Protocol.ResourceRecords
 {
 
     public class TextResourceRecordTest

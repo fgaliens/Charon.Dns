@@ -1,10 +1,10 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using Xunit;
 using Charon.Dns.Lib.Protocol.Utils;
+using Xunit;
 
-namespace DNS.Tests.Utils
+namespace Tests.Utils
 {
 
     public class TaskExtensionsTest
