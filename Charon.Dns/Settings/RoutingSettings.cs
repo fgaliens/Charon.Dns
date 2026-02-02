@@ -8,7 +8,7 @@ public record RoutingSettings : ISettings<RoutingSettings>
     public required string InterfaceToRouteThrough { get; init; }
     public required byte IpV4RoutingSubnet { get; init; }
     public required byte IpV6RoutingSubnet { get; init; }
-    public required IReadOnlyCollection<string> FullyMatchedHostNames { get; init; }
+    public required IReadOnlyCollection<string> MatchedByDomainHostNames { get; init; }
     public required IReadOnlyCollection<string> MatchedBySubstringHostNames { get; init; }
 
     public static RoutingSettings Initialize(IConfiguration config)
@@ -17,8 +17,8 @@ public record RoutingSettings : ISettings<RoutingSettings>
         var interfaceToRouteThrough = routingSection["InterfaceToRouteThrough"]!;
         var ipV4RoutingSubnet = byte.Parse(routingSection["IpV4RoutingSubnet"]!);
         var ipV6RoutingSubnet = byte.Parse(routingSection["IpV6RoutingSubnet"]!);
-        var fullyMatchedHostNames = routingSection
-            .GetSection("HostNames:ByFullMatch")
+        var matchedByDomainHostNames = routingSection
+            .GetSection("HostNames:ByDomainName")
             .GetChildren()
             .Select(x => x.Value!)
             .ToArray();
@@ -38,7 +38,7 @@ public record RoutingSettings : ISettings<RoutingSettings>
             InterfaceToRouteThrough = interfaceToRouteThrough,
             IpV4RoutingSubnet = ipV4RoutingSubnet,
             IpV6RoutingSubnet = ipV6RoutingSubnet,
-            FullyMatchedHostNames = fullyMatchedHostNames,
+            MatchedByDomainHostNames = matchedByDomainHostNames,
             MatchedBySubstringHostNames = matchedBySubstringHostNames,
         };
     }

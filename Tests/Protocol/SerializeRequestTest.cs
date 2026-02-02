@@ -1,10 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
-using Xunit;
 using Charon.Dns.Lib.Protocol;
 using Charon.Dns.Lib.Protocol.ResourceRecords;
+using Xunit;
 
-namespace DNS.Tests.Protocol
+namespace Tests.Protocol
 {
 
     public class SerializeRequestTest

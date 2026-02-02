@@ -47,6 +47,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Charon.Dns.Lib\Charon.Dns.Lib.csproj" />
+    <ProjectReference Include="..\Charon.Dns\Charon.Dns.csproj" />
   </ItemGroup>
 
 </Project>
