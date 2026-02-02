@@ -33,7 +33,11 @@
       {
         "Name": "my.home",
         "Address": "10.11.1.2"
-      }
+      },
+        {
+          "Name": "my.hm",
+          "Address": "10.11.1.2"
+        }
     ]
 }
   },

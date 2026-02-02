@@ -24,25 +24,28 @@ namespace Charon.Dns.Interceptors
                 {
                     if (answer.Type is RecordType.A)
                     {
-                        var ipV4Network = new IpV4Network(answer.Data, routingSettings.IpV4RoutingSubnet);
+                        var ipV4Network = new IpV4Network(answer.Data, routingSettings.IpV4RoutingSubnet)
+                            .MinAddress;
+                        
                         if (_addedIpV4Networks.TryAdd(ipV4Network, true))
                         {
                             _ = commandRunner.Execute(new AddIpV4RouteCommand
                             {
-                                Ip = new(answer.Data, routingSettings.IpV4RoutingSubnet),
+                                Ip = ipV4Network,
                                 Interface = routingSettings.InterfaceToRouteThrough,
                             }, token);
                         }
                     }
                     else if (answer.Type is RecordType.AAAA)
                     {
-                        var ipV6Network = new IpV6Network(answer.Data, routingSettings.IpV4RoutingSubnet);
+                        var ipV6Network = new IpV6Network(answer.Data, routingSettings.IpV6RoutingSubnet)
+                            .MinAddress;
 
                         if (_addedIpV6Networks.TryAdd(ipV6Network, true))
                         {
                             _ = commandRunner.Execute(new AddIpV6RouteCommand
                             {
-                                Ip = new(answer.Data, routingSettings.IpV6RoutingSubnet),
+                                Ip = ipV6Network,
                                 Interface = routingSettings.InterfaceToRouteThrough,
                             }, token);
                         }
