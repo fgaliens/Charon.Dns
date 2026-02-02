@@ -16,7 +16,7 @@ namespace Charon.Dns.RequestResolving
 
             try
             {
-                var shouldBeSecured = request.Questions.Select(x => hostNameAnalyzer.ShouldBeSecured(x.Name)).Any();
+                var shouldBeSecured = request.Questions.Any(x => hostNameAnalyzer.ShouldBeSecured(x.Name));
                 if (shouldBeSecured)
                 {
                     logger.Information("Dns request resolving is secured ({Request})", request);
