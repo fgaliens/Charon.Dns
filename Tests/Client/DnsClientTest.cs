@@ -1,15 +1,14 @@
-using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
-using Xunit;
 using Charon.Dns.Lib.Client;
 using Charon.Dns.Lib.Client.RequestResolver;
 using Charon.Dns.Lib.Protocol;
 using Charon.Dns.Lib.Protocol.ResourceRecords;
+using Xunit;
 
-namespace DNS.Tests.Client
+namespace Tests.Client
 {
 
     public class DnsClientTest

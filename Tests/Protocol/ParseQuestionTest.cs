@@ -1,8 +1,8 @@
 ﻿using System.Collections.Generic;
-using Xunit;
 using Charon.Dns.Lib.Protocol;
+using Xunit;
 
-namespace DNS.Tests.Protocol
+namespace Tests.Protocol
 {
 
     public class ParseQuestionTest

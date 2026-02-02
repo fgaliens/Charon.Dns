@@ -1,10 +1,10 @@
 using System;
-using Xunit;
-using Charon.Dns.Lib.Protocol;
-using System.Linq;
 using System.Collections.Generic;
+using System.Linq;
+using Charon.Dns.Lib.Protocol;
+using Xunit;
 
-namespace DNS.Tests.Protocol
+namespace Tests.Protocol
 {
 
     public class ParseCharacterStringTest

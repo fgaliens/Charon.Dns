@@ -1,5 +1,5 @@
 {
-  "LogLevel": "Debug",
+  "LogLevel": "Information",
   "Server": {
     "ListenOn": [
       {
@@ -46,11 +46,13 @@
     "IpV4RoutingSubnet": 32,
     "IpV6RoutingSubnet": 96,
     "HostNames": {
-      "ByFullMatch": [
-        "whoer.net"
-      ],
       "BySubstring": [
         "youtube",
+        "insta"
+      ],
+      "ByDomainName": [
+        "whoer.net",
+        
         "ggpht.cn",
         "ggpht.com",
         "googlevideo.com",
@@ -59,7 +61,6 @@
         "ytimg.com",
         "yt3.googleusercontent.com",
         
-        "insta",
         "bookstagram.com",
         "carstagram.com",
         "chickstagram.com",
