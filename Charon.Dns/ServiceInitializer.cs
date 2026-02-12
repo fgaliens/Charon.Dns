@@ -8,8 +8,7 @@ namespace Charon.Dns
     public class ServiceInitializer(
         ICommandRunner commandRunner,
         ListeningSettings listeningSettings,
-        DnsChainSettings chainSettings,
-        RoutingSettings routingSettings)
+        DnsChainSettings chainSettings)
     {
         public async Task Initialize()
         {
@@ -37,8 +36,8 @@ namespace Charon.Dns
             {
                 await commandRunner.Execute(new AddIpV4RouteCommand
                 {
-                    Ip = new IpV4Network(securedDnsServer.GetAddressBytes(), 32),
-                    Interface = routingSettings.InterfaceToRouteThrough,
+                    Ip = new IpV4Network(securedDnsServer.Ip.GetAddressBytes(), 32),
+                    Interface = securedDnsServer.InterfaceToRouteThrough,
                 });
             }
         }

@@ -5,48 +5,69 @@ namespace Charon.Dns.Settings;
 
 public record RoutingSettings : ISettings<RoutingSettings>
 {
-    public required string InterfaceToRouteThrough { get; init; }
-    public required byte IpV4RoutingSubnet { get; init; }
-    public required byte IpV6RoutingSubnet { get; init; }
+    public required IReadOnlyCollection<RoutingSettingsItem> Items { get; init; }
     public required IReadOnlyCollection<string> BlockedHostNames { get; init; }
-    public required IReadOnlyCollection<string> MatchedByDomainHostNames { get; init; }
-    public required IReadOnlyCollection<string> MatchedBySubstringHostNames { get; init; }
 
     public static RoutingSettings Initialize(IConfiguration config)
     {
         var routingSection = config.GetSection("Routing");
-        var interfaceToRouteThrough = routingSection["InterfaceToRouteThrough"]!;
-        var ipV4RoutingSubnet = byte.Parse(routingSection["IpV4RoutingSubnet"]!);
-        var ipV6RoutingSubnet = byte.Parse(routingSection["IpV6RoutingSubnet"]!);
-        var blockedHostNames = routingSection
-            .GetSection("HostNames:Blocked")
-            .GetChildren()
-            .Select(x => x.Value!)
-            .ToArray();
-        var matchedByDomainHostNames = routingSection
-            .GetSection("HostNames:ByDomainName")
-            .GetChildren()
-            .Select(x => x.Value!)
-            .ToArray();
-        var matchedBySubstringHostNames = routingSection
-            .GetSection("HostNames:BySubstring")
-            .GetChildren()
-            .Select(x => x.Value!)
-            .ToArray();
+        var routingSectionItems = routingSection
+            .GetSection("Items")
+            .GetChildren();
         
-        if (!Regex.IsMatch(interfaceToRouteThrough, @"^[-_\w\d]+$"))
+        var blockedHostNames = routingSection
+            .GetSection("BlockedHostNames")
+            .GetChildren()
+            .Select(x => x.Value!)
+            .ToArray();
+
+        var routingSettingsItems = new List<RoutingSettingsItem>();
+        foreach (var routingSectionItem in routingSectionItems)
         {
-            throw new InvalidOperationException($"Invalid interface name: '{interfaceToRouteThrough}'");
+            var interfaceToRouteThrough = routingSectionItem["InterfaceToRouteThrough"]!;
+            var ipV4RoutingSubnet = byte.Parse(routingSectionItem["IpV4RoutingSubnet"]!);
+            var ipV6RoutingSubnet = byte.Parse(routingSectionItem["IpV6RoutingSubnet"]!);
+            var matchedByDomainHostNames = routingSectionItem
+                .GetSection("HostNameMatches:ByDomainName")
+                .GetChildren()
+                .Select(x => x.Value!)
+                .ToArray();
+            var matchedBySubstringHostNames = routingSectionItem
+                .GetSection("HostNameMatches:BySubstring")
+                .GetChildren()
+                .Select(x => x.Value!)
+                .ToArray();
+
+            if (!Regex.IsMatch(interfaceToRouteThrough, @"^[-_\w\d]+$"))
+            {
+                throw new InvalidOperationException($"Invalid interface name: '{interfaceToRouteThrough}'");
+            }
+            
+            var routingSettingsItem = new RoutingSettingsItem
+            {
+                InterfaceToRouteThrough = interfaceToRouteThrough,
+                IpV4RoutingSubnet = ipV4RoutingSubnet,
+                IpV6RoutingSubnet = ipV6RoutingSubnet,
+                MatchedByDomainHostNames = matchedByDomainHostNames,
+                MatchedBySubstringHostNames = matchedBySubstringHostNames,
+            };
+            
+            routingSettingsItems.Add(routingSettingsItem);
         }
 
         return new RoutingSettings
         {
-            InterfaceToRouteThrough = interfaceToRouteThrough,
-            IpV4RoutingSubnet = ipV4RoutingSubnet,
-            IpV6RoutingSubnet = ipV6RoutingSubnet,
+            Items = routingSettingsItems,
             BlockedHostNames = blockedHostNames,
-            MatchedByDomainHostNames = matchedByDomainHostNames,
-            MatchedBySubstringHostNames = matchedBySubstringHostNames,
         };
     }
+}
+
+public record RoutingSettingsItem
+{
+    public required string InterfaceToRouteThrough { get; init; }
+    public required byte IpV4RoutingSubnet { get; init; }
+    public required byte IpV6RoutingSubnet { get; init; }
+    public required IReadOnlyCollection<string> MatchedByDomainHostNames { get; init; }
+    public required IReadOnlyCollection<string> MatchedBySubstringHostNames { get; init; }
 }

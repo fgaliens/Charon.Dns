@@ -1,3 +1,4 @@
+using Charon.Dns.Extensions;
 using Microsoft.Extensions.Configuration;
 
 namespace Charon.Dns.Settings
@@ -22,8 +23,8 @@ namespace Charon.Dns.Settings
                 .GetChildren()
                 .Select(x => new ARecord
                 {
-                    Name = x["Name"]!,
-                    Address = x["Address"]!,
+                    Name = x.GetSectionValue("Name"),
+                    Address = x.GetSectionValue("Address"),
                 })
                 .ToArray();
 

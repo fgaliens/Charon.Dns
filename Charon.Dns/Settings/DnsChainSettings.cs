@@ -1,4 +1,5 @@
 using System.Net;
+using Charon.Dns.Extensions;
 using Microsoft.Extensions.Configuration;
 
 namespace Charon.Dns.Settings;
@@ -6,7 +7,7 @@ namespace Charon.Dns.Settings;
 public record DnsChainSettings : ISettings<DnsChainSettings>
 {
     public required IReadOnlyCollection<IPAddress> DefaultServers { get; init; }
-    public required IReadOnlyCollection<IPAddress> SecuredServers { get; init; }
+    public required IReadOnlyCollection<SecuredServerSettingsItem> SecuredServers { get; init; }
 
     public static DnsChainSettings Initialize(IConfiguration config)
     {
@@ -19,7 +20,11 @@ public record DnsChainSettings : ISettings<DnsChainSettings>
         var securedServers = dnsChainConfig
             .GetSection("SecuredServers")
             .GetChildren()
-            .Select(x => IPAddress.Parse(x.Value!))
+            .Select(x =>new SecuredServerSettingsItem
+            {
+                Ip = x.GetSectionValue<IPAddress>("Ip"),
+                InterfaceToRouteThrough = x.GetSectionValue("RouteThroughInterface"),
+            })
             .ToArray();
 
         return new DnsChainSettings
@@ -28,4 +33,10 @@ public record DnsChainSettings : ISettings<DnsChainSettings>
             SecuredServers = securedServers,
         };
     }
+}
+
+public record SecuredServerSettingsItem
+{
+    public required IPAddress Ip { get; init; }
+    public required string InterfaceToRouteThrough { get; init; }
 }
