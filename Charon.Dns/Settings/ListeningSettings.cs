@@ -1,4 +1,5 @@
 using System.Net;
+using Charon.Dns.Extensions;
 using Microsoft.Extensions.Configuration;
 
 namespace Charon.Dns.Settings;
@@ -21,9 +22,9 @@ public record ListeningSettings : ISettings<ListeningSettings>
             .GetChildren()
             .Select(x => new ListeningRecord
             {
-                Address = IPAddress.Parse(x["Address"]!),
-                Port = int.Parse(x["Port"]!),
-                DebugOnly = bool.TryParse(x["DebugOnly"], out bool debugOnly) && debugOnly,
+                Address = x.GetSectionValue<IPAddress>("Address"),
+                Port = x.GetSectionValue<int>("Port"),
+                DebugOnly = x.GetSectionValue("DebugOnly", false),
             })
             .ToArray();
 
