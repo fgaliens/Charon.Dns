@@ -36,6 +36,7 @@ public class HostNameAnalyzer : IHostNameAnalyzer
         _domainMatchedHostnames = routingSettings
             .Items
             .TurnOut(x => x.MatchedByDomainHostNames)
+            .DistinctBy(x => x.Key, DomainNameComparer.Instance)
             .ToFrozenDictionary(
                 x => x.Key, 
                 x => securedConnectionParamsCache[x.Value], 
