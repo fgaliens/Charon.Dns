@@ -46,6 +46,10 @@
     "IpV4RoutingSubnet": 32,
     "IpV6RoutingSubnet": 96,
     "HostNames": {
+      "Blocked": [
+        "graph.instagram.com",
+        "graph-fallback.instagram.com"
+      ],
       "BySubstring": [
         "youtube",
         "insta"
@@ -76,8 +80,6 @@
         "intgram.com",
         "kingstagram.com",
         "lnstagram-help.com",
-        "graph.instagram.com",
-        "graph-fallback.instagram.com",
 
         "cdn-telegram.org",
         "comments.app",

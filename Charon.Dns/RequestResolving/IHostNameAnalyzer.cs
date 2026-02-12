@@ -4,6 +4,7 @@ namespace Charon.Dns.RequestResolving
 {
     public interface IHostNameAnalyzer
     {
-        bool ShouldBeSecured(Domain domain);
+        bool ShouldBeSecured(string domainName);
+        bool ShouldBeBlocked(string domainName);
     }
 }
