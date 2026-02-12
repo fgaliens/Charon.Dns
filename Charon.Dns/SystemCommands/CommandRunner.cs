@@ -7,7 +7,7 @@ namespace Charon.Dns.SystemCommands;
 public class CommandRunner(
     ILogger logger) : ICommandRunner
 {
-    public async ValueTask<bool> Execute<T>(
+    public async Task<bool> Execute<T>(
         T command,
         CancellationToken token = default)
         where T : ICommand
