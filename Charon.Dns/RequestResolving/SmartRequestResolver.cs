@@ -16,7 +16,31 @@ namespace Charon.Dns.RequestResolving
 
             try
             {
-                var shouldBeSecured = request.Questions.Any(x => hostNameAnalyzer.ShouldBeSecured(x.Name));
+                var shouldBeBlocked = false;
+                var shouldBeSecured = false;
+                foreach (var question in request.Questions)
+                {
+                    var hostName = question.Name.ToString();
+                    
+                    if (hostNameAnalyzer.ShouldBeBlocked(hostName))
+                    {
+                        shouldBeBlocked = true;
+                        break;
+                    }
+                    
+                    if (hostNameAnalyzer.ShouldBeSecured(hostName))
+                    {
+                        shouldBeSecured = true;
+                        break;
+                    }
+                }
+
+                if (shouldBeBlocked)
+                {
+                    logger.Information("Dns request was blocked ({Request})", request);
+                    return Response.FromRequest(request);
+                }
+                
                 if (shouldBeSecured)
                 {
                     logger.Information("Dns request resolving is secured ({Request})", request);

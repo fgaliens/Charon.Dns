@@ -20,7 +20,7 @@ namespace Charon.Dns.Interceptors
         {
             foreach (var answer in response.AnswerRecords)
             {
-                if (hostNameAnalyzer.ShouldBeSecured(answer.Name))
+                if (hostNameAnalyzer.ShouldBeSecured(answer.Name.ToString()))
                 {
                     if (answer.Type is RecordType.A)
                     {

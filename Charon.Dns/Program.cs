@@ -45,14 +45,14 @@ await serviceInitializer.Initialize();
 await smartDnsServer.Start();
 LogEventLevel GetLogLevel()
 {
+#if DEBUG
+    return LogEventLevel.Debug;
+#else
     if (Enum.TryParse<LogEventLevel>(config["LogLevel"], out var logLevel))
     {
         return logLevel;
     }
-    
-#if DEBUG
-    return LogEventLevel.Debug;
-#else
+
     return LogEventLevel.Information;
 #endif
 }
