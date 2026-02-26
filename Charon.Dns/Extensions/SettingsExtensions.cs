@@ -15,4 +15,36 @@ public static class SettingsExtensions
             return TSettings.Initialize(configuration);
         });
     }
+    
+    public static IEnumerable<string> TryResolveDataFromFiles(this IEnumerable<string> itemsToCheck)
+    {
+        const string filePrefix = "file:";
+        
+        foreach (var itemToCheck in itemsToCheck)
+        {
+            if (!itemToCheck.StartsWith(filePrefix, StringComparison.OrdinalIgnoreCase))
+            {
+                yield return itemToCheck;
+            }
+            else
+            {
+                var path = itemToCheck
+                    .Replace(filePrefix, string.Empty, StringComparison.OrdinalIgnoreCase)
+                    .Trim();
+
+                if (File.Exists(path))
+                {
+                    using var reader = File.OpenText(path);
+                    while (reader.ReadLine() is { } lineOfText)
+                    {
+                        var trimmedLineOfText = lineOfText.Trim();
+                        if (!trimmedLineOfText.StartsWith('#'))
+                        {
+                            yield return trimmedLineOfText;
+                        }
+                    }
+                }
+            }
+        }
+    }
 }

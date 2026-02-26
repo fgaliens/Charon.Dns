@@ -1,4 +1,5 @@
 using System.Text.RegularExpressions;
+using Charon.Dns.Extensions;
 using Microsoft.Extensions.Configuration;
 
 namespace Charon.Dns.Settings;
@@ -18,24 +19,27 @@ public record RoutingSettings : ISettings<RoutingSettings>
         var blockedHostNames = routingSection
             .GetSection("BlockedHostNames")
             .GetChildren()
-            .Select(x => x.Value!)
+            .Select(x => x.GetSectionValue())
+            .TryResolveDataFromFiles()
             .ToArray();
 
         var routingSettingsItems = new List<RoutingSettingsItem>();
         foreach (var routingSectionItem in routingSectionItems)
         {
-            var interfaceToRouteThrough = routingSectionItem["InterfaceToRouteThrough"]!;
-            var ipV4RoutingSubnet = byte.Parse(routingSectionItem["IpV4RoutingSubnet"]!);
-            var ipV6RoutingSubnet = byte.Parse(routingSectionItem["IpV6RoutingSubnet"]!);
+            var interfaceToRouteThrough = routingSectionItem.GetSectionValue("InterfaceToRouteThrough");
+            var ipV4RoutingSubnet = routingSectionItem.GetSectionValue<byte>("IpV4RoutingSubnet");
+            var ipV6RoutingSubnet = routingSectionItem.GetSectionValue<byte>("IpV6RoutingSubnet");
             var matchedByDomainHostNames = routingSectionItem
                 .GetSection("HostNameMatches:ByDomainName")
                 .GetChildren()
-                .Select(x => x.Value!)
+                .Select(x => x.GetSectionValue())
+                .TryResolveDataFromFiles()
                 .ToArray();
             var matchedBySubstringHostNames = routingSectionItem
                 .GetSection("HostNameMatches:BySubstring")
                 .GetChildren()
-                .Select(x => x.Value!)
+                .Select(x => x.GetSectionValue())
+                .TryResolveDataFromFiles()
                 .ToArray();
 
             if (!Regex.IsMatch(interfaceToRouteThrough, @"^[-_\w\d]+$"))

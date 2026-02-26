@@ -50,7 +50,8 @@
   "Routing": {
     "BlockedHostNames": [
       "graph.instagram.com",
-      "graph-fallback.instagram.com"
+      "graph-fallback.instagram.com",
+      "file:hosts_blacklist.txt"
     ],
     "Items": [
       {

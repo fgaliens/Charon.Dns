@@ -5,6 +5,17 @@ namespace Charon.Dns.Extensions;
 
 public static class ConfigurationExtensions
 {
+    public static string GetSectionValue(this IConfigurationSection section)
+    {
+        var value = section.Value;
+        if (value is null)
+        {
+            throw new SettingsValidationException($"Value for '{section.Path}' is missing");
+        }
+
+        return value;
+    }
+    
     public static string GetSectionValue(this IConfigurationSection section, string key)
     {
         var value = section.GetSection(key).Value;
