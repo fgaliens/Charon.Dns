@@ -18,6 +18,8 @@ public class HostNameAnalyzer : IHostNameAnalyzer
         ILogger logger)
     {
         _blockedHostnames = routingSettings.BlockedHostNames.ToFrozenSet(StringComparer.OrdinalIgnoreCase);
+        
+        logger.Information("Found {ItemsCount} host names to block", _blockedHostnames.Count);
 
         var securedConnectionParamsCache = new Dictionary<RoutingSettingsItem, SecuredConnectionParams>();
         foreach (var routingSettingsItem in routingSettings.Items)
@@ -41,12 +43,16 @@ public class HostNameAnalyzer : IHostNameAnalyzer
                 x => x.Key, 
                 x => securedConnectionParamsCache[x.Value], 
                 DomainNameComparer.Instance);
+        
+        logger.Information("Found {ItemsCount} host names to be secured (by domain name)", _domainMatchedHostnames.Count);
 
         _substringMatchedHostnames = routingSettings
             .Items
             .TurnOut(x => x.MatchedBySubstringHostNames)
             .Select(x => (x.Key, securedConnectionParamsCache[x.Value]))
             .ToArray();
+        
+        logger.Information("Found {ItemsCount} host names to be secured (by domain substring)", _substringMatchedHostnames.Length);
         
         _logger = logger;
     }
