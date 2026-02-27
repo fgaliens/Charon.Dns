@@ -10,7 +10,6 @@ using Xunit;
 
 namespace Tests.Client
 {
-
     public class DnsClientTest
     {
         [Fact]
