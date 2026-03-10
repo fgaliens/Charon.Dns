@@ -6,12 +6,19 @@ namespace Charon.Dns.Settings;
 
 public record RoutingSettings : ISettings<RoutingSettings>
 {
+    public required TimeSpan RoutingPeriod { get; init; }
     public required IReadOnlyCollection<RoutingSettingsItem> Items { get; init; }
     public required IEnumerable<string> BlockedHostNames { get; init; }
 
     public static RoutingSettings Initialize(IConfiguration config)
     {
         var routingSection = config.GetSection("Routing");
+        
+        var period = routingSection.GetSectionValue("Period", TimeSpan.Zero);
+        #if DEBUG
+        period = TimeSpan.FromSeconds(30);
+        #endif
+        
         var routingSectionItems = routingSection
             .GetSection("Items")
             .GetChildren();
@@ -60,6 +67,7 @@ public record RoutingSettings : ISettings<RoutingSettings>
 
         return new RoutingSettings
         {
+            RoutingPeriod = period,
             Items = routingSettingsItems,
             BlockedHostNames = blockedHostNames,
         };

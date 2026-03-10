@@ -48,9 +48,18 @@
 }
   },
   "Routing": {
+    "Period": "01:00:00",
     "BlockedHostNames": [
-      "graph.instagram.com",
-      "graph-fallback.instagram.com",
+      "max.ru",
+      "api.oneme.ru",
+      "ip.mail.ru",
+      "ipv4-internet.yandex.net/api/v0/ip",
+      "ipv6-internet.yandex.net/api/v0/ip",
+      "ifconfig.me/ip",
+      "api.ipify.org",
+      "checkip.amazonaws.com",
+      "ipify.org",
+      
       "file:hosts_blacklist.txt"
     ],
     "Items": [
