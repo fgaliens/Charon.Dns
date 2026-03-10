@@ -2,20 +2,17 @@ using System.Collections.Concurrent;
 using Charon.Dns.Lib.Protocol;
 using Charon.Dns.Net;
 using Charon.Dns.RequestResolving;
-using Charon.Dns.SystemCommands;
-using Charon.Dns.SystemCommands.Implementations;
+using Charon.Dns.Routing;
 
 namespace Charon.Dns.Interceptors
 {
     public class RequestInterceptor(
         IHostNameAnalyzer hostNameAnalyzer,
-        ICommandRunner commandRunner) 
+        IRouteManager<IpV4Network> ipV4NetworkManager,
+        IRouteManager<IpV6Network> ipV6NetworkManager) 
         : IRequestInterceptor
     {
-        private readonly ConcurrentDictionary<IpV4Network, bool> _addedIpV4Networks = new();
-        private readonly ConcurrentDictionary<IpV6Network, bool> _addedIpV6Networks = new();
-        
-        public Task Handle(IRequest request, IResponse response, CancellationToken token = default)
+        public async Task Handle(IRequest request, IResponse response, CancellationToken token = default)
         {
             var previousHostNameWasSecured = false;
             Domain? previousHostName = null;
@@ -40,36 +37,16 @@ namespace Charon.Dns.Interceptors
                 {
                     if (answer.Type is RecordType.A)
                     {
-                        var ipV4Network = new IpV4Network(answer.Data, connectionParams!.IpV4RoutingSubnet)
-                            .MinAddress;
-                        
-                        if (_addedIpV4Networks.TryAdd(ipV4Network, true))
-                        {
-                            _ = commandRunner.Execute(new AddIpV4RouteCommand
-                            {
-                                Ip = ipV4Network,
-                                Interface = connectionParams.InterfaceName,
-                            }, token);
-                        }
+                        var ipV4Network = new IpV4Network(answer.Data, connectionParams!.IpV4RoutingSubnet);
+                        await ipV4NetworkManager.AddRoute(ipV4Network, connectionParams.InterfaceName);
                     }
                     else if (answer.Type is RecordType.AAAA)
                     {
-                        var ipV6Network = new IpV6Network(answer.Data, connectionParams!.IpV6RoutingSubnet)
-                            .MinAddress;
-
-                        if (_addedIpV6Networks.TryAdd(ipV6Network, true))
-                        {
-                            _ = commandRunner.Execute(new AddIpV6RouteCommand
-                            {
-                                Ip = ipV6Network,
-                                Interface = connectionParams.InterfaceName,
-                            }, token);
-                        }
+                        var ipV6Network = new IpV6Network(answer.Data, connectionParams!.IpV6RoutingSubnet);
+                        await ipV6NetworkManager.AddRoute(ipV6Network, connectionParams.InterfaceName);
                     }
                 }
             }
-            
-            return Task.CompletedTask;
         }
     }
 }

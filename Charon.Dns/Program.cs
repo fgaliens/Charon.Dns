@@ -1,9 +1,13 @@
 ﻿using Charon.Dns;
 using Charon.Dns.Extensions;
 using Charon.Dns.Interceptors;
+using Charon.Dns.Jobs;
+using Charon.Dns.Jobs.Implementations;
 using Charon.Dns.RequestResolving;
+using Charon.Dns.Routing;
 using Charon.Dns.Settings;
 using Charon.Dns.SystemCommands;
+using Charon.Dns.Utils;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;
@@ -25,15 +29,18 @@ var serviceProvider = new ServiceCollection()
     .AddSingleton<SmartDnsServer>()
     .AddSingleton<IHostNameAnalyzer, HostNameAnalyzer>()
     .AddSingleton<ISmartRequestResolver, SmartRequestResolver>()
-    .AddSingleton<IDefaultRequestResolver,  DefaultRequestResolver>()
-    .AddSingleton<ISafeRequestResolver,  SafeRequestResolver>()
+    .AddSingleton<IDefaultRequestResolver, DefaultRequestResolver>()
+    .AddSingleton<ISafeRequestResolver, SafeRequestResolver>()
     .AddSingleton<ICommandRunner, CommandRunner>()
     .AddSingleton<IRequestInterceptor, RequestInterceptor>()
+    .AddRouteManagement()
+    .AddJobs(cfg => cfg.AddJob<RemoveOutdatedRoutesJob>())
     .AddSingleton<IConfiguration>(config)
     .AddSettings<ListeningSettings>()
     .AddSettings<DnsRecordsSettings>()
     .AddSettings<DnsChainSettings>()
     .AddSettings<RoutingSettings>()
+    .AddSingleton<IDateTimeProvider, DateTimeProvider>()
     .AddSingleton<ILogger>(logger)
     .BuildServiceProvider();
 

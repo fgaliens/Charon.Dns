@@ -1,3 +1,4 @@
+using Charon.Dns.Jobs;
 using Charon.Dns.Net;
 using Charon.Dns.Settings;
 using Charon.Dns.SystemCommands;
@@ -7,6 +8,7 @@ namespace Charon.Dns
 {
     public class ServiceInitializer(
         ICommandRunner commandRunner,
+        IJobRunner jobRunner,
         ListeningSettings listeningSettings,
         DnsChainSettings chainSettings)
     {
@@ -40,6 +42,8 @@ namespace Charon.Dns
                     Interface = securedDnsServer.InterfaceToRouteThrough,
                 });
             }
+            
+            jobRunner.Start();
         }
     }
 }
