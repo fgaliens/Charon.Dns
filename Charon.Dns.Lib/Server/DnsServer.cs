@@ -155,6 +155,7 @@ namespace Charon.Dns.Lib.Server
 
                 IResponse response = await resolver.Resolve(request).ConfigureAwait(false);
 
+                // TODO: Async events
                 OnEvent(Responded, new RespondedEventArgs(request, response, data, remote));
                 await udp
                     .SendAsync(response.ToArray(), response.Size, remote)
