@@ -1,4 +1,4 @@
-using System.Collections.Concurrent;
+using System.Collections.Immutable;
 using Charon.Dns.Settings;
 using Charon.Dns.Utils;
 using Serilog;
@@ -10,8 +10,7 @@ public class RouteUsageTracker<T> : IRouteUsageTracker<T> where T : notnull
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly RoutingSettings _routingSettings;
     private readonly ILogger _logger;
-    // TODO: ImmutableDictionary?
-    private readonly ConcurrentDictionary<T, RouteItem> _ipNetworks = new();
+    private ImmutableDictionary<T, RouteItem> _ipNetworks = ImmutableDictionary.Create<T, RouteItem>();
 
     public RouteUsageTracker(
         IDateTimeProvider dateTimeProvider,
@@ -42,7 +41,7 @@ public class RouteUsageTracker<T> : IRouteUsageTracker<T> where T : notnull
             return !itemIsTracked;
         }
 
-        return _ipNetworks.TryAdd(ip, new RouteItem
+        return ImmutableInterlocked.TryAdd(ref _ipNetworks, ip, new RouteItem
         {
             LastUsageTime = _dateTimeProvider.UtcNow,
             State = RouteState.Active,
