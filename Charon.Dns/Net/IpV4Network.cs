@@ -15,7 +15,6 @@ public readonly struct IpV4Network : IEquatable<IpV4Network>
         ArgumentOutOfRangeException.ThrowIfNotEqual(ip.Length, 4);
         ArgumentOutOfRangeException.ThrowIfGreaterThan(subnetSize, MaxSubnetSize);
 
-        //_ip = BinaryPrimitives.ReadUInt32BigEndian(ip.Span);
         _ip = BitConverter.ToUInt32(ip.Span);
         _subnetSize = subnetSize;
     }

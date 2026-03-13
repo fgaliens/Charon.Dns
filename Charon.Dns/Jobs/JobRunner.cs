@@ -28,12 +28,12 @@ public class JobRunner : IJobRunner
         {
             Task.Run(async () =>
             {
-                var jobType = job.GetType();
+                var localJob = job;
+                var jobType = localJob.GetType();
                 _logger.Debug("Job {JobName} started", jobType);
                 
                 while (!_cancellationTokenSource.IsCancellationRequested)
                 {
-                    var localJob = job;
                     try
                     {
                         _logger.Debug("Executing job {JobName}", jobType);
