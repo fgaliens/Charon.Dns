@@ -38,7 +38,7 @@ public static class SettingsExtensions
                     while (reader.ReadLine() is { } lineOfText)
                     {
                         var trimmedLineOfText = lineOfText.Trim();
-                        if (!trimmedLineOfText.StartsWith('#'))
+                        if (string.IsNullOrEmpty(trimmedLineOfText) && !trimmedLineOfText.StartsWith('#'))
                         {
                             yield return trimmedLineOfText;
                         }

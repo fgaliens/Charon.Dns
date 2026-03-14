@@ -1,3 +1,8 @@
+#vk
+ad.adriver.ru
+tracker-api.vk-analytics.ru
+ts.tracker-api.vk-analytics.ru
+#>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 0-02.net
 0001-metrics1-drcn-dt-dbankcloud-cn.geac.dbankedge.cn
 0002-metrics1-drcn-dt-dbankcloud-cn.geac.dbankedge.cn
@@ -1970,7 +1975,7 @@ abt-online.netease.im
 abt.nike.com
 abt.s3.yandex.net
 abtasty.com
-abtauthprd.samsungcloudsolution.com
+#abtauthprd.samsungcloudsolution.com
 abtest-ali-tokyo-01.saas.sensorsdata.cn
 abtest-api-data-sg.hoyoverse.com
 abtest-api-data.mihoyo.com
@@ -2236,11 +2241,11 @@ acquisitionhonestlybough.com
 acquitfamouscavity.com
 acquitjeans.com
 acquitmidst.com
-acr-br-prd.samsungcloud.tv
-acr-ca-prd.samsungcloud.tv
-acr-eu-prd.samsungcloud.tv
-acr-kr-prd.samsungcloud.tv
-acr-mx-prd.samsungcloud.tv
+#acr-br-prd.samsungcloud.tv
+#acr-ca-prd.samsungcloud.tv
+#acr-eu-prd.samsungcloud.tv
+#acr-kr-prd.samsungcloud.tv
+#acr-mx-prd.samsungcloud.tv
 acr.roku.com
 acrazeclaretsdegage.cfd
 acrdfrcfapzvn.site
@@ -10264,7 +10269,7 @@ api.rollbar.com
 api.rstprgapipt.com
 api.rtvrapi.com
 api.rudderlabs.com
-api.runestone.samsung.com
+#api.runestone.samsung.com
 api.sae.systems
 api.sailthru.com
 api.sanjagh.com
@@ -11079,7 +11084,7 @@ aptsanabia.cyou
 apture.com
 aptwcewxlhufh.website
 apu.hentaibox.xyz
-apu.samsungelectronics.com
+#apu.samsungelectronics.com
 apv-launcher.minute.ly
 apvdr.com
 apvovfnwiob.com
@@ -12958,7 +12963,7 @@ banner.playgatecasino.com
 banner.profile.ru
 banner.reinstil.de
 banner.sakuharuno.com
-banner.samsungmembers.com
+#banner.samsungmembers.com
 banner.sealmedia.de
 banner.surfree.com
 banner.tanto.de
@@ -15198,7 +15203,7 @@ bprsvoikehhdr.space
 bpt.webedia-group.com
 bptibdkuxvrxg.space
 bpttn8trk.com
-bpu.samsungelectronics.com
+#bpu.samsungelectronics.com
 bpvoctpvauvyv.website
 bpywqfn.cc
 bpzxevecpsxva.store
@@ -15937,7 +15942,7 @@ business.guinnessworldrecords.com
 business.inveno.com
 business.newsbreak.com
 business.omahasteaks.com
-business.samsungusa.com
+#business.samsungusa.com
 business.sharedcount.com
 businessclick.ch
 businessclick.com
@@ -21323,7 +21328,7 @@ cptefr.com
 cpu-api.infor.pl
 cpu-baidu-com-block.cdn.bcebos.com
 cpu.baidu.com
-cpu.samsungelectronics.com
+#cpu.samsungelectronics.com
 cpucdn.baidu.com
 cpuiouglooukucidynln.com
 cpux.gmud.top
@@ -24098,7 +24103,7 @@ dc.applicationinsights.azure.cn
 dc.applicationinsights.azure.us
 dc.arrivalist.com
 dc.banggood.com
-dc.dqa.samsung.com
+#dc.dqa.samsung.com
 dc.grabit.video
 dc.letv.com
 dc.meitustat.com
@@ -24783,7 +24788,7 @@ devicebind.ebay.de
 devicebind.ebay.ie
 deviceid.tantanapp.com
 deviceinf.com
-devicelog.samsungcloudsolution.net
+#devicelog.samsungcloudsolution.net
 deviceprotect.eu
 devices.tantanapp.com
 deviceslogger.netsparkmobile.com
@@ -24965,13 +24970,13 @@ dhyrlpxupgjcj.site
 di-capt.com
 di-collector-alb-1810496193.eu-central-1.elb.amazonaws.com
 di.mintierbingee.shop
-di.runestone.samsung.com
+#di.runestone.samsung.com
 di028lywwye7s.cloudfront.net
 di2e2m1cmrtc9.cloudfront.net
 di2xlfgjbl0v7.cloudfront.net
 di7stero.com
-diagmon-policy.samsungdm.com
-diagmon-serviceapi.samsungdm.com
+#diagmon-policy.samsungdm.com
+#diagmon-serviceapi.samsungdm.com
 diagnosedecorationvideotape.com
 diagnosiscontractortrophy.com
 diagnosisintriguingorganizer.com
@@ -25572,8 +25577,8 @@ dlp4luwpus5kr.cloudfront.net
 dlqbioenjjwsv.store
 dlres.ind9ed.com
 dlrioxg1637dk.cloudfront.net
-dls-account.di.atlas.samsung.com
-dls-ddc.dqa.samsung.com
+#dls-account.di.atlas.samsung.com
+#dls-ddc.dqa.samsung.com
 dlsite123.online
 dlssuizl.art
 dlswbr.baidu.com
@@ -26130,7 +26135,7 @@ dpssevgyylnkh.site
 dpsslacounty.demdex.net
 dpst35vkvd2u3.cloudfront.net
 dptxqbwdwuqye.website
-dpu.samsungelectronics.com
+#dpu.samsungelectronics.com
 dpuplet.com
 dpuplet.net
 dpuxtqqajzwam.store
@@ -39793,7 +39798,7 @@ investorsbusinessdai.tt.omtrdc.net
 invibes.com
 invicta.evergage.com
 invincibleacid.com
-invitation.samsungiotcloud.com
+#invitation.samsungiotcloud.com
 invitationownsnappy.com
 invitedexamine.com
 invitejs.trustpilot.com
@@ -42632,7 +42637,7 @@ kprwyomtkenby.space
 kpsxmpevuhdwf.space
 kptivfdlgtrtl.website
 kptura2.com
-kpu.samsungelectronics.com
+#kpu.samsungelectronics.com
 kpuscrsmljibk.space
 kpvlhacvplbci.site
 kpyzfyal.com
@@ -45214,7 +45219,7 @@ log.resso.app
 log.romanssystem.store
 log.rutube.ru
 log.saas.zeasn.tv
-log.samsunghrm.com
+#log.samsunghrm.com
 log.scanqrcodedesign.live
 log.sdk.zadn.vn
 log.seekda.com
@@ -51395,7 +51400,7 @@ musicarbitrary.com
 musicflashcard.com
 musicianfinnish.com
 musiciansinceredumpling.com
-musicid.samsungcloudsolution.com
+#musicid.samsungcloudsolution.com
 musik-mp3.info
 musimonkeleh.shop
 muskatchefdom.com
@@ -52993,7 +52998,7 @@ nlztpmhcxyzwh.vip
 nm-mb-collector-lb-2118323421.ap-southeast-2.elb.amazonaws.com
 nm68kgmnf1.com
 nmajjhzqyckro.icu
-nmetrics.samsung.com
+#nmetrics.samsung.com
 nmexfejiqh.com
 nmfhumudol.com
 nmgassets.com
@@ -58226,8 +58231,8 @@ osamapk.com
 osamara.com
 osaminesculped.com
 osarmapa.net
-osb-krsvc.samsungqbe.com
-osb.samsungqbe.com
+#osb-krsvc.samsungqbe.com
+#osb.samsungqbe.com
 osbbajomj.com
 oscarey.my.id
 osculelost.com
@@ -61279,7 +61284,7 @@ politicsdryer.com
 politnavigator.news
 polityyearlinggullible.com
 polkadotpla.net
-poll.gras.samsungdm.com
+#poll.gras.samsungdm.com
 poll.push-na.fsapi.com
 pollingpayoff.com
 pollingramblefunctions.com
@@ -61754,8 +61759,8 @@ prd-qlik-telemetry.servicebus.windows.net
 prd-usw2-requestattribution-iad.apple.com
 prd.api.bleacherreport.com
 prd.epsilon-rtr.dotomi.com
-prderrordumphsm.samsungcloudsolution.com
-prderrordumpssm.samsungcloudsolution.net
+#prderrordumphsm.samsungcloudsolution.com
+#prderrordumpssm.samsungcloudsolution.net
 prdredir.com
 prdt.illumina.com
 prdwebcollector.ruetracking.com
@@ -63131,7 +63136,7 @@ push.newsvot.com
 push.onestore.co.kr
 push.reamaze.com
 push.rollout.io
-push.samsungosp.com.cn
+#push.samsungosp.com.cn
 push.service.tapcash.com
 push.silversiri.com
 push.snappea.com
@@ -67292,7 +67297,7 @@ regardingsnappy.com
 regflow.com
 reggieunfloor.shop
 reghgnyodfqoi.store
-regi.di.atlas.samsung.com
+#regi.di.atlas.samsung.com
 regie.ai
 regie.hiwit.org
 regie.story-fr.com
@@ -67545,7 +67550,7 @@ report.ap.yandex-net.ru
 report.apkpure.net
 report.cdnpure.com
 report.gamecenter.qq.com
-report.gras.samsungdm.com
+#report.gras.samsungdm.com
 report.iciba.com
 report.idqqimg.com
 report.imtt.qq.com
@@ -70104,7 +70109,7 @@ sca-timesync.vivoglobal.com
 sca-vcode-api.vivoglobal.com
 sca-vcode-od.vivoglobal.com
 sca-vcode-or.vivoglobal.com
-sca.samsung.com
+#sca.samsung.com
 sca1.listrakbi.com
 scabbdg673jiggetey83.retiredowlstrain.su
 scadnet.com
@@ -70482,7 +70487,7 @@ sdk.optimove.net
 sdk.postscript.io
 sdk.ptqy.gitv.tv
 sdk.pulse.schibsted.com
-sdk.pushmessage.samsung.com
+#sdk.pushmessage.samsung.com
 sdk.resu.io
 sdk.rfunbox.com
 sdk.scopely.io
@@ -72649,7 +72654,7 @@ shcnohorrazqn.store
 shdid.me
 she-want-fuck.com
 shealapish.com
-shealth-analytics-api.samsunghealth.com
+#shealth-analytics-api.samsunghealth.com
 sheareasygoingcommerce.com
 sheargovernor.com
 sheaszadjsu.com
@@ -72921,7 +72926,7 @@ shymlsj.com
 shyplan.com
 shzwsrc.ksapisrv.com
 si.adocean.pl
-sia.internet.apps.samsung.com
+#sia.internet.apps.samsung.com
 siaf.sg
 sibergy.com
 siblaggiqx.com
@@ -74378,7 +74383,7 @@ smetrics.sainsburysbank.co.uk
 smetrics.saksoff5th.com
 smetrics.salliemae.com
 smetrics.samedelman.com
-smetrics.samsung.com
+#smetrics.samsung.com
 smetrics.santander.co.uk
 smetrics.sap.com
 smetrics.sasktel.com
@@ -77411,7 +77416,7 @@ stats.rustore.ru
 stats.ruv.de
 stats.ryzeo.com
 stats.safeway.com
-stats.samsungpass.com
+#stats.samsungpass.com
 stats.sat1nrw.de
 stats.sec.telefonica.com
 stats.securebrowser.com
@@ -79596,7 +79601,7 @@ tapvigai.property
 taradhuay.com
 tarbosau.bbqpitcleaners.info
 targad.de
-target-us.samsung.com
+#target-us.samsung.com
 target.accenture.com
 target.amica.com
 target.ansys.com
@@ -80473,7 +80478,7 @@ test-perfops.ldgslb.com
 test-pixmarketing.aralego.com
 test.contentsquare.com
 test.rutube.ru
-test.samsungrm.net
+#test.samsungrm.net
 test.seo-brain.net
 test.showvid.ws
 test.surepush.cn
@@ -85281,7 +85286,7 @@ uptrace.dev
 uptracs.com
 uptrendsdata.com
 uptyzxegbsprx.space
-upu.samsungelectronics.com
+#upu.samsungelectronics.com
 upuplet.net
 upwave.com
 upwwqfvpvbara.site
@@ -91769,7 +91774,7 @@ xps.huk.de
 xps.huk24.de
 xpsads.com
 xptzbpajealib.website
-xpu.samsungelectronics.com
+#xpu.samsungelectronics.com
 xpub.ro
 xpvewpanmkzis.site
 xpwpkuexwpakf.store
@@ -92703,7 +92708,7 @@ yphmaqcyhpfyz.store
 ypiohesltiqrj.space
 ypituyqsq.biz
 ypmrjyxltcrra.space
-ypu.samsungelectronics.com
+#ypu.samsungelectronics.com
 ypuupdvjvsvrm.website
 ypwcttlciuuzu.online
 ypxdakreabzhk.website
@@ -93624,7 +93629,7 @@ zppjpssx.com
 zpqfqxoczrwfq.space
 zprk.io
 zpservice.58.com
-zpu.samsungelectronics.com
+#zpu.samsungelectronics.com
 zpuavdcswqnml.online
 zpveapgfsqcty.online
 zpwllfsjphpig.online
