@@ -1,9 +1,10 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using Charon.Dns.Lib.Protocol.ResourceRecords;
 
 namespace Charon.Dns.Lib.Protocol
 {
-    public interface IRequest : IMessage
+    public interface IRequest : IMessage, IEquatable<IRequest>
     {
         int Id { get; set; }
         IList<IResourceRecord> AdditionalRecords { get; }

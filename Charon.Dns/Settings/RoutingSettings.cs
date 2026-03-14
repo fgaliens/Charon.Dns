@@ -15,9 +15,9 @@ public record RoutingSettings : ISettings<RoutingSettings>
         var routingSection = config.GetSection("Routing");
         
         var period = routingSection.GetSectionValue("Period", TimeSpan.Zero);
-        #if DEBUG
+#if DEBUG
         period = TimeSpan.FromSeconds(30);
-        #endif
+#endif
         
         var routingSectionItems = routingSection
             .GetSection("Items")

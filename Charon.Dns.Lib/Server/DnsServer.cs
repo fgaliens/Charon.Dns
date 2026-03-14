@@ -233,7 +233,8 @@ namespace Charon.Dns.Lib.Server
                 foreach (IRequestResolver resolver in _resolvers)
                 {
                     response = await resolver.Resolve(request, cancellationToken).ConfigureAwait(false);
-                    if (response.AnswerRecords.Count > 0) break;
+                    if (response.AnswerRecords.Count > 0) 
+                        break;
                 }
 
                 return response;

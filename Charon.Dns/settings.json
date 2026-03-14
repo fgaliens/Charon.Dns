@@ -47,6 +47,9 @@
       ]
     }
   },
+  "Cache": {
+    "TimeToLive": "00:15:00"
+  },
   "Routing": {
     "Period": "02:00:00",
     "BlockedHostNames": [

@@ -11,6 +11,7 @@ namespace Charon.Dns
 {
     public class SmartDnsServer(
         ISmartRequestResolver smartRequestResolver,
+        ICachedRequestResolver cachedRequestResolver,
         IResponseInterceptor responseInterceptor,
         ListeningSettings listeningSettings,
         DnsRecordsSettings dnsRecords,
@@ -26,6 +27,7 @@ namespace Charon.Dns
 
             var requestResolvers = new DnsServer.FallbackRequestResolver(
                 masterFile,
+                cachedRequestResolver,
                 smartRequestResolver);
             
             using var server = new DnsServer(requestResolvers);

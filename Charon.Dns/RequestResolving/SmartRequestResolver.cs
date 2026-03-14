@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using Charon.Dns.Cache;
 using Charon.Dns.Lib.Protocol;
 using Serilog;
 
@@ -8,9 +9,17 @@ namespace Charon.Dns.RequestResolving
         IDefaultRequestResolver defaultRequestResolver,
         ISafeRequestResolver safeRequestResolver,
         IHostNameAnalyzer hostNameAnalyzer,
+        IDnsCache  dnsCache,
         ILogger logger) : ISmartRequestResolver
     {
-        public async Task<IResponse> Resolve(IRequest request, CancellationToken cancellationToken = default(CancellationToken))
+        public async Task<IResponse> Resolve(IRequest request, CancellationToken cancellationToken = default)
+        {
+            var response = await ResolveInternal(request, cancellationToken);
+            dnsCache.AddResponse(request, response);
+            return response;
+        }
+        
+        private async Task<IResponse> ResolveInternal(IRequest request, CancellationToken cancellationToken)
         {
             var stopwatch = Stopwatch.StartNew();
 

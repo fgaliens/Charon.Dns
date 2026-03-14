@@ -1,4 +1,5 @@
 ﻿using Charon.Dns;
+using Charon.Dns.Cache;
 using Charon.Dns.Extensions;
 using Charon.Dns.Interceptors;
 using Charon.Dns.Jobs;
@@ -32,18 +33,23 @@ var serviceProvider = new ServiceCollection()
     .AddSingleton<ServiceInitializer>()
     .AddSingleton<SmartDnsServer>()
     .AddSingleton<IHostNameAnalyzer, HostNameAnalyzer>()
+    .AddSingleton<IDnsCache, DnsCache>()
     .AddSingleton<ISmartRequestResolver, SmartRequestResolver>()
     .AddSingleton<IDefaultRequestResolver, DefaultRequestResolver>()
     .AddSingleton<ISafeRequestResolver, SafeRequestResolver>()
+    .AddSingleton<ICachedRequestResolver, CachedRequestResolver>()
     .AddSingleton<ICommandRunner, CommandRunner>()
     .AddSingleton<IResponseInterceptor, ResponseInterceptor>()
     .AddRouteManagement()
-    .AddJobs(cfg => cfg.AddJob<RemoveOutdatedRoutesJob>())
+    .AddJobs(cfg => cfg
+        .AddJob<RemoveOutdatedRoutesJob>()
+        .AddJob<RemoveOutdatedCacheEntriesJob>())
     .AddSingleton<IConfiguration>(config)
     .AddSettings<ListeningSettings>()
     .AddSettings<DnsRecordsSettings>()
     .AddSettings<DnsChainSettings>()
     .AddSettings<RoutingSettings>()
+    .AddSettings<CacheSettings>()
     .AddSingleton<IDateTimeProvider, DateTimeProvider>()
     .AddSingleton<ILogger>(logger)
     .BuildServiceProvider();

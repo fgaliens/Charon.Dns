@@ -1,81 +1,94 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.IO;
 using System.Net;
+using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 using Charon.Dns.Lib.Client.RequestResolver;
 using Charon.Dns.Lib.Protocol;
+using Charon.Dns.Lib.Protocol.EqualityComparers;
 using Charon.Dns.Lib.Protocol.ResourceRecords;
 
 namespace Charon.Dns.Lib.Client
 {
     public class ClientRequest : IRequest
     {
-        private const int DEFAULT_PORT = 53;
+        private const int DefaultPort = 53;
 
-        private IRequestResolver resolver;
-        private IRequest request;
+        private readonly IRequestResolver _resolver;
+        private readonly IRequest _request;
 
         public ClientRequest(IPEndPoint dns, IRequest request = null) :
             this(new UdpRequestResolver(dns), request)
         { }
 
-        public ClientRequest(IPAddress ip, int port = DEFAULT_PORT, IRequest request = null) :
+        public ClientRequest(IPAddress ip, int port = DefaultPort, IRequest request = null) :
             this(new IPEndPoint(ip, port), request)
         { }
 
-        public ClientRequest(string ip, int port = DEFAULT_PORT, IRequest request = null) :
+        public ClientRequest(string ip, int port = DefaultPort, IRequest request = null) :
             this(IPAddress.Parse(ip), port, request)
         { }
 
         public ClientRequest(IRequestResolver resolver, IRequest request = null)
         {
-            this.resolver = resolver;
-            this.request = request == null ? new Request() : new Request(request);
+            this._resolver = resolver;
+            this._request = request == null ? new Request() : new Request(request);
         }
 
         public int Id
         {
-            get { return request.Id; }
-            set { request.Id = value; }
+            get { return _request.Id; }
+            set { _request.Id = value; }
         }
 
         public IList<IResourceRecord> AdditionalRecords
         {
-            get { return new ReadOnlyCollection<IResourceRecord>(request.AdditionalRecords); }
+            get { return _request.AdditionalRecords; }
         }
 
         public OperationCode OperationCode
         {
-            get { return request.OperationCode; }
-            set { request.OperationCode = value; }
+            get { return _request.OperationCode; }
+            set { _request.OperationCode = value; }
         }
 
         public bool RecursionDesired
         {
-            get { return request.RecursionDesired; }
-            set { request.RecursionDesired = value; }
+            get { return _request.RecursionDesired; }
+            set { _request.RecursionDesired = value; }
         }
 
         public IList<Question> Questions
         {
-            get { return request.Questions; }
+            get { return _request.Questions; }
         }
 
         public int Size
         {
-            get { return request.Size; }
+            get { return _request.Size; }
         }
 
         public byte[] ToArray()
         {
-            return request.ToArray();
+            return _request.ToArray();
+        }
+
+        public bool Equals(IRequest other)
+        {
+            return _request.Equals(other);
+        }
+
+        public override int GetHashCode()
+        {
+            return _request.GetHashCode();
         }
 
         public override string ToString()
         {
-            return request.ToString();
+            return _request.ToString();
         }
 
         /// <summary>
@@ -91,7 +104,7 @@ namespace Charon.Dns.Lib.Client
         {
             try
             {
-                IResponse response = await resolver.Resolve(this, cancellationToken).ConfigureAwait(false);
+                IResponse response = await _resolver.Resolve(this, cancellationToken).ConfigureAwait(false);
 
                 if (response.Id != this.Id)
                 {

@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Buffers.Binary;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 using Charon.Dns.Lib.Protocol.Utils;
 
 namespace Charon.Dns.Lib.Protocol
@@ -9,16 +11,16 @@ namespace Charon.Dns.Lib.Protocol
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public struct Header
     {
-        public const int SIZE = 12;
+        public const int HeaderSize = 12;
 
         public static Header FromArray(byte[] header)
         {
-            if (header.Length < SIZE)
+            if (header.Length < HeaderSize)
             {
                 throw new ArgumentException("Header length too small");
             }
 
-            return Marshalling.Struct.GetStruct<Header>(header, 0, SIZE);
+            return Marshalling.Struct.GetStruct<Header>(header, 0, HeaderSize);
         }
 
         private ushort id;
@@ -124,7 +126,7 @@ namespace Charon.Dns.Lib.Protocol
 
         public int Size
         {
-            get { return Header.SIZE; }
+            get { return Header.HeaderSize; }
         }
 
         public byte[] ToArray()
@@ -138,6 +140,23 @@ namespace Charon.Dns.Lib.Protocol
                 .AddAll()
                 .Remove(nameof(Size))
                 .ToString();
+        }
+
+        internal Vector128<byte> AsVector(bool withId = false)
+        {
+            Span<byte> buffer = stackalloc byte[128 / 8];
+            if (withId)
+            {
+                BinaryPrimitives.WriteUInt16BigEndian(buffer[..1], id);
+            }
+            buffer[2] = flag0;
+            buffer[3] = flag1;
+            BinaryPrimitives.WriteUInt16BigEndian(buffer[4..6], qdCount);
+            BinaryPrimitives.WriteUInt16BigEndian(buffer[6..8], anCount);
+            BinaryPrimitives.WriteUInt16BigEndian(buffer[8..10], nsCount);
+            BinaryPrimitives.WriteUInt16BigEndian(buffer[10..12], arCount);
+
+            return Vector128.Create(buffer);
         }
 
         // Query/Response Flag
