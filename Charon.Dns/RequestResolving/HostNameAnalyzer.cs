@@ -100,7 +100,7 @@ public class HostNameAnalyzer : IHostNameAnalyzer
         var substringIndexesLookup = _substringMatchedHostnames.GetAlternateLookup<ReadOnlySpan<char>>();
         for (int i = 0; i < domainName.Length; i++)
         {
-            for (int j = i + 1; j < domainName.Length - i; j++)
+            for (int j = i + 1; j < domainName.Length; j++)
             {
                 var domainNameSubstring = domainName.AsSpan(i..j);
                 if (!substringIndexesLookup.TryGetValue(domainNameSubstring, out var foundedParams))
