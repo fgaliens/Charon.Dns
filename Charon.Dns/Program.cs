@@ -4,6 +4,8 @@ using Charon.Dns.Extensions;
 using Charon.Dns.Interceptors;
 using Charon.Dns.Jobs;
 using Charon.Dns.Jobs.Implementations;
+using Charon.Dns.Lib.Protocol;
+using Charon.Dns.Logging;
 using Charon.Dns.RequestResolving;
 using Charon.Dns.Routing;
 using Charon.Dns.Settings;
@@ -23,8 +25,9 @@ var config = new ConfigurationBuilder()
     .Build();
 
 var logger = new LoggerConfiguration()
-    .WriteTo.Console()
     .MinimumLevel.Is(GetLogLevel())
+    .Destructure.With(new LoggingDestructuringPolicies())
+    .WriteTo.Console()
     .CreateLogger();
 
 logger.Information("Starting up DNS server. Version {AppVersion}", appVersion);

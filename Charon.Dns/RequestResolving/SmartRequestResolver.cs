@@ -3,6 +3,7 @@ using System.Net;
 using Charon.Dns.Cache;
 using Charon.Dns.Lib.Protocol;
 using Serilog;
+using Serilog.Events;
 
 namespace Charon.Dns.RequestResolving
 {
@@ -47,27 +48,28 @@ namespace Charon.Dns.RequestResolving
 
                 if (shouldBeBlocked)
                 {
-                    logger.Information("Dns request was blocked ({Request})", request);
+                    logger.Information("Dns request was blocked ({@Request})", request);
                     return Response.FromRequest(request);
                 }
                 
                 if (shouldBeSecured)
                 {
-                    logger.Information("Dns request resolving is secured ({Request})", request);
+                    logger.Information("Dns request resolving is secured ({@Request})", request);
                     return await safeRequestResolver.Resolve(request, remoteEndPoint, cancellationToken);
                 }
 
-                logger.Debug("Dns request resolving is non secured ({Request})", request);
+                logger.Debug("Dns request resolving is non secured ({@Request})", request);
                 return await defaultRequestResolver.Resolve(request, remoteEndPoint, cancellationToken);
             }
             catch (Exception e)
             {
-                logger.Error(e, "Dns request resolving failed ({Request})", request);
+                logger.Error(e, "Dns request resolving failed ({@Request})", request);
                 throw;
             }
             finally
             {
-                logger.Debug("Request handled in {Time} ms.", stopwatch.ElapsedMilliseconds);
+                var logLevel = stopwatch.ElapsedMilliseconds < 400 ? LogEventLevel.Debug : LogEventLevel.Warning;
+                logger.Write(logLevel, "Request handled {@Request} in {Time} ms.", request, stopwatch.ElapsedMilliseconds);
             }
         }
     }

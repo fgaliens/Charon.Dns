@@ -26,7 +26,7 @@ namespace Charon.Dns.RequestResolving
 
         public async Task<IResponse> Resolve(IRequest request, IPEndPoint remoteEndPoint, CancellationToken cancellationToken = default)
         {
-            _logger.Debug("Resolving {Request} by default", request);
+            _logger.Debug("Resolving {@Request} by default", request);
 
             var stopwatch = Stopwatch.StartNew();
             

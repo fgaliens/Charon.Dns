@@ -46,7 +46,7 @@ public class DnsCache(
             ImmutableInterlockedUtils.Add(ref _cacheEntries, responseEntry);
         }
 
-        logger.Debug("Response added to cache for request {Request}", request);
+        logger.Debug("Response added to cache for request {@Request}", request);
     }
 
     public bool TryGetResponse(IRequest request, [NotNullWhen(true)] out IResponse? response)
@@ -73,7 +73,7 @@ public class DnsCache(
             return false;
         }
         
-        logger.Debug("Cache hit for request {Request}: {Response}", request, cachedResponse);
+        logger.Debug("Cache hit for request {@Request}: {@Response}", request, cachedResponse);
         
         var cachedAnswers = cachedResponse.AnswerRecords.ToArray();
         response = new Response(cachedResponse);
