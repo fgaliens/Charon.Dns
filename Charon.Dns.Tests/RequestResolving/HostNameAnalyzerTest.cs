@@ -14,6 +14,7 @@ public class HostNameAnalyzerTest
 {
     [Theory]
     [InlineData("instagram.com")]
+    [InlineData("Instagram.Com")]
     [InlineData("cdninstagram.com")]
     [InlineData("content-fallback.cdninstagram.com")]
     public void ShouldBeSecured_WhenDomainMatchedBySubstring_ReturnsTrue(string hostName)
@@ -88,6 +89,7 @@ public class HostNameAnalyzerTest
     
     [Theory]
     [InlineData("instagram.com")]
+    [InlineData("Instagram.Com")]
     [InlineData("example.instagram.com")]
     [InlineData("other-example.content-fallback.instagram.com")]
     public void ShouldBeSecured_WhenDomainMatchedByHostName_ReturnsTrue(string hostName)
@@ -158,5 +160,82 @@ public class HostNameAnalyzerTest
         // Assert
         result.Should().BeFalse();
         connectionParams.Should().BeNull();
+    }
+    
+    [Theory]
+    [InlineData("adv.instagram.com")]
+    [InlineData("adv.Instagram.Com")]
+    public void ShouldBeBlocked_WhenDomainFullyMatchesBlocked_ReturnsTrue(string hostName)
+    {
+        // Arrange
+        var settings = new RoutingSettings
+        {
+            RoutingPeriod = TimeSpan.FromHours(1),
+            Items = [
+                new RoutingSettingsItem
+                {
+                    InterfaceToRouteThrough = "interface-name",
+                    IpV4RoutingSubnet = 32,
+                    IpV6RoutingSubnet = 128,
+                    MatchedByDomainHostNames = [
+                        "instagram.com",
+                    ],
+                    MatchedBySubstringHostNames = []
+                }
+            ],
+            BlockedHostNames = 
+            [
+                "adv.instagram.com",
+            ],
+        };
+
+        var loggerMock = Mock.Of<ILogger>();
+        
+        var analyzer = new HostNameAnalyzer(settings, loggerMock);
+        
+        // Act
+        var result = analyzer.ShouldBeBlocked(hostName);
+        
+        // Assert
+        result.Should().BeTrue();
+    }
+    
+    [Theory]
+    [InlineData("instagram.com")]
+    [InlineData("mail.instagram.com")]
+    [InlineData("super.adv.instagram.com")]
+    public void ShouldBeBlocked_WhenDomainDoesntMatchBlocked_ReturnsFalse(string hostName)
+    {
+        // Arrange
+        var settings = new RoutingSettings
+        {
+            RoutingPeriod = TimeSpan.FromHours(1),
+            Items = [
+                new RoutingSettingsItem
+                {
+                    InterfaceToRouteThrough = "interface-name",
+                    IpV4RoutingSubnet = 32,
+                    IpV6RoutingSubnet = 128,
+                    MatchedByDomainHostNames = [
+                        "instagram.com",
+                    ],
+                    MatchedBySubstringHostNames = []
+                }
+            ],
+            BlockedHostNames = 
+            [
+                "adv.instagram.com",
+            ],
+        };
+
+        var loggerMock = Mock.Of<ILogger>();
+        
+        var analyzer = new HostNameAnalyzer(settings, loggerMock);
+        
+        // Act
+        var result = analyzer.ShouldBeBlocked(hostName);
+        
+        // Assert
+        result.Should().BeFalse();
     }
 }

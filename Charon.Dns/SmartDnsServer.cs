@@ -7,73 +7,82 @@ using Charon.Dns.RequestResolving;
 using Charon.Dns.Settings;
 using Serilog;
 
-namespace Charon.Dns
+namespace Charon.Dns;
+
+public class SmartDnsServer(
+    ISmartRequestResolver smartRequestResolver,
+    IResponseInterceptor responseInterceptor,
+    ListeningSettings listeningSettings,
+    DnsRecordsSettings dnsRecords,
+    CacheSettings cacheSettings,
+    ILogger logger)
 {
-    public class SmartDnsServer(
-        ISmartRequestResolver smartRequestResolver,
-        ICachedRequestResolver cachedRequestResolver,
-        IResponseInterceptor responseInterceptor,
-        ListeningSettings listeningSettings,
-        DnsRecordsSettings dnsRecords,
-        CacheSettings cacheSettings,
-        ILogger logger)
+    private readonly CancellationTokenSource _cancellationTokenSource = new();
+    
+    public async Task Start()
     {
-        public async Task Start()
+        var cancellationToken = _cancellationTokenSource.Token;
+        cancellationToken.ThrowIfCancellationRequested();
+        
+        var masterFile = new MasterFile(cacheSettings.TimeToLive);
+        foreach (var aRecord in dnsRecords.ARecords)
         {
-            var masterFile = new MasterFile(cacheSettings.TimeToLive);
-            foreach (var aRecord in dnsRecords.ARecords)
-            {
-                masterFile.AddIpAddressResourceRecord(
-                    aRecord.Name, 
-                    aRecord.Address,
-                    aRecord.ResolveOnlyIfRequestCameFrom);
-            }
-
-            var requestResolvers = new DnsServer.FallbackRequestResolver(
-                masterFile,
-                cachedRequestResolver,
-                smartRequestResolver);
-            
-            using var server = new DnsServer(requestResolvers);
-            server.Subscribe(AsyncObserver.Create<OnExceptionEventArgs>(eventArgs =>
-            {
-                logger.Error(eventArgs.Exception, "Error occured");
-                return Task.CompletedTask;
-            }));
-
-            server.Subscribe(responseInterceptor);
-
-            var listeningTasks = new List<Task>();
-            foreach (var listeningSettingsItem in listeningSettings.Items)
-            {
-#if !DEBUG
-                if (listeningSettingsItem.DebugOnly)
-                {
-                    continue;
-                }
-#endif
-                
-                var task = Task.Run([SuppressMessage("ReSharper", "AccessToDisposedClosure")] async () =>
-                {
-                    logger.Information("Listening on {Ip}:{Port}.",
-                        listeningSettingsItem.Address, listeningSettingsItem.Port);
-                    try
-                    {
-                        await server.Listen(new IPEndPoint(listeningSettingsItem.Address, listeningSettingsItem.Port));
-                    }
-                    catch (Exception e)
-                    {
-                        logger.Error(e, "Error occured while listening on {Ip}:{Port}", 
-                            listeningSettingsItem.Address, listeningSettingsItem.Port);
-                    }
-                    
-                    logger.Warning("Stop listening on {Ip}:{Port}.",
-                        listeningSettingsItem.Address, listeningSettingsItem.Port);
-                });
-                listeningTasks.Add(task);
-            }
-
-            await Task.WhenAll(listeningTasks);
+            masterFile.AddIpAddressResourceRecord(
+                aRecord.Name, 
+                aRecord.Address,
+                aRecord.ResolveOnlyIfRequestCameFrom);
         }
+
+        var requestResolvers = new DnsServer.FallbackRequestResolver(
+            masterFile,
+            smartRequestResolver);
+        
+        using var server = new DnsServer(requestResolvers);
+        server.Subscribe(AsyncObserver.Create<OnExceptionEventArgs>(eventArgs =>
+        {
+            logger.Error(eventArgs.Exception, "Error occured");
+            return Task.CompletedTask;
+        }));
+
+        server.Subscribe(responseInterceptor);
+
+        var listeningTasks = new List<Task>();
+        foreach (var listeningSettingsItem in listeningSettings.Items)
+        {
+#if !DEBUG
+            if (listeningSettingsItem.DebugOnly)
+            {
+                continue;
+            }
+#endif
+            
+            var task = Task.Run([SuppressMessage("ReSharper", "AccessToDisposedClosure")] async () =>
+            {
+                logger.Information("Listening on {Ip}:{Port}.",
+                    listeningSettingsItem.Address, listeningSettingsItem.Port);
+                try
+                {
+                    await server.Listen(
+                        new IPEndPoint(listeningSettingsItem.Address, listeningSettingsItem.Port), 
+                        cancellationToken);
+                }
+                catch (Exception e)
+                {
+                    logger.Error(e, "Error occured while listening on {Ip}:{Port}", 
+                        listeningSettingsItem.Address, listeningSettingsItem.Port);
+                }
+                
+                logger.Warning("Stop listening on {Ip}:{Port}.",
+                    listeningSettingsItem.Address, listeningSettingsItem.Port);
+            });
+            listeningTasks.Add(task);
+        }
+
+        await Task.WhenAll(listeningTasks);
+    }
+    
+    public void Stop()
+    {
+        _cancellationTokenSource.Cancel();
     }
 }

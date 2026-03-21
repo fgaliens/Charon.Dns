@@ -36,7 +36,7 @@ namespace Charon.Dns
             
             foreach (var securedDnsServer in chainSettings.SecuredServers)
             {
-                await commandRunner.Execute(new AddIpV4RouteCommand
+                await commandRunner.Execute(new AddIpRouteCommand<IpV4Network>
                 {
                     Ip = new IpV4Network(securedDnsServer.Ip.GetAddressBytes(), 32),
                     Interface = securedDnsServer.InterfaceToRouteThrough,

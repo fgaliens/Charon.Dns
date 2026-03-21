@@ -4,7 +4,7 @@ using Charon.Dns.Extensions;
 
 namespace Charon.Dns.Net;
 
-public readonly struct IpV4Network : IEquatable<IpV4Network>
+public readonly struct IpV4Network : IIpNetwork<IpV4Network>
 {
     private const byte MaxSubnetSize = 32;
     private readonly uint _ip;
@@ -32,6 +32,10 @@ public readonly struct IpV4Network : IEquatable<IpV4Network>
     public IpV4Network MinAddress => new(_ip & GetSubnetMask(), _subnetSize);
 
     public IpV4Network MaxAddress => new(_ip | ~GetSubnetMask(), _subnetSize);
+
+    public bool IsIpV4 { get; } = true;
+
+    public bool IsIpV6 { get; } = false;
 
     public override int GetHashCode()
     {
@@ -65,7 +69,7 @@ public readonly struct IpV4Network : IEquatable<IpV4Network>
         return $"{span[0]}.{span[1]}.{span[2]}.{span[3]}";
     }
 
-    public void WriteToStringBuilder(StringBuilder stringBuilder, bool alwaysAddSubnetSize = true)
+    public void WriteToStringBuilder(StringBuilder stringBuilder)
     {
         const int expectedLength = 15 + 4;
         stringBuilder.EnsureCapacity(stringBuilder.Length + expectedLength);
@@ -83,13 +87,10 @@ public readonly struct IpV4Network : IEquatable<IpV4Network>
 
             stringBuilder.Append(item);
         }
-
-        if (alwaysAddSubnetSize || _subnetSize != MaxSubnetSize)
-        {
-            stringBuilder
-                .Append('/')
-                .Append(_subnetSize);
-        }
+        
+        stringBuilder
+            .Append('/')
+            .Append(_subnetSize);
     }
 
     private void FillIpIntoSpan(Span<byte> dst)

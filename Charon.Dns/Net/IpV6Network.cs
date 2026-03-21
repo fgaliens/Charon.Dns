@@ -5,7 +5,7 @@ using Charon.Dns.Extensions;
 
 namespace Charon.Dns.Net;
 
-public readonly struct IpV6Network : IEquatable<IpV6Network>
+public readonly struct IpV6Network : IIpNetwork<IpV6Network>
 {
     private const byte MaxSubnetSize = 128;
     private readonly UInt128 _ip;
@@ -32,6 +32,10 @@ public readonly struct IpV6Network : IEquatable<IpV6Network>
 
     public IpV6Network MaxAddress => new(_ip | ~GetSubnetMask(), _subnetSize);
 
+    public bool IsIpV4 { get; } = false;
+
+    public bool IsIpV6 { get; } = true;
+    
     public bool Equals(IpV6Network otherAddress)
     {
         return _ip == otherAddress._ip && _subnetSize == otherAddress._subnetSize;
@@ -60,14 +64,11 @@ public readonly struct IpV6Network : IEquatable<IpV6Network>
     public override string ToString()
     {
         var stringBuilder = new StringBuilder();
-        WriteToStringBuilder(stringBuilder, false);
+        WriteToStringBuilder(stringBuilder);
         return stringBuilder.ToString();
     }
 
-    public void WriteToStringBuilder(
-        StringBuilder stringBuilder,
-        bool alwaysAddSubnetSize = true,
-        bool printZeros = false)
+    public void WriteToStringBuilder(StringBuilder stringBuilder)
     {
         const int expectedLength = 39 + 4;
         stringBuilder.EnsureCapacity(stringBuilder.Length + expectedLength);
@@ -81,18 +82,12 @@ public readonly struct IpV6Network : IEquatable<IpV6Network>
 
             var upper = _ip.ReadByte(i);
             var lower = _ip.ReadByte(i + 1);
-
-            if (!printZeros && (upper != 0 || lower != 0))
-            {
-                stringBuilder.Append($"{upper:x2}{lower:x2}");
-            }
+            
+            stringBuilder.Append($"{upper:x2}{lower:x2}");
         }
-
-        if (alwaysAddSubnetSize || _subnetSize != MaxSubnetSize)
-        {
-            stringBuilder
-                .Append('/')
-                .Append(_subnetSize);
-        }
+        
+        stringBuilder
+            .Append('/')
+            .Append(_subnetSize);
     }
 }

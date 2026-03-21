@@ -62,12 +62,12 @@ namespace Charon.Dns.Lib.Server
             _resolver = resolver;
         }
 
-        public Task Listen(int port = DefaultPort, IPAddress ip = null)
+        public Task Listen(int port = DefaultPort, IPAddress ip = null, CancellationToken cancellationToken = default)
         {
-            return Listen(new IPEndPoint(ip ?? IPAddress.Any, port));
+            return Listen(new IPEndPoint(ip ?? IPAddress.Any, port), cancellationToken);
         }
 
-        public async Task Listen(IPEndPoint endpoint)
+        public async Task Listen(IPEndPoint endpoint, CancellationToken cancellationToken = default)
         {
             await Task.Yield();
 
@@ -77,6 +77,8 @@ namespace Charon.Dns.Lib.Server
             {
                 try
                 {
+                    cancellationToken.Register(Dispose);
+                        
                     _udp = new UdpClient(endpoint);
 
                     if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))

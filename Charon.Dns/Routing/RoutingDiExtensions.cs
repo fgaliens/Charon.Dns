@@ -10,8 +10,8 @@ public static class RoutingDiExtensions
         public IServiceCollection AddRouteManagement()
         {
             return services
-                .AddSingleton<IRouteManager<IpV4Network>, IpV4RouteManager>()
-                .AddSingleton<IRouteManager<IpV6Network>, IpV6RouteManager>()
+                .AddSingleton<IRouteManager<IpV4Network>, IpRouteManager<IpV4Network>>()
+                .AddSingleton<IRouteManager<IpV6Network>, IpRouteManager<IpV6Network>>()
                 .AddSingleton<IRouteUsageTracker<IpV4Network>, RouteUsageTracker<IpV4Network>>()
                 .AddSingleton<IRouteUsageTracker<IpV6Network>, RouteUsageTracker<IpV6Network>>();
         }

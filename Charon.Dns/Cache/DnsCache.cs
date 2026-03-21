@@ -115,8 +115,10 @@ public class DnsCache(
         var cacheEntries = _cacheEntries;
         while (cacheEntries.Count > 0 && cacheEntries.Min.ValidUntil < dateTimeProvider.UtcNow)
         {
-            logger.Debug("Removing outdated cache entry: {Entry}", cacheEntries.Min);
-            RemoveCacheEntry(cacheEntries.Min);
+            var cacheEntry = cacheEntries.Min;
+            logger.Debug("Removing outdated cache entry. Valid until: {Valid}; Request: {@Request}; Response: {@Response}", 
+                cacheEntry.ValidUntil, cacheEntry.Request, cacheEntry.Response);
+            RemoveCacheEntry(cacheEntry);
             
             cacheEntries = _cacheEntries;
         }
@@ -139,12 +141,6 @@ public class DnsCache(
         public required IRequest Request { get; init; }
         public required IResponse Response { get; init; }
     }
-    
-    // private readonly record struct ResponseEntry
-    // {
-    //     public required DateTimeOffset ValidUntil { get; init; }
-    //     public required IResponse Response { get; init; }
-    // }
 
     private class CacheEntryEqualityComparer : IComparer<CacheEntry>
     {

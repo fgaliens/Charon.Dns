@@ -11,11 +11,16 @@ namespace Charon.Dns.RequestResolving
         IDefaultRequestResolver defaultRequestResolver,
         ISafeRequestResolver safeRequestResolver,
         IHostNameAnalyzer hostNameAnalyzer,
-        IDnsCache  dnsCache,
+        IDnsCache dnsCache,
         ILogger logger) : ISmartRequestResolver
     {
         public async Task<IResponse> Resolve(IRequest request, IPEndPoint remoteEndPoint, CancellationToken cancellationToken = default)
         {
+            if (dnsCache.TryGetResponse(request, out var cachedResponse))
+            {
+                return cachedResponse;
+            }
+            
             var response = await ResolveInternal(request, remoteEndPoint, cancellationToken);
             dnsCache.AddResponse(request, response);
             return response;

@@ -1,11 +1,12 @@
 using System.Collections.Immutable;
+using Charon.Dns.Net;
 using Charon.Dns.Settings;
 using Charon.Dns.Utils;
 using Serilog;
 
 namespace Charon.Dns.Routing;
 
-public class RouteUsageTracker<T> : IRouteUsageTracker<T> where T : notnull
+public class RouteUsageTracker<T> : IRouteUsageTracker<T> where T : IIpNetwork<T>
 {
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly RoutingSettings _routingSettings;
@@ -43,15 +44,16 @@ public class RouteUsageTracker<T> : IRouteUsageTracker<T> where T : notnull
 
         return ImmutableInterlocked.TryAdd(ref _ipNetworks, ip, new RouteItem
         {
-            LastUsageTime = _dateTimeProvider.UtcNow,
             State = RouteState.Active,
+            LastUsageTime = _dateTimeProvider.UtcNow,
         });
     }
 
     public async Task<RouteToUntrack<T>> FindNextRouteToUntrack()
     {
         var outdatedPeriod = _dateTimeProvider.UtcNow - _routingSettings.RoutingPeriod;
-        foreach (var (ipNetwork, routeItem) in _ipNetworks)
+        var ipNetworks = _ipNetworks;
+        foreach (var (ipNetwork, routeItem) in ipNetworks)
         {
             if (outdatedPeriod > routeItem.LastUsageTime && routeItem.State == RouteState.Active)
             {
@@ -101,14 +103,20 @@ public class RouteUsageTracker<T> : IRouteUsageTracker<T> where T : notnull
     
     private class RouteItem : IDisposable
     {
+        private static TimeSpan LockTimeout { get; } = TimeSpan.FromSeconds(5);
         private readonly SemaphoreSlim _lock = new(1, 1);
          
         public DateTimeOffset LastUsageTime { get; set; }
         public RouteState State { get; set; }
+        public bool Locked => _lock.CurrentCount == 0;
 
         public async Task EnterLock()
         {
-            await _lock.WaitAsync();
+            var success = await _lock.WaitAsync(LockTimeout);
+            if (!success)
+            {
+                throw new InvalidOperationException($"Getting lock for {nameof(RouteItem)} {this} failed");
+            }
         }
         
         public void Dispose()
