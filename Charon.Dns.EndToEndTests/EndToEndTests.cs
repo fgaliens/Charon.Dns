@@ -9,7 +9,7 @@ namespace Charon.Dns.EndToEndTests;
 
 public class EndToEndTests : IDisposable
 {
-    private static readonly TimeSpan InitializationTimeout = TimeSpan.FromSeconds(10);
+    private static readonly TimeSpan InitializationTimeout = TimeSpan.FromSeconds(5);
     
     private readonly ITestOutputHelper _output;
     private readonly CancellationTokenSource _cancellationTokenSource;
