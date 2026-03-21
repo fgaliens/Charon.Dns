@@ -67,6 +67,21 @@ public class EndToEndTests : IDisposable
     }
     
     [Fact]
+    public async Task CheckResolvingForManuallyAddedRecords()
+    {
+        // Arrange
+        await Task.Delay(InitializationDelay);
+        
+        var client = new DnsClient("127.0.0.1");
+        
+        // Act
+        var response = await client.Resolve("my.home", RecordType.A);
+
+        // Assert
+        response.AnswerRecords.Should().NotBeEmpty();
+    }
+    
+    [Fact]
     public async Task CheckUnderLoad()
     {
         // Arrange
@@ -85,6 +100,7 @@ public class EndToEndTests : IDisposable
         string[] hosts =
         [
             "ya.ru",
+            "yandex.cloud",
             "apple.com",
             "google.com",
             "selectel.ru",

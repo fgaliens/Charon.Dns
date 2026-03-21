@@ -7,15 +7,15 @@ using Charon.Dns.Lib.Protocol.Utils;
 
 namespace Charon.Dns.Lib.Protocol
 {
-    public class Domain : IComparable<Domain>
+    public class Domain : IEquatable<Domain>, IComparable<Domain>
     {
-        private const byte ASCII_UPPERCASE_FIRST = 65;
-        private const byte ASCII_UPPERCASE_LAST = 90;
-        private const byte ASCII_LOWERCASE_FIRST = 97;
-        private const byte ASCII_LOWERCASE_LAST = 122;
-        private const byte ASCII_UPPERCASE_MASK = 223;
+        private const byte AsciiUppercaseFirst = 65;
+        private const byte AsciiUppercaseLast = 90;
+        private const byte AsciiLowercaseFirst = 97;
+        private const byte AsciiLowercaseLast = 122;
+        private const byte AsciiUppercaseMask = 223;
 
-        private byte[][] labels;
+        private readonly byte[][] _labels;
 
         public static Domain FromString(string domain)
         {
@@ -82,10 +82,10 @@ namespace Charon.Dns.Lib.Protocol
 
         public static Domain PointerName(IPAddress ip)
         {
-            return new Domain(FormatReverseIP(ip));
+            return new Domain(FormatReverseIp(ip));
         }
 
-        private static string FormatReverseIP(IPAddress ip)
+        private static string FormatReverseIp(IPAddress ip)
         {
             byte[] address = ip.GetAddressBytes();
 
@@ -107,18 +107,18 @@ namespace Charon.Dns.Lib.Protocol
             return string.Join(".", nibbles.Reverse().Select(b => b.ToString("x"))) + ".ip6.arpa";
         }
 
-        private static bool IsASCIIAlphabet(byte b)
+        private static bool IsAsciiAlphabet(byte b)
         {
-            return (ASCII_UPPERCASE_FIRST <= b && b <= ASCII_UPPERCASE_LAST) ||
-                (ASCII_LOWERCASE_FIRST <= b && b <= ASCII_LOWERCASE_LAST);
+            return b is >= AsciiUppercaseFirst and <= AsciiUppercaseLast 
+                or >= AsciiLowercaseFirst and <= AsciiLowercaseLast;
         }
 
         private static int CompareTo(byte a, byte b)
         {
-            if (IsASCIIAlphabet(a) && IsASCIIAlphabet(b))
+            if (IsAsciiAlphabet(a) && IsAsciiAlphabet(b))
             {
-                a &= ASCII_UPPERCASE_MASK;
-                b &= ASCII_UPPERCASE_MASK;
+                a &= AsciiUppercaseMask;
+                b &= AsciiUppercaseMask;
             }
 
             return a - b;
@@ -139,12 +139,12 @@ namespace Charon.Dns.Lib.Protocol
 
         public Domain(byte[][] labels)
         {
-            this.labels = labels;
+            _labels = labels;
         }
 
         public Domain(string[] labels, Encoding encoding)
         {
-            this.labels = labels.Select(label => encoding.GetBytes(label)).ToArray();
+            _labels = labels.Select(label => encoding.GetBytes(label)).ToArray();
         }
 
         public Domain(string domain) : this(domain.Split('.')) { }
@@ -153,7 +153,7 @@ namespace Charon.Dns.Lib.Protocol
 
         public int Size
         {
-            get { return labels.Sum(l => l.Length) + labels.Length + 1; }
+            get { return _labels.Sum(l => l.Length) + _labels.Length + 1; }
         }
 
         public byte[] ToArray()
@@ -161,7 +161,7 @@ namespace Charon.Dns.Lib.Protocol
             byte[] result = new byte[Size];
             int offset = 0;
 
-            foreach (byte[] label in labels)
+            foreach (byte[] label in _labels)
             {
                 result[offset++] = (byte)label.Length;
                 label.CopyTo(result, offset);
@@ -174,7 +174,7 @@ namespace Charon.Dns.Lib.Protocol
 
         public string ToString(Encoding encoding)
         {
-            return string.Join(".", labels.Select(label => encoding.GetString(label)));
+            return string.Join(".", _labels.Select(label => encoding.GetString(label)));
         }
 
         public override string ToString()
@@ -184,29 +184,35 @@ namespace Charon.Dns.Lib.Protocol
 
         public int CompareTo(Domain other)
         {
-            int length = Math.Min(labels.Length, other.labels.Length);
+            int length = Math.Min(_labels.Length, other._labels.Length);
 
             for (int i = 0; i < length; i++)
             {
-                int v = CompareTo(this.labels[i], other.labels[i]);
+                int v = CompareTo(_labels[i], other._labels[i]);
                 if (v != 0) return v;
             }
 
-            return this.labels.Length - other.labels.Length;
+            return _labels.Length - other._labels.Length;
         }
 
         public override bool Equals(object obj)
         {
-            if (obj == null)
+            if (obj is Domain domain)
             {
-                return false;
+                return Equals(domain);
             }
-            if (!(obj is Domain))
+
+            return false;
+        }
+        
+        public bool Equals(Domain other)
+        {
+            if (other is null)
             {
                 return false;
             }
 
-            return CompareTo(obj as Domain) == 0;
+            return CompareTo(other) == 0;
         }
 
         public override int GetHashCode()
@@ -215,11 +221,11 @@ namespace Charon.Dns.Lib.Protocol
             {
                 int hash = 17;
 
-                foreach (byte[] label in labels)
+                foreach (byte[] label in _labels)
                 {
                     foreach (byte b in label)
                     {
-                        hash = hash * 31 + (IsASCIIAlphabet(b) ? b & ASCII_UPPERCASE_MASK : b);
+                        hash = hash * 31 + (IsAsciiAlphabet(b) ? b & AsciiUppercaseMask : b);
                     }
                 }
 

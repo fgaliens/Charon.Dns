@@ -21,7 +21,7 @@ public class QuestionComparer : IEqualityComparer<Question>
 
         return x.Type == y.Type
             && x.Class == y.Class
-            && x.Name.CompareTo(y.Name) == 0;
+            && x.Name.Equals(y.Name);
     }
 
     public int GetHashCode(Question obj)

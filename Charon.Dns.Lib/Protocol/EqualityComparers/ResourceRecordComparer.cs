@@ -18,19 +18,17 @@ public class ResourceRecordComparer : IEqualityComparer<IResourceRecord>
             return false;
         if (x.GetType() != y.GetType()) 
             return false;
-        return x.TimeToLive.Equals(y.TimeToLive)
-            && x.DataLength == y.DataLength
+        return x.DataLength == y.DataLength
             && x.Type == y.Type
             && x.Class == y.Class
             && x.Size == y.Size
-            && x.Data.SequenceEqual(y.Data)
-            && x.Name.CompareTo(y.Name) == 0;
+            && x.Name.CompareTo(y.Name) == 0
+            && x.Data.SequenceEqual(y.Data);
     }
 
     public int GetHashCode(IResourceRecord obj)
     {
         var hashCode = new HashCode();
-        hashCode.Add(obj.TimeToLive);
         hashCode.Add(obj.DataLength);
         hashCode.Add(obj.Name);
         hashCode.Add((int)obj.Type);

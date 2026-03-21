@@ -3,7 +3,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
-using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Charon.Dns.Lib.Client.RequestResolver;
@@ -15,30 +14,7 @@ namespace Charon.Dns.Lib.Server
     public class MasterFile : IRequestResolver
     {
         private static readonly TimeSpan DefaultTtl = new TimeSpan(0);
-
-        private static bool Matches(Domain domain, Domain entry)
-        {
-            string[] labels = entry.ToString().Split('.');
-            string[] patterns = new string[labels.Length];
-
-            for (int i = 0; i < labels.Length; i++)
-            {
-                string label = labels[i];
-                patterns[i] = label == "*" ? "(\\w+)" : Regex.Escape(label);
-            }
-
-            Regex re = new Regex("^" + string.Join("\\.", patterns) + "$", RegexOptions.IgnoreCase);
-            return re.IsMatch(domain.ToString());
-        }
-
-        private static void Merge<T>(IList<T> l1, IList<T> l2)
-        {
-            foreach (T obj in l2)
-            {
-                l1.Add(obj);
-            }
-        }
-
+        
         private readonly IList<MasterFileEntry> _entries = [];
         private readonly TimeSpan _ttl = DefaultTtl;
 
@@ -149,7 +125,6 @@ namespace Charon.Dns.Lib.Server
 
         public Task<IResponse> Resolve(IRequest request, IPEndPoint remoteEndPoint, CancellationToken cancellationToken = default(CancellationToken))
         {
-            //request.
             IResponse response = Response.FromRequest(request);
 
             foreach (Question question in request.Questions)
@@ -169,6 +144,14 @@ namespace Charon.Dns.Lib.Server
             return Task.FromResult(response);
         }
 
+        private static void Merge<T>(IList<T> l1, IList<T> l2)
+        {
+            foreach (T obj in l2)
+            {
+                l1.Add(obj);
+            }
+        }
+
         private IEnumerable<IResourceRecord> Get(Domain domain, RecordType type, IPAddress remoteAddress)
         {
             List<(MasterFileEntry Entry, bool MatchesByIp)>? foundEntries = null;
@@ -176,8 +159,8 @@ namespace Charon.Dns.Lib.Server
             foreach (var entry in _entries)
             {
                 var resourceRecord = entry.ResourceRecord;
-                if (Matches(domain, resourceRecord.Name) 
-                    && (resourceRecord.Type == type || type == RecordType.ANY))
+                if ((resourceRecord.Type == type || type == RecordType.ANY)
+                    && domain.Equals(resourceRecord.Name))
                 {
                     foundEntries ??= new List<(MasterFileEntry Entry, bool MatchesByIp)>();
                     var ipEquals = entry.ExpectedRemoteAddress?.Equals(remoteAddress.MapToIPv6()) ?? false;
