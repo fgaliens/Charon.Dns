@@ -1,6 +1,5 @@
 namespace Charon.Dns.Routing;
 
-[Obsolete]
 public interface IRouteUsageTracker<T>
 {
     ValueTask<bool> TryTrackRoute(T ip);
