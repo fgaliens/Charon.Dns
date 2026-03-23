@@ -17,12 +17,11 @@ namespace Charon.Dns.Lib.Client.RequestResolver
     {
         private const int MaxUdpMsgSize = 512;
         
-        private readonly TimeSpan _timeout = TimeSpan.FromSeconds(5);
+        private readonly TimeSpan _timeout = TimeSpan.FromSeconds(2);
         private readonly IPEndPoint _dnsEndpoint;
         private readonly IRequestResolver? _fallback;
         private readonly ILogger? _logger;
         private readonly ConcurrentBag<Socket> _availableSockets = new();
-        //private readonly SemaphoreSlim _concurrencyLimiter = new(10,10);
         private readonly ArrayPool<byte> _arrayPool = ArrayPool<byte>.Shared;
 
         public UdpRequestResolver(
