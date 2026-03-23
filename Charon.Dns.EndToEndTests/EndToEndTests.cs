@@ -198,7 +198,7 @@
        public async Task CheckUnderLoadWithSameRequests()
        {
            // Arrange
-           await Task.Delay(InitializationDelay * 2);
+           await Task.Delay(InitializationDelay);
    
            DnsClient[] clients =
            [
