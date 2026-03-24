@@ -9,14 +9,12 @@ using Charon.Dns.Lib.Client.RequestResolver;
 using Charon.Dns.Lib.Protocol;
 using Charon.Dns.Lib.Protocol.ResourceRecords;
 using Charon.Dns.Lib.Tracing;
-using Serilog.Core;
 
 namespace Charon.Dns.Lib.Client
 {
     public class ClientRequest : IRequest
     {
         private const int DefaultPort = 53;
-        private static readonly IPEndPoint LocalEndPoint = new IPEndPoint(IPAddress.Loopback, 0);
 
         private readonly IRequestResolver _resolver;
         private readonly IRequest _request;
@@ -107,12 +105,7 @@ namespace Charon.Dns.Lib.Client
             {
                 IResponse response = await _resolver.Resolve(
                         this, 
-                        new RequestTrace
-                        {
-                            Id = 0,
-                            RemoteEndPoint = new IPEndPoint(0,0),
-                            Logger = Logger.None,
-                        },
+                        RequestTrace.Empty,
                         cancellationToken)
                     .ConfigureAwait(false);
 
