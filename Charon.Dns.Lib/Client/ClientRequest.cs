@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
@@ -14,27 +13,13 @@ namespace Charon.Dns.Lib.Client
 {
     public class ClientRequest : IRequest
     {
-        private const int DefaultPort = 53;
-
         private readonly IRequestResolver _resolver;
         private readonly IRequest _request;
 
-        public ClientRequest(IPEndPoint dns, IRequest request = null) :
-            this(new UdpRequestResolver(dns), request)
-        { }
-
-        public ClientRequest(IPAddress ip, int port = DefaultPort, IRequest request = null) :
-            this(new IPEndPoint(ip, port), request)
-        { }
-
-        public ClientRequest(string ip, int port = DefaultPort, IRequest request = null) :
-            this(IPAddress.Parse(ip), port, request)
-        { }
-
         public ClientRequest(IRequestResolver resolver, IRequest request = null)
         {
-            this._resolver = resolver;
-            this._request = request == null ? new Request() : new Request(request);
+            _resolver = resolver;
+            _request = request == null ? new Request() : new Request(request);
         }
 
         public int Id

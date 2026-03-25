@@ -56,8 +56,8 @@ static class Program
                 "logs/dns.log", 
                 GetFileLogLevel(),
                 outputTemplate: "[{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz}][{Level:u3}][#{RequestId}] {Message:lj}{NewLine}{Exception}",
-                buffered: true,
-                flushToDiskInterval: TimeSpan.FromSeconds(5),
+                //buffered: true,
+                //flushToDiskInterval: TimeSpan.FromSeconds(5),
                 rollingInterval: RollingInterval.Minute,
                 retainedFileCountLimit: 60)
             .CreateLogger();

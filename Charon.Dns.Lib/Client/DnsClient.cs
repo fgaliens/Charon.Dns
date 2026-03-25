@@ -17,7 +17,7 @@ namespace Charon.Dns.Lib.Client
         private readonly IRequestResolver _resolver;
 
         public DnsClient(IPEndPoint dns) :
-            this(new UdpRequestResolver(dns, new TcpRequestResolver(dns)))
+            this(new UdpRequestResolver(dns, 0, new TcpRequestResolver(dns)))
         { }
 
         public DnsClient(IPAddress ip, int port = DefaultPort) :
@@ -89,7 +89,7 @@ namespace Charon.Dns.Lib.Client
             return Resolve(new Domain(domain), type, cancellationToken);
         }
 
-        public Task<IResponse> Resolve(Domain domain, RecordType type, CancellationToken cancellationToken = default(CancellationToken))
+        public async Task<IResponse> Resolve(Domain domain, RecordType type, CancellationToken cancellationToken = default(CancellationToken))
         {
             ClientRequest request = Create();
             Question question = new Question(domain, type);
@@ -98,7 +98,12 @@ namespace Charon.Dns.Lib.Client
             request.OperationCode = OperationCode.Query;
             request.RecursionDesired = true;
 
-            return request.Resolve(cancellationToken);
+            var response = await request.Resolve(cancellationToken);
+            if (request.Id != response.Id)
+            {
+                throw new InvalidOperationException("Request and response identifiers are different");
+            }
+            return response;
         }
     }
 }

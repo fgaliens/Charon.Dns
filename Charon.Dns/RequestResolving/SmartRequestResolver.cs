@@ -24,6 +24,9 @@ namespace Charon.Dns.RequestResolving
             
             var response = await ResolveInternal(request, trace, cancellationToken);
             dnsCache.AddResponse(request, response, trace);
+            
+            trace.Logger.Debug("Got response {@Response}", response);
+            
             return response;
         }
         

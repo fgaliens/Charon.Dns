@@ -12,27 +12,31 @@ public class RequestResolverBase : IRequestResolver
         
     private readonly UdpRequestResolver[] _innerResolvers;
         
-    public RequestResolverBase(IEnumerable<IPAddress> chainDnsServers)
+    public RequestResolverBase(IEnumerable<IPAddress> chainDnsServers, int requestConcurrencyLimit)
     {
         _innerResolvers = chainDnsServers
-            .Select(x => new UdpRequestResolver(new IPEndPoint(x, DefaultDnsPort)))
+            .Select(x => new UdpRequestResolver(new IPEndPoint(x, DefaultDnsPort), requestConcurrencyLimit))
             .ToArray();
     }
 
     public async Task<IResponse> Resolve(
         IRequest request, 
-        RequestTrace? trace, 
+        RequestTrace trace, 
         CancellationToken cancellationToken = default)
     {
-        trace?.Logger.Debug("Resolving {@Request} safely", request);
+        trace.Logger.Debug("Resolving {@Request} safely", request);
             
         var stopwatch = Stopwatch.StartNew();
         try
         {
-            var responseTasks = _innerResolvers.Select(x => 
-                x.Resolve(request, trace, cancellationToken));
-            var response = await Task.WhenAny(responseTasks);
-            return await response;
+            return await  _innerResolvers[Random.Shared.Next(_innerResolvers.Length)]
+                .Resolve(request, trace, cancellationToken);
+            
+            //TODO: uncomment
+            // var responseTasks = _innerResolvers.Select(x => 
+            //     x.Resolve(request, trace, cancellationToken));
+            // var response = await Task.WhenAny(responseTasks);
+            // return await response;
         }
         finally
         {
