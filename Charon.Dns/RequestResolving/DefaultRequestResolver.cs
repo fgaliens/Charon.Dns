@@ -1,7 +1,8 @@
 using Charon.Dns.Settings;
+using Serilog;
 
 namespace Charon.Dns.RequestResolving
 {
-    public class DefaultRequestResolver(DnsChainSettings dnsChainSettings) 
-        : RequestResolverBase(dnsChainSettings.DefaultServers, dnsChainSettings.ResolvingConcurrencyLimit), IDefaultRequestResolver;
+    public class DefaultRequestResolver(DnsChainSettings dnsChainSettings, ILogger globalLogger) 
+        : RequestResolverBase(dnsChainSettings.DefaultServers, globalLogger), IDefaultRequestResolver;
 }

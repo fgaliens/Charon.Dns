@@ -116,12 +116,12 @@ public class EndToEndTests : IDisposable
         [
             RecordType.A,
             RecordType.AAAA,
-            //RecordType.MX, TODO: !!!
+            RecordType.MX,
         ];
 
         var requestsCombination = hosts
             .CombineWith(recordTypes)
-            .Select(x => Enumerable.Repeat(x, 3))
+            .Select(x => Enumerable.Repeat(x, 3)) // TODO: 3
             .SelectMany(x => x)
             .ToArray();
         
@@ -136,6 +136,7 @@ public class EndToEndTests : IDisposable
         {
             foreach (var dnsClient in clients)
             {
+                //await Task.Delay(5);
                 responses.Add(Task.Run(async () =>
                 {
                     var innerHost = host;
