@@ -28,12 +28,15 @@ public class RequestResolverBase : IRequestResolver
         RequestTrace trace, 
         CancellationToken cancellationToken = default)
     {
-        trace.Logger.Debug("Resolving {@Request} safely", request);
-            
+        var resolver = GetType().Name;
+        trace.Logger.Debug("Resolving {@Request} by {Resolver}", request, resolver);
+        
         var stopwatch = Stopwatch.StartNew();
         try
         {
-            return await  _innerResolvers[Random.Shared.Next(_innerResolvers.Length)]
+            // TODO: Remove
+            var resolverIndex = _counter.Increment() % (ulong)_innerResolvers.Length;
+            return await _innerResolvers[resolverIndex]
                 .Resolve(request, trace, cancellationToken);
             
             //TODO: uncomment
@@ -44,8 +47,8 @@ public class RequestResolverBase : IRequestResolver
         }
         finally
         {
-            trace?.Logger.Debug(
-                "{Source}: request resolved by chain in {ElapsedMilliseconds} ms.", 
+            trace.Logger.Debug(
+                "{Source}: request handled by chain in {ElapsedMilliseconds} ms.", 
                 GetType().Name, 
                 stopwatch.ElapsedMilliseconds);
         }

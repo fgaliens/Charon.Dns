@@ -64,29 +64,31 @@ static class Program
 
         logger.Information("Starting up DNS server. Version {AppVersion}", AppVersion);
 
-        var serviceProvider = new ServiceCollection()
-            .AddSingleton<ServiceInitializer>()
-            .AddSingleton<SmartDnsServer>()
-            .AddSingleton<IHostNameAnalyzer, HostNameAnalyzer>()
-            .AddSingleton<IDnsCache, DnsCache>()
-            .AddSingleton<ISmartRequestResolver, SmartRequestResolver>()
-            .AddSingleton<IDefaultRequestResolver, DefaultRequestResolver>()
-            .AddSingleton<ISafeRequestResolver, SafeRequestResolver>()
-            .AddSingleton<ICommandRunner, CommandRunner>()
-            .AddSingleton<IResponseInterceptor, ResponseInterceptor>()
-            .AddRouteManagement()
-            .AddJobs(cfg => cfg
-                .AddJob<RemoveOutdatedRoutesJob>()
-                .AddJob<RemoveOutdatedCacheEntriesJob>())
-            .AddSingleton<IConfiguration>(config)
-            .AddSettings<ListeningSettings>()
-            .AddSettings<DnsRecordsSettings>()
-            .AddSettings<DnsChainSettings>()
-            .AddSettings<RoutingSettings>()
-            .AddSettings<CacheSettings>()
-            .AddSingleton<IDateTimeProvider, DateTimeProvider>()
-            .AddSingleton<ILogger>(logger)
-            .BuildServiceProvider();
+        try
+        {
+            var serviceProvider = new ServiceCollection()
+                .AddSingleton<ServiceInitializer>()
+                .AddSingleton<SmartDnsServer>()
+                .AddSingleton<IHostNameAnalyzer, HostNameAnalyzer>()
+                .AddSingleton<IDnsCache, DnsCache>()
+                .AddSingleton<ISmartRequestResolver, SmartRequestResolver>()
+                .AddSingleton<IDefaultRequestResolver, DefaultRequestResolver>()
+                .AddSingleton<ISafeRequestResolver, SafeRequestResolver>()
+                .AddSingleton<ICommandRunner, CommandRunner>()
+                .AddSingleton<IResponseInterceptor, ResponseInterceptor>()
+                .AddRouteManagement()
+                .AddJobs(cfg => cfg
+                    .AddJob<RemoveOutdatedRoutesJob>()
+                    .AddJob<RemoveOutdatedCacheEntriesJob>())
+                .AddSingleton<IConfiguration>(config)
+                .AddSettings<ListeningSettings>()
+                .AddSettings<DnsRecordsSettings>()
+                .AddSettings<DnsChainSettings>()
+                .AddSettings<RoutingSettings>()
+                .AddSettings<CacheSettings>()
+                .AddSingleton<IDateTimeProvider, DateTimeProvider>()
+                .AddSingleton<ILogger>(logger)
+                .BuildServiceProvider();
 
             var serviceInitializer = serviceProvider.GetRequiredService<ServiceInitializer>();
             var smartDnsServer = serviceProvider.GetRequiredService<SmartDnsServer>();

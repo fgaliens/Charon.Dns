@@ -130,6 +130,9 @@ public class EndToEndTests : IDisposable
         var responses = new List<Task<IResponse>>();
         
         var measure = Stopwatch.StartNew();
+
+        var started = 0;
+        var failed = 0;
         
         // Act
         foreach (var (host, recordType) in requestsCombination)
@@ -143,23 +146,31 @@ public class EndToEndTests : IDisposable
                     var innerRecordType = recordType;
                     try
                     {
+                        started++;
                         return await dnsClient.Resolve(innerHost, innerRecordType);
                     }
                     catch (Exception e)
                     {
+                        failed++;
                         _output.WriteLine($"[ERR]. Host: {innerHost}. Type: {innerRecordType}.\n{e}");
                         throw;
                     }
                 }));
             }
         }
-        
-        await Task.WhenAll(responses);
-        
-        measure.Stop();
 
-        // Assert
-        _output.WriteLine($"Handled {responses.Count} requests in {measure.ElapsedMilliseconds} ms.");
+        try
+        {
+            await Task.WhenAll(responses);
+            
+            measure.Stop();
+            _output.WriteLine($"Handled {responses.Count} requests in {measure.ElapsedMilliseconds} ms.");
+        }
+        catch
+        {
+            _output.WriteLine($"Error! Successfully handled {started - failed}/{started} request");
+            throw;
+        }
         
         foreach (var responseTask in responses)
         {
