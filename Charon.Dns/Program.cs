@@ -56,8 +56,6 @@ static class Program
                 "logs/dns.log", 
                 GetFileLogLevel(),
                 outputTemplate: "[{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz}][{Level:u3}][#{RequestId}] {Message:lj}{NewLine}{Exception}",
-                //buffered: true,
-                //flushToDiskInterval: TimeSpan.FromSeconds(5),
                 rollingInterval: RollingInterval.Minute,
                 retainedFileCountLimit: 60)
             .CreateLogger();
@@ -90,15 +88,20 @@ static class Program
                 .AddSingleton<ILogger>(logger)
                 .BuildServiceProvider();
 
-        var serviceInitializer = serviceProvider.GetRequiredService<ServiceInitializer>();
-        var smartDnsServer = serviceProvider.GetRequiredService<SmartDnsServer>();
+            var serviceInitializer = serviceProvider.GetRequiredService<ServiceInitializer>();
+            var smartDnsServer = serviceProvider.GetRequiredService<SmartDnsServer>();
 
-        cancellationToken.Register(() => smartDnsServer.Stop());
-        
-        await serviceInitializer.Initialize();
+            cancellationToken.Register(() => smartDnsServer.Stop());
 
-        await smartDnsServer.Start();
-        
+            await serviceInitializer.Initialize();
+
+            await smartDnsServer.Start();
+        }
+        catch (Exception e)
+        {
+            logger.Fatal(e, "Unhandled exception. Dns server stopped");
+        }
+
         LogEventLevel GetConsoleLogLevel()
         {
 #if DEBUG
