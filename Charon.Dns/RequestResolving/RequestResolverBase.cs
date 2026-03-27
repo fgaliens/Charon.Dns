@@ -3,8 +3,6 @@ using System.Net;
 using Charon.Dns.Lib.Client.RequestResolver;
 using Charon.Dns.Lib.Protocol;
 using Charon.Dns.Lib.Tracing;
-using Charon.Dns.Utils;
-using Serilog;
 
 namespace Charon.Dns.RequestResolving;
 
@@ -13,14 +11,12 @@ public class RequestResolverBase : IRequestResolver
     private const int DefaultDnsPort = 53; 
         
     private readonly UdpRequestResolver[] _innerResolvers;
-    private readonly RequestCounter _counter;
-
-    public RequestResolverBase(IEnumerable<IPAddress> chainDnsServers, ILogger globalLogger)
+        
+    public RequestResolverBase(IEnumerable<IPAddress> chainDnsServers, int requestConcurrencyLimit)
     {
         _innerResolvers = chainDnsServers
-            .Select(x => new UdpRequestResolver(new IPEndPoint(x, DefaultDnsPort), globalLogger))
+            .Select(x => new UdpRequestResolver(new IPEndPoint(x, DefaultDnsPort), requestConcurrencyLimit))
             .ToArray();
-        _counter = new RequestCounter();
     }
 
     public async Task<IResponse> Resolve(

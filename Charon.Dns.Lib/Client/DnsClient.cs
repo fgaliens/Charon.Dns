@@ -7,7 +7,6 @@ using System.Threading;
 using Charon.Dns.Lib.Client.RequestResolver;
 using Charon.Dns.Lib.Protocol;
 using Charon.Dns.Lib.Protocol.ResourceRecords;
-using Serilog.Core;
 
 namespace Charon.Dns.Lib.Client
 {
@@ -18,7 +17,7 @@ namespace Charon.Dns.Lib.Client
         private readonly IRequestResolver _resolver;
 
         public DnsClient(IPEndPoint dns) :
-            this(new UdpRequestResolver(dns, Logger.None))
+            this(new UdpRequestResolver(dns, 0, new TcpRequestResolver(dns)))
         { }
 
         public DnsClient(IPAddress ip, int port = DefaultPort) :

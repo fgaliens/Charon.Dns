@@ -1,10 +1,9 @@
 using Charon.Dns.Settings;
-using Serilog;
 
 namespace Charon.Dns.RequestResolving
 {
-    public class SafeRequestResolver(DnsChainSettings dnsChainSettings, ILogger globalLogger) 
+    public class SafeRequestResolver(DnsChainSettings dnsChainSettings) 
         : RequestResolverBase(
             dnsChainSettings.SecuredServers.Select(x => x.Ip), 
-            globalLogger), ISafeRequestResolver;
+            dnsChainSettings.ResolvingConcurrencyLimit), ISafeRequestResolver;
 }

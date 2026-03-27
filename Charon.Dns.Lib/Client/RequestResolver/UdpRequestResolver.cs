@@ -1,55 +1,42 @@
 ﻿#nullable enable
 using System;
+using System.Buffers;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
+using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
+using Charon.Dns.Lib.Concurrency;
 using Charon.Dns.Lib.Protocol;
-using Charon.Dns.Lib.Protocol.Utils;
 using Charon.Dns.Lib.Tracing;
-using Serilog;
 
 namespace Charon.Dns.Lib.Client.RequestResolver;
 
-public class UdpRequestResolver : IRequestResolver, IDisposable
+public class UdpRequestResolver : IRequestResolver
 {
     private const int MaxUdpMsgSize = 512;
     
     private readonly TimeSpan _timeout = TimeSpan.FromSeconds(2);
     private readonly IPEndPoint _dnsEndpoint;
-    private readonly ILogger _globalLogger;
-    private readonly List<Socket> _sockets = new();
-    private readonly ConcurrentDictionary<int, UnhandledRequest> _requestsMap = new();
-    private readonly ConcurrentQueue<UnhandledRequest> _deferredRequests = new();
-    //private readonly ArrayPool<byte> _arrayPool = ArrayPool<byte>.Shared;
-    private readonly CancellationTokenSource _resolverWorkCancellation = new();
-    private ulong _requestsCount;
-    private bool _disposed;
+    private readonly IRequestResolver? _fallback;
+    private readonly ConcurrentQueue<Socket> _availableSockets = new();
+    private readonly ArrayPool<byte> _arrayPool = ArrayPool<byte>.Shared;
+    private ulong _returnedSocketsCounter;
+    private readonly IConcurrencyLimiter _concurrencyLimiter;
+    private readonly int _concurrencyLimit;
 
     public UdpRequestResolver(
         IPEndPoint dnsEndpoint, 
-        ILogger globalLogger)
+        int concurrencyLimit,
+        IRequestResolver? fallback = null)
     {
         _dnsEndpoint = dnsEndpoint;
-        _globalLogger = globalLogger;
-        
-        // var taskFactory = new TaskFactory(_resolverWorkCancellation.Token);
-        // _ = taskFactory.StartNew(async () => await RequestHandlingLoop(), TaskCreationOptions.LongRunning);
-        for (int i = 0; i < 1; i++)
-        {
-            var socket = new Socket(SocketType.Dgram, ProtocolType.Udp);
-            socket.Bind(new  IPEndPoint(0, 0));
-            socket.ReceiveBufferSize = 5 * 1024 * 1024;
-            socket.SendBufferSize = 5 * 1024 * 1024;
-            _sockets.Add(socket);
-            _ = Task.Run(async () =>
-            {
-                var localSocket = socket;
-                await RequestHandlingLoop(localSocket);
-            }, _resolverWorkCancellation.Token);
-        }
+        _fallback = fallback;
+        _concurrencyLimit = concurrencyLimit;
+        _concurrencyLimiter = concurrencyLimit > 0
+            ? new ConcurrencyLimiter(concurrencyLimit)
+            : EmptyConcurrencyLimiter.Instance;
     }
 
     public async Task<IResponse> Resolve(
@@ -57,174 +44,156 @@ public class UdpRequestResolver : IRequestResolver, IDisposable
         RequestTrace trace, 
         CancellationToken cancellationToken = default)
     {
-        ObjectDisposedException.ThrowIf(_disposed, this);
+        using var limiterScope = await _concurrencyLimiter.WaitAsync(cancellationToken);
+        var logger = trace.Logger;
         
-        var requestTask = new TaskCompletionSource<IResponse>();
-        var unhandledRequest = new UnhandledRequest
+        if (!_availableSockets.TryDequeue(out var socket))
         {
-            Request = request,
-            ResponsePromise = requestTask,
-            Trace = trace,
-        };
-
-        if (_requestsMap.TryAdd(request.Id, unhandledRequest))
-        {
-            var requestId = Interlocked.Increment(ref _requestsCount);
-            var socket = _sockets[(int)requestId % _sockets.Count];
-            
-            await SendRequestToDnsServer(socket, request, cancellationToken);
-            trace.Logger.Debug("Request {@Request} sent to DNS server {Dns}", request, _dnsEndpoint);
+            socket = new Socket(SocketType.Dgram, ProtocolType.Udp);
+            logger.Debug(
+                $"{nameof(UdpRequestResolver)}: New socket {{Socket}} for DNS {{Ip}} created",
+                socket.LocalEndPoint,
+                _dnsEndpoint);
         }
-        else
-        {
-            _deferredRequests.Enqueue(unhandledRequest);
-            trace.Logger.Debug("Request {@Request} deferred. Waiting to send to DNS server {Dns}", request, _dnsEndpoint);
-        }
-        trace.Logger.Debug("Active requests: {ActiveCount}; deferred: {DeferredCount}", 
-            _requestsMap.Count, _deferredRequests.Count);
+        
+        logger.Debug(
+            $"{nameof(UdpRequestResolver)}: Using socket {{Socket}} for DNS {{Ip}}. Av. data {{DataSize}} bytes",
+            socket.LocalEndPoint,
+            _dnsEndpoint,
+            socket.Available);
 
         try
         {
-            return await requestTask.Task.WithCancellationTimeout(_timeout, cancellationToken);
+            using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            var isDebugging = false;
+#if DEBUG
+            isDebugging = Debugger.IsAttached;
+#endif
+            if (!isDebugging)
+            {
+                cts.CancelAfter(_timeout);
+            }
+
+            var requestData = request.ToArray();
+            await socket.SendToAsync(requestData, SocketFlags.None, _dnsEndpoint, cts.Token);
+
+            var buffer = _arrayPool.Rent(MaxUdpMsgSize * 2);
+
+            IResponse? response = null;
+            var loopsCount = 0;
+            const int maxLoopsCount = 10;
+            while (request.Id != response?.Id)
+            {
+                if (response is not null)
+                {
+                    loopsCount++;
+                    
+                    logger.Warning($"{nameof(UdpRequestResolver)}: DNS resolver ({{Ip}}) got response with unexpected ID ({{LoopCount}}):\n" +
+                        "Request: {@Request}\nResponse: {@Response}",
+                        _dnsEndpoint, loopsCount, request, response);
+                    
+                    if (loopsCount >= maxLoopsCount)
+                    {
+                        throw new InvalidOperationException("Unexpected response id");
+                    }
+                }
+
+                var availableDataSize = socket.Available;
+                logger.Debug("Socket {Socket} has available data: {DataSize} bytes", socket.LocalEndPoint, availableDataSize);
+
+                var responseInfo = await socket.ReceiveFromAsync(buffer, _dnsEndpoint, cts.Token);
+
+                var msgSize = responseInfo.ReceivedBytes;
+                if (msgSize > MaxUdpMsgSize * 2)
+                {
+                    logger.Error("Received message has unexpected size: {Size} bytes", msgSize);
+                }
+                else if (msgSize > MaxUdpMsgSize)
+                {
+                    logger.Warning("Received message has unexpected size: {Size} bytes", msgSize);
+                }
+                
+                var senderIp = (responseInfo.RemoteEndPoint as IPEndPoint)?.Address.MapToIPv6();
+                if (!_dnsEndpoint.Address.MapToIPv6().Equals(senderIp))
+                {
+                    logger.Warning("Remote endpoint mismatch. Expected response from {DNS}, received from {RemoteEndPoint}",
+                        _dnsEndpoint, senderIp);
+                    continue;
+                }
+
+                response = Response.FromArray(buffer[..responseInfo.ReceivedBytes]);
+            }
+
+            _arrayPool.Return(buffer);
+
+            if (response.Truncated)
+            {
+                if (_fallback != null)
+                {
+                    return await _fallback.Resolve(request, trace, cts.Token);
+                }
+                logger.Warning($"{nameof(UdpRequestResolver)}: DNS resolver ({{Ip}}) got truncated response for request: {{@Request}}",
+                    _dnsEndpoint, request);
+            }
+            return response;
+        }
+        catch (OperationCanceledException operationCanceledException)
+        {
+            throw new OperationCanceledException(
+                $"Request for domain '{request.Questions[0].Name}' to (DNS: {_dnsEndpoint} was canceled)", 
+                operationCanceledException);
         }
         catch (Exception e)
         {
-            _requestsMap.TryRemove(request.Id, out _);
-            trace.Logger.Error(e, "{Source}. Resolving request error via DNS {Dns}! Request: {@Request}",
-                nameof(UdpReceiveResult), _dnsEndpoint, request);
+            logger.Error(e, $"{nameof(UdpRequestResolver)}: DNS resolver ({{Ip}}) got error for request {{@Request}}",
+                _dnsEndpoint, request);
             throw;
+        }
+        finally
+        {
+            _availableSockets.Enqueue(socket);
+            FreeSocketsIfNeeded(trace);
+            
+            logger.Debug($"{nameof(UdpRequestResolver)}: Socket for DNS {{Ip}} returned to pool. Pool size: {{Size}}", 
+                _dnsEndpoint, _availableSockets.Count);
         }
     }
 
-    public void Dispose()
+    private void FreeSocketsIfNeeded(RequestTrace trace)
     {
-        if (_disposed)
+        if (_concurrencyLimit <= 0)
+        {
+            return;
+        }
+        
+        var counter = Interlocked.Increment(ref _returnedSocketsCounter);
+        if (counter % 1000 != 0)
         {
             return;
         }
 
-        _disposed = true;
-        _resolverWorkCancellation.Cancel();
-    }
-
-    private async Task RequestHandlingLoop(Socket socket)
-    {
-        using (socket)
+        Interlocked.Exchange(ref _returnedSocketsCounter, 1);
+        
+        if (_availableSockets.Count <= 5)
         {
-            var buffer = new byte[MaxUdpMsgSize * 2];
-            while (!_resolverWorkCancellation.IsCancellationRequested)
+            return;
+        }
+        
+        const double socketsFreeFactor = 0.8;
+        var loger = trace.Logger;
+        
+        var targetSocketsCount = (int)(_availableSockets.Count * socketsFreeFactor);
+        
+        loger.Debug("Trying to free sockets for DNS '{Dns}'. Current count: {SocketsCount}, target count: {TargetSocketsCount}",
+            _dnsEndpoint, _availableSockets.Count, targetSocketsCount);
+        
+        while (_availableSockets.Count > targetSocketsCount)
+        {
+            if (_availableSockets.TryDequeue(out var socket))
             {
-                try
-                {
-                    var responseInfo = await socket.ReceiveFromAsync(buffer, _dnsEndpoint, _resolverWorkCancellation.Token);
-
-                    var msgSize = responseInfo.ReceivedBytes;
-                    if (msgSize == 0)
-                    {
-                        continue;
-                    }
-
-                    var response = Response.FromArray(buffer[..responseInfo.ReceivedBytes]);
-
-                    if (_requestsMap.TryRemove(response.Id, out var requestInfo))
-                    {
-                        var logger = requestInfo.Trace.Logger;
-                        try
-                        {
-                            if (msgSize >= MaxUdpMsgSize * 2)
-                            {
-                                logger.Error("Received message has unexpected size: {Size} bytes", msgSize);
-                            }
-                            else if (msgSize > MaxUdpMsgSize)
-                            {
-                                logger.Warning("Received message has unexpected size: {Size} bytes", msgSize);
-                            }
-
-                            var senderIp = (responseInfo.RemoteEndPoint as IPEndPoint)?.Address.MapToIPv6();
-                            if (!_dnsEndpoint.Address.MapToIPv6().Equals(senderIp))
-                            {
-                                logger.Warning("Remote endpoint mismatch. Response dropped. Expected response from {DNS}, received from {RemoteEndPoint}",
-                                    _dnsEndpoint, senderIp);
-
-                                continue;
-                            }
-
-                            var resultSet = requestInfo.ResponsePromise.TrySetResult(response);
-
-                            if (resultSet)
-                            {
-                                logger.Debug("Response handled via {Dns}", _dnsEndpoint);
-                            }
-                            else
-                            {
-                                logger.Error("Response handled via {Dns} with problems. Result not set", _dnsEndpoint);
-                            }
-
-                            await AddRequestFromUnuniqueItemsQueue(socket);
-                        }
-                        catch (Exception e)
-                        {
-                            logger.Error(e, "Udp request resolver error (DNS {Dns}). Matched response was found",
-                                socket.LocalEndPoint);
-                            requestInfo.ResponsePromise.SetException(e);
-                        }
-                    }
-                    else
-                    {
-                        _globalLogger.Warning("Request for response {@Response} wasn't found. Response dropped ({Dns})",
-                            response, _dnsEndpoint);
-                    }
-                }
-                catch (Exception e)
-                {
-                    _globalLogger.Error(e, "Udp request resolver error (DNS {Dns})", socket.LocalEndPoint);
-                }
-                finally
-                {
-                    await Task.Yield();
-                }
+                loger.Debug("Disposing connection to DNS '{Dns}'. Socket {Socket}",  _dnsEndpoint, socket.LocalEndPoint);
+                socket.Dispose();
             }
         }
-    }
-
-    private async ValueTask SendRequestToDnsServer(
-        Socket socket, 
-        IRequest request, 
-        CancellationToken cancellationToken)
-    {
-        var requestData = request.ToArray();
-        await socket.SendToAsync(requestData, SocketFlags.None, _dnsEndpoint, cancellationToken);
-    }
-    
-    private async ValueTask AddRequestFromUnuniqueItemsQueue(Socket socket)
-    {
-        while (!_resolverWorkCancellation.IsCancellationRequested)
-        {
-            if (!_deferredRequests.TryPeek(out var request))
-            {
-                return;
-            }
-
-            if (_requestsMap.ContainsKey(request.Request.Id))
-            {
-                return;
-            }
-
-            if (_requestsMap.TryAdd(request.Request.Id, request))
-            {
-                _globalLogger.Debug("Sending deferred request {@Request} for DNS server {Dns}", 
-                    request, _dnsEndpoint);
-                
-                _deferredRequests.TryDequeue(out _);
-                await SendRequestToDnsServer(socket, request.Request, _resolverWorkCancellation.Token);
-            }
-        }
-    }
-    
-    private readonly record struct UnhandledRequest
-    {
-        public required IRequest Request { get; init; }
-        public required TaskCompletionSource<IResponse> ResponsePromise { get; init; }
-        public required RequestTrace Trace { get; init; }
     }
 }

@@ -90,20 +90,15 @@ static class Program
                 .AddSingleton<ILogger>(logger)
                 .BuildServiceProvider();
 
-            var serviceInitializer = serviceProvider.GetRequiredService<ServiceInitializer>();
-            var smartDnsServer = serviceProvider.GetRequiredService<SmartDnsServer>();
+        var serviceInitializer = serviceProvider.GetRequiredService<ServiceInitializer>();
+        var smartDnsServer = serviceProvider.GetRequiredService<SmartDnsServer>();
 
-            cancellationToken.Register(() => smartDnsServer.Stop());
+        cancellationToken.Register(() => smartDnsServer.Stop());
+        
+        await serviceInitializer.Initialize();
 
-            await serviceInitializer.Initialize();
-
-            await smartDnsServer.Start();
-        }
-        catch (Exception e)
-        {
-            logger.Fatal(e, "Unhandled exception");
-        }
-
+        await smartDnsServer.Start();
+        
         LogEventLevel GetConsoleLogLevel()
         {
 #if DEBUG
