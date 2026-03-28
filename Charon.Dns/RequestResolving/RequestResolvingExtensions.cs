@@ -1,6 +1,7 @@
 using Charon.Dns.RequestResolving.ResolvingStrategies;
 using Charon.Dns.Settings;
 using Microsoft.Extensions.DependencyInjection;
+using Serilog;
 
 namespace Charon.Dns.RequestResolving;
 
@@ -20,9 +21,22 @@ public static class RequestResolvingExtensions
                 .AddKeyedSingleton<IResolvingStrategy, ParallelResolvingStrategy>(strategyCollection)
                 .AddTransient(serviceProvider =>
                 {
-                    var dnsChainSettings = serviceProvider.GetRequiredService<DnsChainSettings>();
-                    var resolvingStrategies = serviceProvider.GetKeyedServices<IResolvingStrategy>(strategyCollection);
-                    return resolvingStrategies.Single(x => x.Strategy == dnsChainSettings.ResolvingStrategy);
+                    var logger = serviceProvider.GetRequiredService<ILogger>();
+                    try
+                    {
+                        var dnsChainSettings = serviceProvider.GetRequiredService<DnsChainSettings>();
+                        var resolvingStrategies = serviceProvider.GetKeyedServices<IResolvingStrategy>(strategyCollection);
+                        var selectedStrategy = resolvingStrategies.Single(x => x.Strategy == dnsChainSettings.ResolvingStrategy);
+                        
+                        logger.Debug("Request resolving strategy is '{Strategy}'", selectedStrategy.Strategy);
+                        
+                        return selectedStrategy;
+                    }
+                    catch (Exception e)
+                    {
+                        logger.Error(e, "Error while selecting strategy");
+                        throw;
+                    }
                 });
             
             return services;
