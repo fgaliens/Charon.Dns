@@ -15,7 +15,7 @@ namespace Charon.Dns.Lib.Client.RequestResolver;
 
 public class UdpRequestResolver : IRequestResolver
 {
-    private const int MaxUdpMsgSize = 512;
+    private const int MaxDnsMsgSize = 512;
     
     private readonly TimeSpan _timeout = TimeSpan.FromSeconds(2);
     private readonly IPEndPoint _dnsEndpoint;
@@ -74,10 +74,24 @@ public class UdpRequestResolver : IRequestResolver
                 cts.CancelAfter(_timeout);
             }
 
+            var dnsMsgSize = MaxDnsMsgSize;
+            if (request.AdditionalRecords.Count > 0)
+            {
+                foreach (var additionalRecord in request.AdditionalRecords)
+                {
+                    if (additionalRecord.Type is RecordType.OPT)
+                    {
+                        dnsMsgSize = 4096;
+                        logger.Debug("OPT additional record found: {Record}", additionalRecord);
+                        break;
+                    }
+                }
+            }
+
             var requestData = request.ToArray();
             await socket.SendToAsync(requestData, SocketFlags.None, _dnsEndpoint, cts.Token);
 
-            var buffer = _arrayPool.Rent(MaxUdpMsgSize * 2);
+            var buffer = _arrayPool.Rent(dnsMsgSize * 2);
 
             IResponse? response = null;
             var loopsCount = 0;
@@ -104,11 +118,11 @@ public class UdpRequestResolver : IRequestResolver
                 var responseInfo = await socket.ReceiveFromAsync(buffer, _dnsEndpoint, cts.Token);
 
                 var msgSize = responseInfo.ReceivedBytes;
-                if (msgSize > MaxUdpMsgSize * 2)
+                if (msgSize > MaxDnsMsgSize * 2)
                 {
                     logger.Error("Received message has unexpected size: {Size} bytes", msgSize);
                 }
-                else if (msgSize > MaxUdpMsgSize)
+                else if (msgSize > MaxDnsMsgSize)
                 {
                     logger.Warning("Received message has unexpected size: {Size} bytes", msgSize);
                 }

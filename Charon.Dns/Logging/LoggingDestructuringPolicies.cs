@@ -32,10 +32,13 @@ public class LoggingDestructuringPolicies : IDestructuringPolicy
                 properties.Add(new LogEventProperty("Questions", new SequenceValue(
                     request.Questions.Select(x => new ScalarValue(x)))));
             }
-            
-            properties.Add(new LogEventProperty("AdditionalRecordsCount", new ScalarValue(request.AdditionalRecords.Count)));
-            
-            
+
+            if (request.AdditionalRecords.Count > 0)
+            {
+                properties.Add(new LogEventProperty("AdditionalRecords", new SequenceValue(
+                    request.AdditionalRecords.Select(x => new ScalarValue(x)))));
+            }
+
             result = new StructureValue(properties);
             return true;
         }
@@ -76,7 +79,12 @@ public class LoggingDestructuringPolicies : IDestructuringPolicy
                     response.AnswerRecords.Select(x => new ScalarValue(x)))));
             }
             
-            properties.Add(new LogEventProperty("AdditionalRecordsCount", new ScalarValue(response.AdditionalRecords.Count)));
+            if (response.AdditionalRecords.Count > 0)
+            {
+                properties.Add(new LogEventProperty("AdditionalRecords", new SequenceValue(
+                    response.AdditionalRecords.Select(x => new ScalarValue(x)))));
+            }
+            
             properties.Add(new LogEventProperty("AuthorityRecordsCount", new ScalarValue(response.AuthorityRecords.Count)));
 
             if (response.Truncated)
