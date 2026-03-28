@@ -37,13 +37,83 @@ Additionally, you can:
 - Block analytics and tracking domains so they never resolve
 - Use Charon.Dns as a standard DNS resolver for A record lookups
 
-## Use Cases
+## Configuration
 
-- Selective VPN routing based on domain names
-- Split tunneling for specific services
-- Dynamic routing for domains with frequently changing IP addresses
-- Ad and tracker blocking at the DNS level
-- Local DNS server with custom filtering rules
+Charon.Dns is configured by editing the `settings.json` file. **Note:** The server must be restarted after any configuration changes.
+
+### settings.json Structure
+
+```json
+{
+  "LogLevel": "Information", // Log level for standard output
+  "FileLogLevel": "Debug", // Log level for file output
+  "Server": {
+    "ListenOn": [ // Address and port the server listens on
+      {
+        "Address": "10.0.0.53",
+        "Port": 53
+      }
+    ],
+    "DnsChain": {
+      "ResolvingStrategy": "RoundRobin", // Resolving strategy (options: Random, Parallel, RoundRobin)
+      "ResolvingConcurrencyLimit": 2, // Maximum number of outgoing connections to external DNS servers
+      "DefaultServers": [ // DNS servers for standard resolution
+        "77.88.8.8",
+        "77.88.8.1"
+      ],
+      "SecuredServers": [ // DNS servers and interfaces for domains requiring special routing
+        {
+          "Ip": "1.1.1.1",
+          "RouteThroughInterface": "wg0"
+        },
+        {
+          "Ip": "8.8.8.8",
+          "RouteThroughInterface": "wg0"
+        }
+      ]
+    },
+    "DnsRecords": { // Local A records the server can respond with
+      "A": [
+        {
+          "Name": "my.home",
+          "Address": "10.10.1.25"
+        },
+        {
+          "Name": "my.home",
+          "Address": "192.168.1.1",
+          "ResolveOnlyIfRequestCameFrom": "10.10.1.1" // Conditional response based on source IP
+        }
+      ]
+    }
+  },
+  "Cache": {
+    "TimeToLive": "00:05:00" // DNS cache TTL
+  },
+  "Routing": {
+    "Period": "02:00:00", // Duration for which routes are added
+    "BlockedHostNames": [ // List of domains to block
+      "tracker.com",
+      "file:hosts_blacklist.txt" // Can reference an external file with blocked hosts
+    ],
+    "Items": [
+      {
+        "InterfaceToRouteThrough": "wg0", // Interface to route traffic through
+        "IpV4RoutingSubnet": 32, // Subnet size for added IPv4 routes
+        "IpV6RoutingSubnet": 96, // Subnet size for added IPv6 routes
+        "HostNameMatches": { // Domain matching rules
+          "BySubstring": [
+            "some-site" // Matches any domain containing "some-site"
+          ],
+          "ByDomainName": [ // Matches domain and all subdomains
+            "example.com",
+            "file:other-hosts.txt"
+          ]
+        }
+      }
+    ]
+  }
+}
+```
 
 ## Requirements
 
