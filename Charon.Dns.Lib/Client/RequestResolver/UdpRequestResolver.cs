@@ -81,8 +81,9 @@ public class UdpRequestResolver : IRequestResolver
                 {
                     if (additionalRecord.Type is RecordType.OPT)
                     {
-                        dnsMsgSize = 4096;
-                        logger.Debug("OPT additional record found: {Record}", additionalRecord);
+                        dnsMsgSize = (int)additionalRecord.Class;
+                        logger.Debug("OPT additional record found: {Record}. Requested size: {Size}", 
+                            additionalRecord, dnsMsgSize);
                         break;
                     }
                 }
@@ -91,7 +92,7 @@ public class UdpRequestResolver : IRequestResolver
             var requestData = request.ToArray();
             await socket.SendToAsync(requestData, SocketFlags.None, _dnsEndpoint, cts.Token);
 
-            var buffer = _arrayPool.Rent(dnsMsgSize * 2);
+            var buffer = _arrayPool.Rent(dnsMsgSize);
 
             IResponse? response = null;
             var loopsCount = 0;
