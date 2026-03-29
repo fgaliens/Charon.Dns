@@ -1,6 +1,7 @@
 ﻿#nullable enable
 using System;
 using System.Buffers;
+using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
@@ -26,6 +27,7 @@ namespace Charon.Dns.Lib.Server
 
         private const int MaxUdpRequestSize = 4096;
 
+        private readonly ConcurrentQueue<Socket> _sendSockets = new();
         private readonly AsyncObservable<OnRequestEventArgs> _requestEventObservable = new();
         private readonly AsyncObservable<OnResponseEventArgs> _responseEventObservable = new();
         private readonly AsyncObservable<OnExceptionEventArgs> _exceptionEventObservable = new();
@@ -33,16 +35,16 @@ namespace Charon.Dns.Lib.Server
 
         public async Task Listen(IPEndPoint endpoint, CancellationToken cancellationToken = default)
         {
-            using var udpSocket = new Socket(SocketType.Dgram, ProtocolType.Udp);
-            udpSocket.ReceiveBufferSize = 4 * 1024 * 1024;
-            udpSocket.SendBufferSize = 4 * 1024 * 1024;
-            udpSocket.Bind(endpoint);
+            using var receiveSocket = new Socket(SocketType.Dgram, ProtocolType.Udp);
+            receiveSocket.ReceiveBufferSize = 1 * 1024 * 1024;
+            receiveSocket.ExclusiveAddressUse = false;
+            receiveSocket.Bind(endpoint);
 
             while (!cancellationToken.IsCancellationRequested)
             {
                 var buffer = ArrayPool.Rent(MaxUdpRequestSize * 2);
-                var requestInfo = await udpSocket.ReceiveFromAsync(buffer, endpoint, cancellationToken);
-                _ = HandleRequest(udpSocket, buffer, requestInfo, cancellationToken);
+                var requestInfo = await receiveSocket.ReceiveFromAsync(buffer, endpoint, cancellationToken);
+                _ = HandleRequest(endpoint, buffer, requestInfo, cancellationToken);
             }
         }
 
@@ -56,8 +58,8 @@ namespace Charon.Dns.Lib.Server
         }
 
         private async Task HandleRequest(
-            Socket socket, 
-            byte[] buffer, 
+            IPEndPoint localEndpoint, 
+            byte[] buffer,
             SocketReceiveFromResult dataInfo,
             CancellationToken cancellationToken)
         {
@@ -79,6 +81,13 @@ namespace Charon.Dns.Lib.Server
             requestLogger.Debug("Dns server: handling request from {Remote}", remote);
 
             Request? request = null;
+            
+            if (!_sendSockets.TryDequeue(out var socket))
+            {
+                socket = new Socket(SocketType.Dgram, ProtocolType.Udp);
+                socket.ExclusiveAddressUse = false;
+                socket.Bind(localEndpoint);
+            }
 
             try
             {
@@ -129,6 +138,7 @@ namespace Charon.Dns.Lib.Server
             }
             finally
             {
+                _sendSockets.Enqueue(socket);
                 ArrayPool.Return(buffer, clearArray: true);
             }
         }
