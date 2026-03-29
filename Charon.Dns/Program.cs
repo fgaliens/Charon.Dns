@@ -23,7 +23,7 @@ namespace Charon.Dns;
 
 static class Program
 {
-    private const string AppVersion = "1.5.6";
+    private const string AppVersion = "1.5.7";
 
     public async static Task Main(string[] args)
     {
