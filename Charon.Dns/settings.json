@@ -2,6 +2,7 @@
   "LogLevel": "Information",
   "FileLogLevel": "Debug",
   "Server": {
+    "MaxParallelRequestCount": 8,
     "ListenOn": [
       {
         "Address": "0.0.0.0",

@@ -39,7 +39,11 @@ public class SmartDnsServer(
             masterFile,
             smartRequestResolver);
         
-        var server = new DnsServer(requestResolvers, RequestCounter, logger);
+        var server = new DnsServer(
+            requestResolvers, 
+            RequestCounter, 
+            listeningSettings.MaxParallelRequestCount, 
+            logger);
         server.Subscribe(AsyncObserver.Create<OnExceptionEventArgs>(eventArgs =>
         {
             logger.Error(eventArgs.Exception, "Error occured");
