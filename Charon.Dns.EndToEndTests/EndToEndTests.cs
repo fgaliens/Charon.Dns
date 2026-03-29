@@ -107,6 +107,7 @@ public class EndToEndTests : IDisposable
              "selectel.ru",
              "youtube.com",
              "instagram.com",
+             "i.ytimg.com",
              "amdm.ru",
              "medium.com",
              "max.ru",
@@ -121,9 +122,11 @@ public class EndToEndTests : IDisposable
 
         var requestsCombination = hosts
             .CombineWith(recordTypes)
+            .Where(x => 
+                x.Item1 is not ("medium.com" or "i.ytimg.com") 
+                && x.Item2 != RecordType.MX)
             .Select(x => Enumerable.Repeat(x, 3))
             .SelectMany(x => x)
-            .Where(x => x.Item1 != "medium.com" && x.Item2 != RecordType.MX)
             .ToArray();
         
         Random.Shared.Shuffle(requestsCombination);

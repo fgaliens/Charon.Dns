@@ -1,34 +1,65 @@
 {
-  "LogLevel": "Information",
+  "LogLevel": "Debug",
   "FileLogLevel": "Debug",
   "Server": {
     "ListenOn": [
       {
         "Address": "0.0.0.0",
         "Port": 53
+      },
+      {
+        "Address": "127.0.0.1",
+        "Port": 53,
+        "DebugOnly": true
+      },
+      {
+        "Address": "10.0.0.53",
+        "Port": 53
       }
     ],
     "DnsChain": {
-      "ResolvingStrategy": "Parallel",
-      "ResolvingConcurrencyLimit": 4,
+      "ResolvingStrategy": "RoundRobin",
+      "ResolvingConcurrencyLimit": 0,
       "DefaultServers": [
-        "1.1.1.1",
-        "8.8.8.8"
+        "77.88.8.8",
+        "77.88.8.1"
       ],
-      "SecuredServers": []
+      "SecuredServers": [
+        {
+          "Ip": "1.1.1.1",
+          "RouteThroughInterface": "wg0"
+        },
+        {
+          "Ip": "8.8.8.8",
+          "RouteThroughInterface": "wg0"
+        }
+      ]
     },
     "DnsRecords": {
-      "A": []
+      "A": [
+        {
+          "Name": "my.home",
+          "Address": "10.11.1.2"
+        },
+        {
+          "Name": "my.hm",
+          "Address": "10.11.1.2"
+        },
+        {
+          "Name": "my.hm",
+          "Address": "192.168.1.1",
+          "ResolveOnlyIfRequestCameFrom": "127.0.0.1"
+        }
+      ]
     }
   },
   "Cache": {
-    "TimeToLive": "00:00:00"
+    "TimeToLive": "00:05:00"
   },
   "Routing": {
     "Period": "02:00:00",
     "BlockedHostNames": [
       "max.ru",
-      "www.max.ru",
       "api.oneme.ru",
       "ip.mail.ru",
       "ipv4-internet.yandex.net/api/v0/ip",
@@ -37,67 +68,130 @@
       "api.ipify.org",
       "checkip.amazonaws.com",
       "ipify.org",
-      "startup.mobile.webvisor.com",
-      "firebase-settings.crashlytics.com",
-      "appmetrica.yandex.net",
-
-      "cdn-vk.ru",
-      "mradx.net",
-      "mvk.com",
-      "userapi.com",
-      "vk-analytics.ru",
-      "vk-apps.com",
-      "vk-apps.ru",
-      "vk-cdn.me",
-      "vk-cdn.net",
-      "vkcloud-static.ru",
-      "vk-portal.net",
-      "vk.cc",
-      "vk.com",
-      "www.vk.com",
-      "vk.company",
-      "vk.design",
-      "vk.link",
-      "vk.me",
-      "www.vk.me",
-      "vk.ru",
-      "www.vk.ru",
-      "vk.team",
-      "vkcache.com",
-      "vkgo.app",
-      "vklive.app",
-      "vkmessenger.app",
-      "vkmessenger.com",
-      "vkontakte.ru",
-      "vkuser.net",
-      "vkuseraudio.com",
-      "vkuseraudio.net",
-      "vkuseraudio.ru",
-      "vkusercdn.ru",
-      "vkuserlive.net",
-      "vkuserphoto.ru",
-      "vkuservideo.com",
-      "vkuservideo.net",
-      "vkuservideo.ru",
-      "vkvideo.ru",
-
-      "m.dom.gosuslugi.ru",
-      "startup.mobile.webvisor.com",
-      "www.gosuslugi.ru",
-      "gu-st.ru",
-      "crl.gosuslugi.ru",
-      "elections.gosuslugi.ru",
-      "esia.gosuslugi.ru",
-      "www.gosuslugi.ru",
-      "gosuslugi.ru",
-      "esia.gosuslugi.ru",
-      "gu-st.ru",
-      "sfd.gosuslugi.ru",
-      "bot.gosuslugi.ru",
-      "payment.gosuslugi.ru",
 
       "file:hosts_blacklist.txt"
     ],
-    "Items": []
+    "Items": [
+      {
+        "InterfaceToRouteThrough": "wg0",
+        "IpV4RoutingSubnet": 32,
+        "IpV6RoutingSubnet": 96,
+        "HostNameMatches": {
+          "BySubstring": [
+            "youtube",
+            "insta"
+          ],
+          "ByDomainName": [
+            "whoer.net",
+            "ggpht.cn",
+            "ggpht.com",
+            "googlevideo.com",
+            "youtu.be",
+            "yt.be",
+            "ytimg.com",
+            "yt3.googleusercontent.com",
+            "bookstagram.com",
+            "carstagram.com",
+            "chickstagram.com",
+            "ig.me",
+            "igcdn.com",
+            "igsonar.com",
+            "igtv.com",
+            "imstagram.com",
+            "imtagram.com",
+            "instgram.com",
+            "intagram.com",
+            "intagrm.com",
+            "intgram.com",
+            "kingstagram.com",
+            "lnstagram-help.com",
+            "cdn-telegram.org",
+            "comments.app",
+            "contest.com",
+            "fragment.com",
+            "graph.org",
+            "quiz.directory",
+            "t.me",
+            "tdesktop.com",
+            "telega.one",
+            "telegra.ph",
+            "telegram-cdn.org",
+            "telegram.dog",
+            "telegram.me",
+            "telegram.org",
+            "telegram.space",
+            "telesco.pe",
+            "tg.dev",
+            "tx.me",
+            "usercontent.dev",
+            "wa.me",
+            "whatsapp-plus.info",
+            "whatsapp-plus.me",
+            "whatsapp-plus.net",
+            "whatsapp.cc",
+            "whatsapp.com",
+            "whatsapp.info",
+            "whatsapp.net",
+            "whatsapp.org",
+            "whatsapp.tv",
+            "whatsappbrand.com",
+            "ads-twitter.com",
+            "cms-twdigitalassets.com",
+            "periscope.tv",
+            "pscp.tv",
+            "t.co",
+            "tellapart.com",
+            "tweetdeck.com",
+            "twimg.com",
+            "twitpic.com",
+            "twitter.biz",
+            "twitter.com",
+            "twitter.jp",
+            "twitter.map.fastly.net",
+            "twittercommunity.com",
+            "twitterflightschool.com",
+            "twitterinc.com",
+            "twitteroauth.com",
+            "twitterstat.us",
+            "twtrdns.net",
+            "twttr.com",
+            "twttr.net",
+            "twvid.com",
+            "vine.co",
+            "x.com",
+            "grok.com",
+            "grok.x.com",
+            "x.ai",
+            "redd.it",
+            "reddit.app.link",
+            "reddit.com",
+            "redditblog.com",
+            "reddithelp.com",
+            "redditinc.com",
+            "redditmail.com",
+            "redditmedia.com",
+            "redditspace.com",
+            "redditstatic.com",
+            "redditstatus.com",
+            "reddit.map.fastly.net",
+            "maintracker.org",
+            "rutracker.cc",
+            "rutracker.cr",
+            "rutracker.me",
+            "rutracker.net",
+            "rutracker.nl",
+            "rutracker.org",
+            "rutrk.org",
+            "flibusta.is",
+            "flisland.net",
+            "medium.com",
+            "medium.systems",
+            "amdm.ru",
+            "0.amdm.ru",
+            "file:other_hosts.txt"
+          ]
+        }
+      }
+    ]
   }
 }
