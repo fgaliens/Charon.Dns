@@ -8,6 +8,7 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "DNS", "DNS", "{51F9AEF6-9501-46D2-B4DB-481D8B649866}"
 	ProjectSection(SolutionItems) = preProject
 		.editorconfig = .editorconfig
+		Dockerfile = Dockerfile
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Charon.Dns.Lib", "Charon.Dns.Lib\Charon.Dns.Lib.csproj", "{0F7004C7-BF98-49D4-8362-FC480E043256}"
