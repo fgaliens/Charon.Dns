@@ -1,0 +1,103 @@
+{
+  "LogLevel": "Information",
+  "FileLogLevel": "Debug",
+  "Server": {
+    "ListenOn": [
+      {
+        "Address": "0.0.0.0",
+        "Port": 53
+      }
+    ],
+    "DnsChain": {
+      "ResolvingStrategy": "Parallel",
+      "ResolvingConcurrencyLimit": 4,
+      "DefaultServers": [
+        "1.1.1.1",
+        "8.8.8.8"
+      ],
+      "SecuredServers": []
+    },
+    "DnsRecords": {
+      "A": []
+    }
+  },
+  "Cache": {
+    "TimeToLive": "00:00:00"
+  },
+  "Routing": {
+    "Period": "02:00:00",
+    "BlockedHostNames": [
+      "max.ru",
+      "www.max.ru",
+      "api.oneme.ru",
+      "ip.mail.ru",
+      "ipv4-internet.yandex.net/api/v0/ip",
+      "ipv6-internet.yandex.net/api/v0/ip",
+      "ifconfig.me/ip",
+      "api.ipify.org",
+      "checkip.amazonaws.com",
+      "ipify.org",
+      "startup.mobile.webvisor.com",
+      "firebase-settings.crashlytics.com",
+      "appmetrica.yandex.net",
+
+      "cdn-vk.ru",
+      "mradx.net",
+      "mvk.com",
+      "userapi.com",
+      "vk-analytics.ru",
+      "vk-apps.com",
+      "vk-apps.ru",
+      "vk-cdn.me",
+      "vk-cdn.net",
+      "vkcloud-static.ru",
+      "vk-portal.net",
+      "vk.cc",
+      "vk.com",
+      "www.vk.com",
+      "vk.company",
+      "vk.design",
+      "vk.link",
+      "vk.me",
+      "www.vk.me",
+      "vk.ru",
+      "www.vk.ru",
+      "vk.team",
+      "vkcache.com",
+      "vkgo.app",
+      "vklive.app",
+      "vkmessenger.app",
+      "vkmessenger.com",
+      "vkontakte.ru",
+      "vkuser.net",
+      "vkuseraudio.com",
+      "vkuseraudio.net",
+      "vkuseraudio.ru",
+      "vkusercdn.ru",
+      "vkuserlive.net",
+      "vkuserphoto.ru",
+      "vkuservideo.com",
+      "vkuservideo.net",
+      "vkuservideo.ru",
+      "vkvideo.ru",
+
+      "m.dom.gosuslugi.ru",
+      "startup.mobile.webvisor.com",
+      "www.gosuslugi.ru",
+      "gu-st.ru",
+      "crl.gosuslugi.ru",
+      "elections.gosuslugi.ru",
+      "esia.gosuslugi.ru",
+      "www.gosuslugi.ru",
+      "gosuslugi.ru",
+      "esia.gosuslugi.ru",
+      "gu-st.ru",
+      "sfd.gosuslugi.ru",
+      "bot.gosuslugi.ru",
+      "payment.gosuslugi.ru",
+
+      "file:hosts_blacklist.txt"
+    ],
+    "Items": []
+  }
+}
