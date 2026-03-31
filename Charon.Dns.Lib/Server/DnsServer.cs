@@ -10,6 +10,7 @@ using Charon.Dns.Lib.AsyncEvents;
 using Charon.Dns.Lib.Client.RequestResolver;
 using Charon.Dns.Lib.Protocol;
 using Charon.Dns.Lib.Tracing;
+using Charon.Dns.Utils.ByteUnits;
 using Serilog;
 
 namespace Charon.Dns.Lib.Server
@@ -18,6 +19,7 @@ namespace Charon.Dns.Lib.Server
         IRequestResolver resolver,
         IRequestCounter requestCounter,
         int parallelizationFactor,
+        ByteUnit socketBufferSize,
         ILogger logger)
             : IAsyncObservable<OnRequestEventArgs>,
             IAsyncObservable<OnResponseEventArgs>,
@@ -42,7 +44,7 @@ namespace Charon.Dns.Lib.Server
                 var task = Task.Run(async () =>
                 {
                     using var socket = new Socket(SocketType.Dgram, ProtocolType.Udp);
-                    socket.ReceiveBufferSize = 1 * 1024 * 1024;
+                    socket.ReceiveBufferSize = socketBufferSize.Bytes;
                     socket.ExclusiveAddressUse = false;
                     socket.Bind(endpoint);
 

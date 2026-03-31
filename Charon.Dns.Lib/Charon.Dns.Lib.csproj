@@ -22,4 +22,8 @@
     <PackageReference Include="System.Reflection.TypeExtensions" Version="4.3.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\Charon.Dns.Utils\Charon.Dns.Utils.csproj" />
+  </ItemGroup>
+
 </Project>

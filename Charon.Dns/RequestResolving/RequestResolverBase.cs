@@ -4,7 +4,7 @@ using Charon.Dns.Lib.Client.RequestResolver;
 using Charon.Dns.Lib.Protocol;
 using Charon.Dns.Lib.Tracing;
 using Charon.Dns.RequestResolving.ResolvingStrategies;
-using Charon.Dns.Utils;
+using Charon.Dns.Utils.ByteUnits;
 
 namespace Charon.Dns.RequestResolving;
 
@@ -14,16 +14,19 @@ public class RequestResolverBase : IRequestResolver
         
     private readonly IResolvingStrategy _resolvingStrategy;
     private readonly UdpRequestResolver[] _innerResolvers;
-    private readonly RequestCounter _counter = new();
-        
+
     public RequestResolverBase(
         IResolvingStrategy resolvingStrategy,
-        IEnumerable<IPAddress> chainDnsServers, 
+        IEnumerable<IPAddress> chainDnsServers,
+        ByteUnit socketBufferSize,
         int requestConcurrencyLimit)
     {
         _resolvingStrategy = resolvingStrategy;
         _innerResolvers = chainDnsServers
-            .Select(x => new UdpRequestResolver(new IPEndPoint(x, DefaultDnsPort), requestConcurrencyLimit))
+            .Select(x => new UdpRequestResolver(
+                new IPEndPoint(x, DefaultDnsPort), 
+                requestConcurrencyLimit,
+                socketBufferSize))
             .ToArray();
     }
 

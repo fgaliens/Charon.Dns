@@ -23,6 +23,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Charon.Dns.Tests.Utils", "C
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Charon.Dns.EndToEndTests", "Charon.Dns.EndToEndTests\Charon.Dns.EndToEndTests.csproj", "{F703E047-CCFC-4375-88FA-9761660CC5C5}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Charon.Dns.Utils", "Charon.Dns.Utils\Charon.Dns.Utils.csproj", "{2D21D540-7EC2-488C-9046-EFCA1159D2F0}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -79,6 +81,14 @@ Global
 		{F703E047-CCFC-4375-88FA-9761660CC5C5}.Release|Any CPU.Build.0 = Release|Any CPU
 		{F703E047-CCFC-4375-88FA-9761660CC5C5}.Release|x86.ActiveCfg = Release|Any CPU
 		{F703E047-CCFC-4375-88FA-9761660CC5C5}.Release|x86.Build.0 = Release|Any CPU
+		{2D21D540-7EC2-488C-9046-EFCA1159D2F0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2D21D540-7EC2-488C-9046-EFCA1159D2F0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2D21D540-7EC2-488C-9046-EFCA1159D2F0}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{2D21D540-7EC2-488C-9046-EFCA1159D2F0}.Debug|x86.Build.0 = Debug|Any CPU
+		{2D21D540-7EC2-488C-9046-EFCA1159D2F0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2D21D540-7EC2-488C-9046-EFCA1159D2F0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2D21D540-7EC2-488C-9046-EFCA1159D2F0}.Release|x86.ActiveCfg = Release|Any CPU
+		{2D21D540-7EC2-488C-9046-EFCA1159D2F0}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -90,5 +100,6 @@ Global
 		{D23D6894-DF80-4128-95DC-4FB6951C8D80} = {C976F0F8-3743-4BBD-8A7C-53660F2C7B72}
 		{189EF015-71DB-4D7F-80A8-D05BCE5B4504} = {C976F0F8-3743-4BBD-8A7C-53660F2C7B72}
 		{F703E047-CCFC-4375-88FA-9761660CC5C5} = {C976F0F8-3743-4BBD-8A7C-53660F2C7B72}
+		{2D21D540-7EC2-488C-9046-EFCA1159D2F0} = {51F9AEF6-9501-46D2-B4DB-481D8B649866}
 	EndGlobalSection
 EndGlobal

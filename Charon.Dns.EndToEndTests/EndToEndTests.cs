@@ -7,27 +7,21 @@ using Xunit.Abstractions;
 
 namespace Charon.Dns.EndToEndTests;
 
-public class EndToEndTests : IDisposable
+public class EndToEndTests
 {
-    private static readonly TimeSpan InitializationDelay = TimeSpan.FromSeconds(5);
-    
+    private const string ClientAddress = "127.0.0.1";
     private readonly ITestOutputHelper _output;
-    private readonly CancellationTokenSource _cancellationTokenSource;
 
     public EndToEndTests(ITestOutputHelper output)
     {
         _output = output;
-        _cancellationTokenSource = new CancellationTokenSource();
-        _ = Program.Main(["", "--Server:DnsChain:ResolvingConcurrencyLimit=20"], _cancellationTokenSource.Token);
     }
     
     [Fact]
     public async Task CheckCachedResponse()
     {
         // Arrange
-        await Task.Delay(InitializationDelay);
-        
-        var client = new DnsClient("127.0.0.1");
+        var client = new DnsClient(ClientAddress);
         
         // Act
         var yandexIpsResponseTask1 = client.Resolve("ya.ru", RecordType.A);
@@ -55,9 +49,7 @@ public class EndToEndTests : IDisposable
     public async Task CheckBlockedResponseReturnsNothing()
     {
         // Arrange
-        await Task.Delay(InitializationDelay);
-        
-        var client = new DnsClient("127.0.0.1");
+        var client = new DnsClient(ClientAddress);
         
         // Act
         var maxResponse = await client.Resolve("max.ru", RecordType.A);
@@ -70,9 +62,7 @@ public class EndToEndTests : IDisposable
     public async Task CheckResolvingForManuallyAddedRecords()
     {
         // Arrange
-        await Task.Delay(InitializationDelay);
-        
-        var client = new DnsClient("127.0.0.1");
+        var client = new DnsClient(ClientAddress);
         
         // Act
         var response = await client.Resolve("my.home", RecordType.A);
@@ -85,16 +75,14 @@ public class EndToEndTests : IDisposable
     public async Task CheckUnderLoad()
     {
         // Arrange
-        await Task.Delay(InitializationDelay);
-
         DnsClient[] clients =
         [
-            new DnsClient("127.0.0.1"),
-            new DnsClient("127.0.0.1"),
-            new DnsClient("127.0.0.1"),
-            new DnsClient("127.0.0.1"),
-            new DnsClient("127.0.0.1"),
-            new DnsClient("127.0.0.1"),
+            new DnsClient(ClientAddress),
+            new DnsClient(ClientAddress),
+            new DnsClient(ClientAddress),
+            new DnsClient(ClientAddress),
+            new DnsClient(ClientAddress),
+            new DnsClient(ClientAddress),
         ];
 
         string[] hosts =
@@ -152,10 +140,9 @@ public class EndToEndTests : IDisposable
                         started++;
                         return await dnsClient.Resolve(innerHost, innerRecordType);
                     }
-                    catch (Exception e)
+                    catch
                     {
                         failed++;
-                        _output.WriteLine($"[ERR]. Host: {innerHost}. Type: {innerRecordType}.\n{e}");
                         throw;
                     }
                 }));
@@ -169,9 +156,19 @@ public class EndToEndTests : IDisposable
             measure.Stop();
             _output.WriteLine($"Handled {responses.Count} requests in {measure.ElapsedMilliseconds} ms.");
         }
-        catch
+        catch (AggregateException e)
         {
             _output.WriteLine($"Error! Successfully handled {started - failed}/{started} request");
+            foreach (var innerException in e.InnerExceptions)
+            {
+                _output.WriteLine($"[ERR]. {innerException}");
+            }
+            throw;
+        }
+        catch (Exception e)
+        {
+            _output.WriteLine($"Error! Successfully handled {started - failed}/{started} request");
+            _output.WriteLine($"[ERR]. {e}");
             throw;
         }
         
@@ -208,16 +205,14 @@ public class EndToEndTests : IDisposable
     public async Task CheckUnderLoadWithSameRequests()
     {
         // Arrange
-        await Task.Delay(InitializationDelay);
-
         DnsClient[] clients =
         [
-            new DnsClient("127.0.0.1"),
-            new DnsClient("127.0.0.1"),
-            new DnsClient("127.0.0.1"),
-            new DnsClient("127.0.0.1"),
-            new DnsClient("127.0.0.1"),
-            new DnsClient("127.0.0.1"),
+            new DnsClient(ClientAddress),
+            new DnsClient(ClientAddress),
+            new DnsClient(ClientAddress),
+            new DnsClient(ClientAddress),
+            new DnsClient(ClientAddress),
+            new DnsClient(ClientAddress),
         ];
 
         string[] hosts =
@@ -242,6 +237,9 @@ public class EndToEndTests : IDisposable
 
         var responses = new List<Task<IResponse>>();
         
+        var started = 0;
+        var failed = 0;
+                
         var measure = Stopwatch.StartNew();
         
         // Act
@@ -249,17 +247,48 @@ public class EndToEndTests : IDisposable
         {
             foreach (var dnsClient in clients)
             {
-                responses.Add(dnsClient.Resolve(host, recordType));
+                responses.Add(Task.Run(async () =>
+                {
+                    var innerHost = host;
+                    var innerRecordType = recordType;
+                    try
+                    {
+                        started++;
+                        return await dnsClient.Resolve(innerHost, innerRecordType);
+                    }
+                    catch
+                    {
+                        failed++;
+                        throw;
+                    }
+                }));
             }
         }
-        
-        await Task.WhenAll(responses);
-        
-        measure.Stop();
+
+        try
+        {
+            await Task.WhenAll(responses);
+
+            measure.Stop();
+            _output.WriteLine($"Handled {responses.Count} requests in {measure.ElapsedMilliseconds} ms.");
+        }
+        catch (AggregateException e)
+        {
+            _output.WriteLine($"Error! Successfully handled {started - failed}/{started} request");
+            foreach (var innerException in e.InnerExceptions)
+            {
+                _output.WriteLine($"[ERR]. {innerException}");
+            }
+            throw;
+        }
+        catch (Exception e)
+        {
+            _output.WriteLine($"Error! Successfully handled {started - failed}/{started} request");
+            _output.WriteLine($"[ERR]. {e}");
+            throw;
+        }
 
         // Assert
-        _output.WriteLine($"Handled {responses.Count} requests in {measure.ElapsedMilliseconds} ms.");
-        
         foreach (var responseTask in responses)
         {
             var response = await responseTask;
@@ -274,9 +303,135 @@ public class EndToEndTests : IDisposable
             });
         }
     }
-
-    public void Dispose()
+    
+    [Fact]
+    public async Task CheckWithManyRequests()
     {
-        _cancellationTokenSource.Cancel();
+        // Arrange
+        DnsClient[] clients =
+        [
+            new DnsClient(ClientAddress),
+            new DnsClient(ClientAddress),
+            new DnsClient(ClientAddress),
+            new DnsClient(ClientAddress),
+            new DnsClient(ClientAddress),
+            new DnsClient(ClientAddress),
+        ];
+
+        string[] hosts =
+        [
+             "ya.ru",
+             "yandex.cloud",
+             "apple.com",
+             "google.com",
+             "googlevideo.com",
+             "selectel.ru",
+             "youtube.com",
+             "instagram.com",
+             "i.ytimg.com",
+             "amdm.ru",
+             "medium.com",
+             "max.ru",
+        ];
+
+        RecordType[] recordTypes =
+        [
+            RecordType.A,
+            RecordType.AAAA,
+            RecordType.MX,
+        ];
+
+        var requestsCombination = hosts
+            .CombineWith(recordTypes)
+            .Where(x => 
+                x.Item1 is not ("medium.com" or "i.ytimg.com") 
+                && x.Item2 != RecordType.MX)
+            .Select(x => Enumerable.Repeat(x, 30))
+            .SelectMany(x => x)
+            .ToArray();
+        
+        Random.Shared.Shuffle(requestsCombination);
+
+        var responses = new List<Task<IResponse>>();
+        
+        var measure = Stopwatch.StartNew();
+
+        var started = 0;
+        var failed = 0;
+        
+        // Act
+        foreach (var (host, recordType) in requestsCombination)
+        {
+            foreach (var dnsClient in clients)
+            {
+                await Task.Delay(20);
+                responses.Add(Task.Run(async () =>
+                {
+                    var innerHost = host;
+                    var innerRecordType = recordType;
+                    try
+                    {
+                        started++;
+                        return await dnsClient.Resolve(innerHost, innerRecordType);
+                    }
+                    catch
+                    {
+                        failed++;
+                        throw;
+                    }
+                }));
+            }
+        }
+
+        try
+        {
+            await Task.WhenAll(responses);
+            
+            measure.Stop();
+            _output.WriteLine($"Handled {responses.Count} requests in {measure.ElapsedMilliseconds} ms.");
+        }
+        catch (AggregateException e)
+        {
+            _output.WriteLine($"Error! Successfully handled {started - failed}/{started} request");
+            foreach (var innerException in e.InnerExceptions)
+            {
+                _output.WriteLine($"[ERR]. {innerException}");
+            }
+            throw;
+        }
+        catch (Exception e)
+        {
+            _output.WriteLine($"Error! Successfully handled {started - failed}/{started} request");
+            _output.WriteLine($"[ERR]. {e}");
+            throw;
+        }
+        
+        foreach (var responseTask in responses)
+        {
+            var response = await responseTask;
+            
+            var isBlocked = response.Questions.Any(x => x.Name.ToString().Equals("max.ru", StringComparison.OrdinalIgnoreCase));
+            var isMxQuestion = response.Questions.Any(x => x.Type is  RecordType.MX);
+            if (isBlocked)
+            {
+                response.AnswerRecords.Should().BeEmpty();
+            }
+            else
+            {
+                if (isMxQuestion && response.AnswerRecords.Count == 0)
+                {
+                    continue;
+                }
+                
+                response.AnswerRecords.Should().NotBeEmpty($"Expected that response {response} is not empty");
+                response.Questions.Should().HaveCount(1);
+
+                response.AnswerRecords.Should().AllSatisfy(answer =>
+                {
+                    answer.Type.Should().Be(response.Questions[0].Type);
+                    answer.Class.Should().Be(response.Questions[0].Class);
+                });
+            }
+        }
     }
 }

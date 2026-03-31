@@ -5,11 +5,13 @@ namespace Charon.Dns.Settings;
 
 public class CacheSettings : ISettings<CacheSettings>
 {
+    public required bool Enabled { get; init; }
     public required TimeSpan TimeToLive { get; init; }
     
     public static CacheSettings Initialize(IConfiguration config)
     {
         var cacheSection = config.GetSection("Cache");
+        var enabled = cacheSection.GetSectionValue("Enabled", true);
         var timeToLive = cacheSection.GetSectionValue("TimeToLive", TimeSpan.Zero);
         
 #if DEBUG
@@ -18,6 +20,7 @@ public class CacheSettings : ISettings<CacheSettings>
 
         return new()
         {
+            Enabled = enabled,
             TimeToLive = timeToLive,
         };
     }
