@@ -1,1 +1,3 @@
 other_hosts.txt
+/logs
+start-docker.sh

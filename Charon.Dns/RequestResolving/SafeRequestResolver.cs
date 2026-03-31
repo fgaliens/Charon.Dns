@@ -9,6 +9,7 @@ namespace Charon.Dns.RequestResolving
         : RequestResolverBase(
             resolvingStrategy,
             dnsChainSettings.SecuredServers.Select(x => x.Ip), 
+            dnsChainSettings.SocketBufferSize,
             dnsChainSettings.ResolvingConcurrencyLimit), 
             ISafeRequestResolver;
 }

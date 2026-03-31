@@ -57,7 +57,9 @@ static class Program
                 GetFileLogLevel(),
                 outputTemplate: "[{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz}][{Level:u3}][#{RequestId}] {Message:lj}{NewLine}{Exception}",
                 rollingInterval: RollingInterval.Minute,
-                retainedFileCountLimit: 60)
+                retainedFileCountLimit: 60,
+                buffered: true, 
+                flushToDiskInterval: TimeSpan.FromSeconds(1))
             .CreateLogger();
 
         logger.Information("Starting up DNS server. Version {AppVersion}", AppVersion);

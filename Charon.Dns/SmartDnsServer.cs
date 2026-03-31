@@ -43,6 +43,7 @@ public class SmartDnsServer(
             requestResolvers, 
             RequestCounter, 
             listeningSettings.MaxParallelRequestCount, 
+            listeningSettings.SocketBufferSize,
             logger);
         server.Subscribe(AsyncObserver.Create<OnExceptionEventArgs>(eventArgs =>
         {

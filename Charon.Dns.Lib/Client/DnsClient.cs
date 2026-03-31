@@ -17,7 +17,7 @@ namespace Charon.Dns.Lib.Client
         private readonly IRequestResolver _resolver;
 
         public DnsClient(IPEndPoint dns) :
-            this(new UdpRequestResolver(dns, 0, new TcpRequestResolver(dns)))
+            this(new UdpRequestResolver(dns, 0, fallback: new TcpRequestResolver(dns)))
         { }
 
         public DnsClient(IPAddress ip, int port = DefaultPort) :

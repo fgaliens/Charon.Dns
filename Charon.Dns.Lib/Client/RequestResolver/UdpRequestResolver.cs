@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using Charon.Dns.Lib.Concurrency;
 using Charon.Dns.Lib.Protocol;
 using Charon.Dns.Lib.Tracing;
+using Charon.Dns.Utils.ByteUnits;
 
 namespace Charon.Dns.Lib.Client.RequestResolver;
 
@@ -24,16 +25,19 @@ public class UdpRequestResolver : IRequestResolver
     private readonly ArrayPool<byte> _arrayPool = ArrayPool<byte>.Shared;
     private readonly IConcurrencyLimiter _concurrencyLimiter;
     private readonly int _concurrencyLimit;
+    private readonly ByteUnit? _socketBufferSize;
     private ulong _returnedSocketsCounter;
 
     public UdpRequestResolver(
         IPEndPoint dnsEndpoint, 
         int concurrencyLimit,
+        ByteUnit? socketBufferSize = null,
         IRequestResolver? fallback = null)
     {
         _dnsEndpoint = dnsEndpoint;
         _fallback = fallback;
         _concurrencyLimit = concurrencyLimit;
+        _socketBufferSize = socketBufferSize;
         _concurrencyLimiter = concurrencyLimit > 0
             ? new ConcurrencyLimiter(concurrencyLimit)
             : EmptyConcurrencyLimiter.Instance;
@@ -50,17 +54,26 @@ public class UdpRequestResolver : IRequestResolver
         if (!_availableSockets.TryDequeue(out var socket))
         {
             socket = new Socket(SocketType.Dgram, ProtocolType.Udp);
+            socket.ExclusiveAddressUse = true;
+            if (_socketBufferSize is not null)
+            {
+                socket.SendBufferSize = _socketBufferSize.Value.Bytes;
+                socket.ReceiveBufferSize = _socketBufferSize.Value.Bytes;
+            }
+            socket.Bind(new IPEndPoint(0, 0));
             logger.Debug(
                 $"{nameof(UdpRequestResolver)}: New socket {{Socket}} for DNS {{Ip}} created",
                 socket.LocalEndPoint,
                 _dnsEndpoint);
         }
-        
-        logger.Debug(
-            $"{nameof(UdpRequestResolver)}: Using socket {{Socket}} for DNS {{Ip}}. Av. data {{DataSize}} bytes",
-            socket.LocalEndPoint,
-            _dnsEndpoint,
-            socket.Available);
+        else
+        {
+            logger.Debug(
+                $"{nameof(UdpRequestResolver)}: Using socket {{Socket}} for DNS {{Ip}}. Av. data {{DataSize}} bytes",
+                socket.LocalEndPoint,
+                _dnsEndpoint,
+                socket.Available);
+        }
 
         try
         {
@@ -114,24 +127,23 @@ public class UdpRequestResolver : IRequestResolver
                 }
 
                 var availableDataSize = socket.Available;
-                logger.Debug("Socket {Socket} has available data: {DataSize} bytes", socket.LocalEndPoint, availableDataSize);
-
+                if (availableDataSize > 0)
+                {
+                    logger.Debug("Socket {Socket} has available data: {DataSize} bytes", socket.LocalEndPoint, availableDataSize);
+                }
+                
                 var responseInfo = await socket.ReceiveFromAsync(buffer, _dnsEndpoint, cts.Token);
 
                 var msgSize = responseInfo.ReceivedBytes;
-                if (msgSize > MaxDnsMsgSize * 2)
+                if (msgSize >= dnsMsgSize)
                 {
-                    logger.Error("Received message has unexpected size: {Size} bytes", msgSize);
-                }
-                else if (msgSize > MaxDnsMsgSize)
-                {
-                    logger.Warning("Received message has unexpected size: {Size} bytes", msgSize);
+                    logger.Warning("Received message has size: {Size} bytes", msgSize);
                 }
                 
                 var senderIp = (responseInfo.RemoteEndPoint as IPEndPoint)?.Address.MapToIPv6();
                 if (!_dnsEndpoint.Address.MapToIPv6().Equals(senderIp))
                 {
-                    logger.Warning("Remote endpoint mismatch. Expected response from {DNS}, received from {RemoteEndPoint}. (ID: {TraceId})",
+                    logger.Warning("Remote endpoint mismatch. Expected response from {DNS}, received from {RemoteEndPoint}. (ID: {Id})",
                         _dnsEndpoint, senderIp, request.Id);
                     continue;
                 }

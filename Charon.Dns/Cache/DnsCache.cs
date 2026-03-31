@@ -135,7 +135,7 @@ public class DnsCache(
 
     private bool IsDisabled()
     {
-        return cacheSettings.TimeToLive <= TimeSpan.Zero;
+        return !cacheSettings.Enabled;
     }
 
     private void RemoveCacheEntry(in CacheEntry entry)

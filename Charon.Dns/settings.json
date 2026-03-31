@@ -3,6 +3,7 @@
   "FileLogLevel": "Debug",
   "Server": {
     "MaxParallelRequestCount": 8,
+    "SocketBufferSize": "2Mb",
     "ListenOn": [
       {
         "Address": "0.0.0.0",
@@ -22,6 +23,7 @@
     "DnsChain": {
       "ResolvingStrategy": "RoundRobin",
       "ResolvingConcurrencyLimit": 2,
+      "SocketBufferSize": "512Kb",
       "DefaultServers": [
         "77.88.8.8",
         "77.88.8.1"
@@ -56,6 +58,7 @@
     }
   },
   "Cache": {
+    "Enabled": true,
     "TimeToLive": "00:05:00"
   },
   "Routing": {
