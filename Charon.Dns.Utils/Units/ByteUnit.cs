@@ -1,7 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Text.RegularExpressions;
 
-namespace Charon.Dns.Utils.ByteUnits;
+namespace Charon.Dns.Utils.Units;
 
 public readonly struct ByteUnit(uint bytes) : IParsable<ByteUnit>
 {

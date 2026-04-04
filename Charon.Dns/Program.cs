@@ -49,7 +49,7 @@ static class Program
             .MinimumLevel.Is(LogEventLevel.Debug)
             .Destructure.With(new LoggingDestructuringPolicies())
             .WriteTo.Console(
-                outputTemplate: "[{Timestamp:HH:mm:ss}][{Level:u3}][#{RequestId}] {Message:lj}{NewLine}{Exception}",
+                outputTemplate: "[{Timestamp:HH:mm:ss.fff}][{Level:u3}][#{RequestId}] {Message:lj}{NewLine}{Exception}",
                 restrictedToMinimumLevel: GetConsoleLogLevel(),
                 theme: consoleTheme)
             .WriteTo.File(

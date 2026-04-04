@@ -10,7 +10,7 @@ using Charon.Dns.Lib.AsyncEvents;
 using Charon.Dns.Lib.Client.RequestResolver;
 using Charon.Dns.Lib.Protocol;
 using Charon.Dns.Lib.Tracing;
-using Charon.Dns.Utils.ByteUnits;
+using Charon.Dns.Utils.Units;
 using Serilog;
 
 namespace Charon.Dns.Lib.Server
