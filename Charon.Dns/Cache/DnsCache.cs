@@ -10,6 +10,7 @@ using Serilog;
 
 namespace Charon.Dns.Cache;
 
+// TODO: Implement returning Task<IResponse> for parallel requests
 public class DnsCache(
     IDateTimeProvider dateTimeProvider,
     CacheSettings cacheSettings,
