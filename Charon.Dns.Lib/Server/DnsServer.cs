@@ -119,7 +119,7 @@ namespace Charon.Dns.Lib.Server
 
                 await socket.SendToAsync(response.ToArray(), SocketFlags.None, remote, cancellationToken);
                 
-                requestLogger.Debug("Dns server (socket #{SocketIndex}): response to {Remote} sent", socketIndex, remote);
+                requestLogger.Debug("Dns server (socket #{SocketIndex}): response sent to {Remote}", socketIndex, remote);
             }
             catch (Exception e)
             {
