@@ -163,7 +163,7 @@ public class UdpRequestResolver : IRequestResolver, IDisposable
                 return;
             }
             
-            logger.Debug("Request resolving completed. Returning result");
+            logger.Debug("Request resolving completed. Returning result ({Size} bytes)", responseInfo.ReceivedBytes);
             _sentRequestsBuffer[bufferIndex] = null;
             responseCompletionSource.ResponseCompletionSource.SetResult(response);
         }
