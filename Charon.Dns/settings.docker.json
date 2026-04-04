@@ -1,5 +1,5 @@
 {
-  "LogLevel": "Warning",
+  "LogLevel": "Debug",
   "FileLogLevel": "Warning",
   "Server": {
     "MaxParallelRequestCount": 16,
@@ -192,6 +192,15 @@
             "medium.systems",
             "amdm.ru",
             "0.amdm.ru",
+            "bizographics.com",
+            "l-0005.dc-msedge.net",
+            "l-0005.l-msedge.net",
+            "licdn.com",
+            "linkedin.at",
+            "linkedin.com",
+            "lnkd.in",
+            "licdn.cn",
+            "linkedin.cn",
             "file:other_hosts.txt"
           ]
         }

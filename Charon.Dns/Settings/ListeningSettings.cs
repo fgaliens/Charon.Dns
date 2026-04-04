@@ -1,6 +1,6 @@
 using System.Net;
 using Charon.Dns.Extensions;
-using Charon.Dns.Utils.ByteUnits;
+using Charon.Dns.Utils.Units;
 using Microsoft.Extensions.Configuration;
 
 namespace Charon.Dns.Settings;

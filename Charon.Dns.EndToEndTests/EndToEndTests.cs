@@ -158,7 +158,7 @@ public class EndToEndTests
         }
         catch (AggregateException e)
         {
-            _output.WriteLine($"Error! Successfully handled {started - failed}/{started} request");
+            _output.WriteLine($"Error! Handled {started - failed}/{started} request");
             foreach (var innerException in e.InnerExceptions)
             {
                 _output.WriteLine($"[ERR]. {innerException}");
@@ -167,7 +167,7 @@ public class EndToEndTests
         }
         catch (Exception e)
         {
-            _output.WriteLine($"Error! Successfully handled {started - failed}/{started} request");
+            _output.WriteLine($"Error! Handled {started - failed}/{started} request");
             _output.WriteLine($"[ERR]. {e}");
             throw;
         }
@@ -247,6 +247,7 @@ public class EndToEndTests
         {
             foreach (var dnsClient in clients)
             {
+                await Task.Delay(2);
                 responses.Add(Task.Run(async () =>
                 {
                     var innerHost = host;
@@ -274,7 +275,7 @@ public class EndToEndTests
         }
         catch (AggregateException e)
         {
-            _output.WriteLine($"Error! Successfully handled {started - failed}/{started} request");
+            _output.WriteLine($"Error! Handled {started - failed}/{started} request");
             foreach (var innerException in e.InnerExceptions)
             {
                 _output.WriteLine($"[ERR]. {innerException}");
@@ -283,7 +284,7 @@ public class EndToEndTests
         }
         catch (Exception e)
         {
-            _output.WriteLine($"Error! Successfully handled {started - failed}/{started} request");
+            _output.WriteLine($"Error! Handled {started - failed}/{started} request");
             _output.WriteLine($"[ERR]. {e}");
             throw;
         }
@@ -392,7 +393,7 @@ public class EndToEndTests
         }
         catch (AggregateException e)
         {
-            _output.WriteLine($"Error! Successfully handled {started - failed}/{started} request");
+            _output.WriteLine($"Error! Handled {started - failed}/{started} request");
             foreach (var innerException in e.InnerExceptions)
             {
                 _output.WriteLine($"[ERR]. {innerException}");
@@ -401,7 +402,7 @@ public class EndToEndTests
         }
         catch (Exception e)
         {
-            _output.WriteLine($"Error! Successfully handled {started - failed}/{started} request");
+            _output.WriteLine($"Error! Handled {started - failed}/{started} request");
             _output.WriteLine($"[ERR]. {e}");
             throw;
         }
