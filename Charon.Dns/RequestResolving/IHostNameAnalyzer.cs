@@ -12,5 +12,6 @@ namespace Charon.Dns.RequestResolving
             RequestTrace trace, 
             [NotNullWhen(true)] out SecuredConnectionParams? connectionParams);
         bool ShouldBeBlocked(string domainName, RequestTrace trace);
+        void AddSecuredDomainName(string domainName, SecuredConnectionParams connectionParams, RequestTrace trace);
     }
 }

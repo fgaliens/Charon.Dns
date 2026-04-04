@@ -10,6 +10,7 @@ namespace Charon.Dns.RequestResolving;
 
 public class HostNameAnalyzer : IHostNameAnalyzer
 {
+    private readonly ConcurrentDictionary<string, SecuredConnectionParams> _fullMatchedHostnames = new(StringComparer.OrdinalIgnoreCase);
     private readonly FrozenDictionary<string, SecuredConnectionParams> _domainMatchedHostnames;
     private readonly ConcurrentDictionary<string, SecuredConnectionParams?> _substringMatchedHostnames = new(StringComparer.OrdinalIgnoreCase);
     private readonly FrozenSet<string> _blockedHostnames;
@@ -91,12 +92,29 @@ public class HostNameAnalyzer : IHostNameAnalyzer
         return _blockedHostnames.Contains(domainName);
     }
 
+    public void AddSecuredDomainName(string domainName, SecuredConnectionParams connectionParams, RequestTrace trace)
+    {
+        var added = _fullMatchedHostnames.TryAdd(domainName, connectionParams);
+        if (added)
+        {
+            trace.Logger.Debug("Secured domain name '{Name}' added to analyzer ({@Params})", domainName, connectionParams);
+        }
+    }
+
     private bool ShouldBeSecuredInternal(
         string domainName, 
         RequestTrace trace,
         [NotNullWhen(true)] out SecuredConnectionParams? connectionParams)
     {
         var logger = trace.Logger;
+        
+        if (_fullMatchedHostnames.TryGetValue(domainName, out connectionParams))
+        {
+            logger.Debug("Host name '{Host}' should be secured because it has full match by domain", domainName);
+            
+            return true;
+        }
+        
         if (_domainMatchedHostnames.TryGetValue(domainName, out connectionParams))
         {
             logger.Debug("Host name '{Host}' should be secured because it is matched by domain", domainName);

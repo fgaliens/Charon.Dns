@@ -58,7 +58,6 @@ public class UdpRequestResolver : IRequestResolver, IDisposable
             _socket.LocalEndPoint,
             socketBufferSizeBytes,
             _sentRequestsBuffer.Length);
-        
 
         _ = Task.Run(async () =>
         {
@@ -76,6 +75,12 @@ public class UdpRequestResolver : IRequestResolver, IDisposable
     {
         var logger = trace.Logger;
         
+        using var linkedCancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(
+            _resolvingCancellationToken.Token,
+            cancellationToken);
+        linkedCancellationTokenSource.CancelAfter(_timeout);
+        var linkedCancellationToken = linkedCancellationTokenSource.Token;
+        
         var internalRequestId = (ushort)(Interlocked.Increment(ref _internalRequestIdCounter) % ushort.MaxValue);
         var bufferIndex = internalRequestId % _sentRequestsBuffer.Length;
 
@@ -91,8 +96,13 @@ public class UdpRequestResolver : IRequestResolver, IDisposable
             requestData, 
             SocketFlags.None, 
             _dnsEndpoint,
-            cancellationToken);
+            linkedCancellationToken);
+        
         var taskCompletionSource = new TaskCompletionSource<IResponse>();
+        
+        await using var cancellationRegistration = linkedCancellationToken.Register(() => 
+            taskCompletionSource.TrySetCanceled(linkedCancellationToken));
+        
         var promise = new ResponsePromise
         {
             OriginalRequestId = originalRequestId,
@@ -103,7 +113,16 @@ public class UdpRequestResolver : IRequestResolver, IDisposable
         };
         _sentRequestsBuffer[bufferIndex] = promise;
 
-        return await taskCompletionSource.Task.WaitAsync(_timeout, cancellationToken);
+        try
+        {
+            return await taskCompletionSource.Task;
+        }
+        catch (Exception e)
+        {
+            logger.Error(e, "Request resolving error!. External id: {ExtId}; internal id: {IntId}", originalRequestId, internalRequestId);
+            _sentRequestsBuffer[bufferIndex] = null;
+            throw;
+        }
     }
     
     public void Dispose()
@@ -132,7 +151,8 @@ public class UdpRequestResolver : IRequestResolver, IDisposable
 
             if (responseCompletionSource is null)
             {
-                _globalLogger.Warning("Request resolving. Unable to find response promise for request with internal Id: {Id}. Response dropped", internalResponseId);
+                _globalLogger.Warning("Request resolving (resolver {Resolver}). Unable to find response promise for request with internal Id: {Id}. Response dropped", 
+                    _dnsEndpoint, internalResponseId);
                 return;
             }
 
@@ -165,7 +185,7 @@ public class UdpRequestResolver : IRequestResolver, IDisposable
             
             logger.Debug("Request resolving completed. Returning result ({Size} bytes)", responseInfo.ReceivedBytes);
             _sentRequestsBuffer[bufferIndex] = null;
-            responseCompletionSource.ResponseCompletionSource.SetResult(response);
+            responseCompletionSource.ResponseCompletionSource.TrySetResult(response);
         }
         finally
         {
