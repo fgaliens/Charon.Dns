@@ -167,5 +167,5 @@ pip-log.txt
 # Mac crap
 .DS_Store
 /.vs
-
+Charon.Dns.Debug/
 other_hosts.txt

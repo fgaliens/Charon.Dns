@@ -1,4 +1,5 @@
-﻿using System;
+﻿#nullable enable
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Charon.Dns.Lib.Protocol.ResourceRecords;
@@ -6,13 +7,15 @@ using Charon.Dns.Lib.Protocol.Utils;
 
 namespace Charon.Dns.Lib.Protocol
 {
+    // TODO: Beware of mutations. Think about readonly request and response
     public class Response : IResponse
     {
-        private Header header;
-        private IList<Question> questions;
-        private IList<IResourceRecord> answers;
-        private IList<IResourceRecord> authority;
-        private IList<IResourceRecord> additional;
+        private Header _header;
+        private readonly IList<Question> _questions;
+        private readonly IList<IResourceRecord> _answers;
+        private readonly IList<IResourceRecord> _authority;
+        private readonly IList<IResourceRecord> _additional;
+        private readonly byte[]? _originalResponse;
 
         public static Response FromRequest(IRequest request)
         {
@@ -51,39 +54,46 @@ namespace Charon.Dns.Lib.Protocol
                 Question.GetAllFromArray(message, offset, header.QuestionCount, out offset),
                 ResourceRecordFactory.GetAllFromArray(message, offset, header.AnswerRecordCount, out offset),
                 ResourceRecordFactory.GetAllFromArray(message, offset, header.AuthorityRecordCount, out offset),
-                ResourceRecordFactory.GetAllFromArray(message, offset, header.AdditionalRecordCount, out offset));
+                ResourceRecordFactory.GetAllFromArray(message, offset, header.AdditionalRecordCount, out offset),
+                message);
         }
 
-        public Response(Header header, IList<Question> questions, IList<IResourceRecord> answers,
-                IList<IResourceRecord> authority, IList<IResourceRecord> additional)
+        public Response(
+            Header header, 
+            IList<Question> questions, 
+            IList<IResourceRecord> answers,
+            IList<IResourceRecord> authority, 
+            IList<IResourceRecord> additional,
+            byte[]? originalResponse = null)
         {
-            this.header = header;
-            this.questions = questions;
-            this.answers = answers;
-            this.authority = authority;
-            this.additional = additional;
+            _header = header;
+            _questions = questions;
+            _answers = answers;
+            _authority = authority;
+            _additional = additional;
+            _originalResponse = originalResponse;
         }
 
         public Response()
         {
-            this.header = new Header();
-            this.questions = new List<Question>();
-            this.answers = new List<IResourceRecord>();
-            this.authority = new List<IResourceRecord>();
-            this.additional = new List<IResourceRecord>();
+            _header = new Header();
+            _questions = new List<Question>();
+            _answers = new List<IResourceRecord>();
+            _authority = new List<IResourceRecord>();
+            _additional = new List<IResourceRecord>();
 
-            this.header.Response = true;
+            _header.Response = true;
         }
 
         public Response(IResponse response)
         {
-            this.header = new Header();
-            this.questions = new List<Question>(response.Questions);
-            this.answers = new List<IResourceRecord>(response.AnswerRecords);
-            this.authority = new List<IResourceRecord>(response.AuthorityRecords);
-            this.additional = new List<IResourceRecord>(response.AdditionalRecords);
+            _header = new Header();
+            _questions = new List<Question>(response.Questions);
+            _answers = new List<IResourceRecord>(response.AnswerRecords);
+            _authority = new List<IResourceRecord>(response.AuthorityRecords);
+            _additional = new List<IResourceRecord>(response.AdditionalRecords);
 
-            this.header.Response = true;
+            _header.Response = true;
 
             Id = response.Id;
             RecursionAvailable = response.RecursionAvailable;
@@ -94,95 +104,100 @@ namespace Charon.Dns.Lib.Protocol
 
         public IList<Question> Questions
         {
-            get { return questions; }
+            get { return _questions; }
         }
 
         public IList<IResourceRecord> AnswerRecords
         {
-            get { return answers; }
+            get { return _answers; }
         }
 
         public IList<IResourceRecord> AuthorityRecords
         {
-            get { return authority; }
+            get { return _authority; }
         }
 
         public IList<IResourceRecord> AdditionalRecords
         {
-            get { return additional; }
+            get { return _additional; }
         }
 
         public int Id
         {
-            get { return header.Id; }
-            set { header.Id = value; }
+            get { return _header.Id; }
+            set { _header.Id = value; }
         }
 
         public bool RecursionAvailable
         {
-            get { return header.RecursionAvailable; }
-            set { header.RecursionAvailable = value; }
+            get { return _header.RecursionAvailable; }
+            set { _header.RecursionAvailable = value; }
         }
 
         public bool AuthenticData
         {
-            get { return header.AuthenticData; }
-            set { header.AuthenticData = value; }
+            get { return _header.AuthenticData; }
+            set { _header.AuthenticData = value; }
         }
 
         public bool CheckingDisabled
         {
-            get { return header.CheckingDisabled; }
-            set { header.CheckingDisabled = value; }
+            get { return _header.CheckingDisabled; }
+            set { _header.CheckingDisabled = value; }
         }
 
         public bool AuthorativeServer
         {
-            get { return header.AuthorativeServer; }
-            set { header.AuthorativeServer = value; }
+            get { return _header.AuthorativeServer; }
+            set { _header.AuthorativeServer = value; }
         }
 
         public bool Truncated
         {
-            get { return header.Truncated; }
-            set { header.Truncated = value; }
+            get { return _header.Truncated; }
+            set { _header.Truncated = value; }
         }
 
         public OperationCode OperationCode
         {
-            get { return header.OperationCode; }
-            set { header.OperationCode = value; }
+            get { return _header.OperationCode; }
+            set { _header.OperationCode = value; }
         }
 
         public ResponseCode ResponseCode
         {
-            get { return header.ResponseCode; }
-            set { header.ResponseCode = value; }
+            get { return _header.ResponseCode; }
+            set { _header.ResponseCode = value; }
         }
 
         public int Size
         {
             get
             {
-                return header.Size +
-                    questions.Sum(q => q.Size) +
-                    answers.Sum(a => a.Size) +
-                    authority.Sum(a => a.Size) +
-                    additional.Sum(a => a.Size);
+                return _header.Size +
+                    _questions.Sum(q => q.Size) +
+                    _answers.Sum(a => a.Size) +
+                    _authority.Sum(a => a.Size) +
+                    _additional.Sum(a => a.Size);
             }
         }
 
         public byte[] ToArray()
         {
+            if (_originalResponse is not null)
+            {
+                return _originalResponse.ToArray();
+            }
+            
             UpdateHeader();
             ByteStream result = new ByteStream(Size);
 
             result
-                .Append(header.ToArray())
-                .Append(questions.Select(q => q.ToArray()))
-                .Append(answers.Select(a => a.ToArray()))
-                .Append(authority.Select(a => a.ToArray()))
-                .Append(additional.Select(a => a.ToArray()));
+                .Append(_header.ToArray())
+                .Append(_questions.Select(q => q.ToArray()))
+                .Append(_answers.Select(a => a.ToArray()))
+                .Append(_authority.Select(a => a.ToArray()))
+                .Append(_additional.Select(a => a.ToArray()));
 
             return result.ToArray();
         }
@@ -192,17 +207,17 @@ namespace Charon.Dns.Lib.Protocol
             UpdateHeader();
 
             return ObjectStringifier.New(this)
-                .Add(nameof(Header), header)
+                .Add(nameof(Header), _header)
                 .Add(nameof(Questions), nameof(AnswerRecords), nameof(AuthorityRecords), nameof(AdditionalRecords))
                 .ToString();
         }
 
         private void UpdateHeader()
         {
-            header.QuestionCount = questions.Count;
-            header.AnswerRecordCount = answers.Count;
-            header.AuthorityRecordCount = authority.Count;
-            header.AdditionalRecordCount = additional.Count;
+            _header.QuestionCount = _questions.Count;
+            _header.AnswerRecordCount = _answers.Count;
+            _header.AuthorityRecordCount = _authority.Count;
+            _header.AdditionalRecordCount = _additional.Count;
         }
     }
 }

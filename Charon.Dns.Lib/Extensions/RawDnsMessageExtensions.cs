@@ -12,7 +12,7 @@ public static class RawDnsMessageExtensions
     
     extension(byte[] rawMessage)
     {
-        public RawDnsMessage DnsMessage => new(rawMessage);
+        public RawDnsMessage AsDnsMessage => new(rawMessage);
     }
 }
 

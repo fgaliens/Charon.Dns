@@ -1,8 +1,8 @@
 using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
 using Charon.Dns.Extensions;
+using Charon.Dns.Lib.Extensions;
 using Charon.Dns.Lib.Protocol;
-using Charon.Dns.Lib.Protocol.ResourceRecords;
 using Charon.Dns.Lib.Tracing;
 using Charon.Dns.Settings;
 using Charon.Dns.Utils;
@@ -84,34 +84,12 @@ public class DnsCache(
         }
         
         logger.Debug("Cache hit for request {@Request}: {@Response}", request, cachedResponse);
-        
-        var cachedAnswers = cachedResponse.AnswerRecords.ToArray();
-        response = new Response(cachedResponse);
-        response.Id = request.Id;
-        response.AnswerRecords.Clear();
-        
-        var ttl = cachedResponseEntry.ValidUntil - now;
-        ttl = ttl >= TimeSpan.Zero ? ttl : TimeSpan.Zero;
-        
-        foreach (var answer in cachedAnswers)
-        {
-            if (answer is BaseResourceRecord resourceRecord)
-            {
-                var updatedResourceRecord = new ResourceRecord(
-                    resourceRecord.Name,
-                    resourceRecord.Data,
-                    resourceRecord.Type,
-                    resourceRecord.Class,
-                    ttl);
-                
-                response.AnswerRecords.Add(updatedResourceRecord);
-            }
-            else
-            {
-                response.AnswerRecords.Add(answer);
-            }
-        }
-        
+
+        var rawResponseMessage = cachedResponse.ToArray();
+        var responseHeader = rawResponseMessage.AsDnsMessage.Header;
+        responseHeader.Id = (ushort)request.Id;
+
+        response = Response.FromArray(rawResponseMessage);
         return true;
     }
 

@@ -89,7 +89,7 @@ public class UdpRequestResolver : IRequestResolver, IDisposable
         logger.Debug("Request resolving. Mapping request id {ExtId} -> {IntId}", originalRequestId, internalRequestId);
         
         var requestData = request.ToArray();
-        var messageHeader = requestData.DnsMessage.Header; 
+        var messageHeader = requestData.AsDnsMessage.Header; 
         messageHeader.Id = internalRequestId;
         
         await _socket.SendToAsync(
@@ -144,7 +144,7 @@ public class UdpRequestResolver : IRequestResolver, IDisposable
         try
         {
             var responseInfo = await _socket.ReceiveFromAsync(buffer, _dnsEndpoint, cancellationToken);
-            var internalResponseId = buffer.DnsMessage.Header.Id;
+            var internalResponseId = buffer.AsDnsMessage.Header.Id;
             
             var bufferIndex = internalResponseId % _sentRequestsBuffer.Length;
             var responseCompletionSource = _sentRequestsBuffer[bufferIndex];
@@ -156,7 +156,7 @@ public class UdpRequestResolver : IRequestResolver, IDisposable
                 return;
             }
 
-            var messageHeader = buffer.DnsMessage.Header; 
+            var messageHeader = buffer.AsDnsMessage.Header; 
             messageHeader.Id = responseCompletionSource.OriginalRequestId;
             var response = Response.FromArray(buffer[..responseInfo.ReceivedBytes]);
             

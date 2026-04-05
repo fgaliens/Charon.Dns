@@ -1,4 +1,5 @@
-﻿using System;
+﻿#nullable enable
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Charon.Dns.Lib.Protocol.EqualityComparers;
@@ -7,11 +8,13 @@ using Charon.Dns.Lib.Protocol.Utils;
 
 namespace Charon.Dns.Lib.Protocol
 {
+    // TODO: Beware of mutations. Think about readonly request and response
     public class Request : IRequest
     {
         private readonly IList<Question> _questions;
         private Header _header;
         private readonly IList<IResourceRecord> _additional;
+        private readonly byte[]? _originalRequest;
 
         public static Request FromArray(byte[] message)
         {
@@ -30,12 +33,17 @@ namespace Charon.Dns.Lib.Protocol
                 Question.GetAllFromArray(message, offset, header.QuestionCount, out offset),
                 ResourceRecordFactory.GetAllFromArray(message, offset, header.AdditionalRecordCount, out offset));
         }
-
-        public Request(Header header, IList<Question> questions, IList<IResourceRecord> additional)
+        
+        public Request(
+            Header header, 
+            IList<Question> questions, 
+            IList<IResourceRecord> additional,
+            byte[]? originalRequest = null)
         {
-            this._header = header;
-            this._questions = questions;
-            this._additional = additional;
+            _header = header;
+            _questions = questions;
+            _additional = additional;
+            _originalRequest = originalRequest;
         }
 
         public Request()
@@ -102,6 +110,11 @@ namespace Charon.Dns.Lib.Protocol
 
         public byte[] ToArray()
         {
+            if (_originalRequest is not null)
+            {
+                return _originalRequest.ToArray();
+            }
+            
             UpdateHeader();
             ByteStream result = new ByteStream(Size);
 
@@ -123,7 +136,7 @@ namespace Charon.Dns.Lib.Protocol
                 .ToString();
         }
         
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             if (obj is null) 
                 return false;
@@ -154,7 +167,7 @@ namespace Charon.Dns.Lib.Protocol
             return hashCode.ToHashCode();
         }
         
-        public bool Equals(IRequest other)
+        public bool Equals(IRequest? other)
         {
             if (other is not Request otherRequest)
             {
