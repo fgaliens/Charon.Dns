@@ -2,13 +2,15 @@
 
 **Charon.Dns** is a DNS server with the ability to dynamically manage traffic routes on your Linux server.
 
+Charon.Dns.Lib library is based on the [kapetan/dns](https://github.com/kapetan/dns) library.
+
 ## The Problem
 
-Imagine you have two gateways:
+Imagine you have two gateways on host:
 - A default gateway
 - A VPN gateway
 
-You want most traffic to go through your default gateway, but all traffic to `example.com` should be routed through the VPN. Normally, you'd use `ip route add ...` to accomplish this. But what if `example.com` has multiple IP addresses that can change over time? Manually managing these routes becomes impractical.
+You want most traffic to go through your default gateway, but all traffic to `example.com` should be routed through the VPN. Normally, you'd use `ip route add ...` to accomplish this. But what if `example.com` has multiple IP addresses that can change over time or you need to route many sites? Manually managing these routes becomes impractical.
 
 ## The Solution
 
