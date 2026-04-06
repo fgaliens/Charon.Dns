@@ -27,11 +27,6 @@ static class Program
 
     public async static Task Main(string[] args)
     {
-        await Main(args, default);
-    }
-    
-    public async static Task Main(string[] args, CancellationToken cancellationToken)
-    {
         var config = new ConfigurationBuilder()
             .SetBasePath(Directory.GetCurrentDirectory())
             .AddJsonFile("settings.json")
@@ -90,8 +85,6 @@ static class Program
 
             var serviceInitializer = serviceProvider.GetRequiredService<ServiceInitializer>();
             var smartDnsServer = serviceProvider.GetRequiredService<SmartDnsServer>();
-
-            cancellationToken.Register(() => smartDnsServer.Stop());
 
             await serviceInitializer.Initialize();
 
