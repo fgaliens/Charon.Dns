@@ -35,7 +35,7 @@ namespace Charon.Dns.Lib.Server
         private readonly AsyncObservable<OnExceptionEventArgs> _exceptionEventObservable = new();
         private readonly AsyncObservable<OnListeningEventArgs> _listeningEventObservable = new();
 
-        public async Task Listen(IPEndPoint endpoint, CancellationToken cancellationToken = default)
+        public async Task Listen(IPEndPoint endpoint, bool enableIpV6, CancellationToken cancellationToken = default)
         {
             var tasks = new List<Task>(parallelizationFactor);
             for (int i = 0; i < parallelizationFactor; i++)
@@ -43,7 +43,8 @@ namespace Charon.Dns.Lib.Server
                 int socketIndex = i;
                 var task = Task.Run(async () =>
                 {
-                    using var socket = new Socket(SocketType.Dgram, ProtocolType.Udp);
+                    var addressFamily = enableIpV6 ? AddressFamily.InterNetworkV6 : AddressFamily.InterNetwork;
+                    using var socket = new Socket(addressFamily, SocketType.Dgram, ProtocolType.Udp);
                     socket.ReceiveBufferSize = socketBufferSize.Bytes;
                     socket.ExclusiveAddressUse = false;
                     socket.Bind(endpoint);
