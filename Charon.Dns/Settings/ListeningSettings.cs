@@ -15,6 +15,7 @@ public record ListeningSettings : ISettings<ListeningSettings>
     {
         public required IPAddress Address { get; init; }
         public required int Port { get; init; }
+        public required bool EnableIpV6 { get; init; }
         public required bool DebugOnly { get; init; }
     }
 
@@ -33,6 +34,7 @@ public record ListeningSettings : ISettings<ListeningSettings>
             {
                 Address = x.GetSectionValue<IPAddress>("Address"),
                 Port = x.GetSectionValue<int>("Port"),
+                EnableIpV6 = x.GetSectionValue("EnableIpV6", false),
                 DebugOnly = x.GetSectionValue("DebugOnly", false),
             })
             .ToArray();

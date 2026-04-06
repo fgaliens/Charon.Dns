@@ -70,7 +70,8 @@ public class SmartDnsServer(
                 try
                 {
                     await server.Listen(
-                        new IPEndPoint(listeningSettingsItem.Address, listeningSettingsItem.Port), 
+                        new IPEndPoint(listeningSettingsItem.Address, listeningSettingsItem.Port),
+                        listeningSettingsItem.EnableIpV6,
                         cancellationToken);
                 }
                 catch (Exception e)

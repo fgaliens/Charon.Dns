@@ -8,16 +8,19 @@
       {
         "Address": "0.0.0.0",
         "Port": 53,
-        "DebugOnly": true
+        "DebugOnly": true,
+        "EnableIpV6": false
       },
       {
         "Address": "127.0.0.1",
         "Port": 53,
-        "DebugOnly": true
+        "DebugOnly": true,
+        "EnableIpV6": false
       },
       {
         "Address": "10.0.0.53",
-        "Port": 53
+        "Port": 53,
+        "EnableIpV6": false
       }
     ],
     "DnsChain": {
