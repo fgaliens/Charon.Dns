@@ -18,11 +18,11 @@ public class DnsCache(
     : IDnsCache
 {
     private ImmutableSortedSet<CacheEntry> _cacheEntries = ImmutableSortedSet.Create<CacheEntry>(CacheEntryEqualityComparer.Instance);
-    private ImmutableDictionary<IRequest, CacheEntry> _cache = ImmutableDictionary.Create<IRequest, CacheEntry>();
-    
+    private ImmutableDictionary<IReadOnlyRequest, CacheEntry> _cache = ImmutableDictionary.Create<IReadOnlyRequest, CacheEntry>();
+
     public void AddResponse(
-        IRequest request, 
-        IResponse response, 
+        IReadOnlyRequest request,
+        IReadOnlyResponse response,
         RequestTrace trace)
     {
         if (IsDisabled())
@@ -57,7 +57,7 @@ public class DnsCache(
     }
 
     public bool TryGetResponse(
-        IRequest request, 
+        IReadOnlyRequest request,
         RequestTrace trace,
         [NotNullWhen(true)] out IResponse? response)
     {
@@ -148,8 +148,8 @@ public class DnsCache(
     private readonly record struct CacheEntry
     {
         public required DateTimeOffset ValidUntil { get; init; }
-        public required IRequest Request { get; init; }
-        public required IResponse Response { get; init; }
+        public required IReadOnlyRequest Request { get; init; }
+        public required IReadOnlyResponse Response { get; init; }
     }
 
     private class CacheEntryEqualityComparer : IComparer<CacheEntry>

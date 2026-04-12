@@ -7,8 +7,8 @@ namespace Charon.Dns.Interceptors
     public interface IResponseInterceptor : IAsyncObserver<OnResponseEventArgs>
     {
         Task Handle(
-            IRequest request,
-            IResponse response,
+            IReadOnlyRequest request,
+            IReadOnlyResponse response,
             RequestTrace trace,
             CancellationToken token = default);
     }
