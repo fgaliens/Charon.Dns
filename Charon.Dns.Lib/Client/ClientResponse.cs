@@ -102,6 +102,11 @@ namespace Charon.Dns.Lib.Client
             get { return new ReadOnlyCollection<Question>(response.Questions); }
         }
 
+        IReadOnlyList<Question> IReadOnlyResponse.Questions => (IReadOnlyList<Question>)response.Questions;
+        IReadOnlyList<IResourceRecord> IReadOnlyResponse.AnswerRecords => (IReadOnlyList<IResourceRecord>)response.AnswerRecords;
+        IReadOnlyList<IResourceRecord> IReadOnlyResponse.AuthorityRecords => (IReadOnlyList<IResourceRecord>)response.AuthorityRecords;
+        IReadOnlyList<IResourceRecord> IReadOnlyResponse.AdditionalRecords => (IReadOnlyList<IResourceRecord>)response.AdditionalRecords;
+
         public int Size
         {
             get { return message.Length; }

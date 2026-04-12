@@ -75,7 +75,7 @@ namespace Charon.Dns.Lib.Protocol
             this.header.Response = true;
         }
 
-        public Response(IResponse response)
+        public Response(IReadOnlyResponse response)
         {
             this.header = new Header();
             this.questions = new List<Question>(response.Questions);
@@ -111,6 +111,11 @@ namespace Charon.Dns.Lib.Protocol
         {
             get { return additional; }
         }
+
+        IReadOnlyList<Question> IReadOnlyResponse.Questions => (IReadOnlyList<Question>)questions;
+        IReadOnlyList<IResourceRecord> IReadOnlyResponse.AnswerRecords => (IReadOnlyList<IResourceRecord>)answers;
+        IReadOnlyList<IResourceRecord> IReadOnlyResponse.AuthorityRecords => (IReadOnlyList<IResourceRecord>)authority;
+        IReadOnlyList<IResourceRecord> IReadOnlyResponse.AdditionalRecords => (IReadOnlyList<IResourceRecord>)additional;
 
         public int Id
         {

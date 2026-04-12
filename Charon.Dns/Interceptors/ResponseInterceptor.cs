@@ -17,8 +17,8 @@ public class ResponseInterceptor(
     : IResponseInterceptor
 {
     public async Task Handle(
-        IRequest request, 
-        IResponse response,
+        IReadOnlyRequest request,
+        IReadOnlyResponse response,
         RequestTrace trace,
         CancellationToken token = default)
     {

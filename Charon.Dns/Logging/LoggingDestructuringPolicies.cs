@@ -11,7 +11,7 @@ public class LoggingDestructuringPolicies : IDestructuringPolicy
         ILogEventPropertyValueFactory propertyValueFactory, 
         out LogEventPropertyValue result)
     {
-        if (value is IRequest request)
+        if (value is IReadOnlyRequest request)
         {
             var properties = new List<LogEventProperty>
             {
@@ -43,7 +43,7 @@ public class LoggingDestructuringPolicies : IDestructuringPolicy
             return true;
         }
         
-        if (value is IResponse response)
+        if (value is IReadOnlyResponse response)
         {
             var properties = new List<LogEventProperty>
             {
