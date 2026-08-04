@@ -1,6 +1,5 @@
-using System.Collections.Immutable;
+using System.Collections.Concurrent;
 using System.Diagnostics.CodeAnalysis;
-using Charon.Dns.Extensions;
 using Charon.Dns.Lib.Protocol;
 using Charon.Dns.Lib.Protocol.ResourceRecords;
 using Charon.Dns.Lib.Tracing;
@@ -10,15 +9,13 @@ using Serilog;
 
 namespace Charon.Dns.Cache;
 
-// TODO: Implement returning Task<IResponse> for parallel requests
 public class DnsCache(
     IDateTimeProvider dateTimeProvider,
     CacheSettings cacheSettings,
     ILogger globalLogger) 
     : IDnsCache
 {
-    private ImmutableSortedSet<CacheEntry> _cacheEntries = ImmutableSortedSet.Create<CacheEntry>(CacheEntryEqualityComparer.Instance);
-    private ImmutableDictionary<IRequest, CacheEntry> _cache = ImmutableDictionary.Create<IRequest, CacheEntry>();
+    private ConcurrentDictionary<IRequest, CacheEntry> _cache = new();
     
     public void AddResponse(
         IRequest request, 
@@ -48,10 +45,8 @@ public class DnsCache(
             Response = response,
         };
             
-        if (ImmutableInterlocked.TryAdd(ref _cache, request, responseEntry))
-        {
-            ImmutableInterlockedUtils.Add(ref _cacheEntries, responseEntry);
-            
+        if (_cache.TryAdd(request, responseEntry))
+        {            
             logger.Debug("Response added to cache for request {@Request}", request);
         }
     }
@@ -79,7 +74,7 @@ public class DnsCache(
 
         if (cachedResponseEntry.ValidUntil < now)
         {
-            RemoveCacheEntry(cachedResponseEntry);
+            _cache.Remove(cachedResponseEntry.Request, out _);
             return false;
         }
         
@@ -121,16 +116,15 @@ public class DnsCache(
         {
             return;
         }
-        
-        var cacheEntries = _cacheEntries;
-        while (cacheEntries.Count > 0 && cacheEntries.Min.ValidUntil < dateTimeProvider.UtcNow)
+
+        var now = dateTimeProvider.UtcNow;
+        var itemsToRemove = _cache
+            .Where(x => x.Value.ValidUntil < now)
+            .ToArray();
+
+        foreach (var itemToRemove in itemsToRemove)
         {
-            var cacheEntry = cacheEntries.Min;
-            globalLogger.Debug("Removing outdated cache entry. Valid until: {Valid}; Request: {@Request}; Response: {@Response}", 
-                cacheEntry.ValidUntil, cacheEntry.Request, cacheEntry.Response);
-            RemoveCacheEntry(cacheEntry);
-            
-            cacheEntries = _cacheEntries;
+            _cache.Remove(itemToRemove.Key, out _);
         }
     }
 
@@ -139,25 +133,10 @@ public class DnsCache(
         return !cacheSettings.Enabled;
     }
 
-    private void RemoveCacheEntry(in CacheEntry entry)
-    {
-        ImmutableInterlocked.TryRemove(ref _cache, entry.Request, out _);
-        ImmutableInterlockedUtils.Remove(ref _cacheEntries, entry);
-    }
-
     private readonly record struct CacheEntry
     {
         public required DateTimeOffset ValidUntil { get; init; }
         public required IRequest Request { get; init; }
         public required IResponse Response { get; init; }
-    }
-
-    private class CacheEntryEqualityComparer : IComparer<CacheEntry>
-    {
-        public static CacheEntryEqualityComparer Instance { get; } = new();
-        public int Compare(CacheEntry x, CacheEntry y)
-        {
-            return x.ValidUntil.CompareTo(y.ValidUntil);
-        }
     }
 }
