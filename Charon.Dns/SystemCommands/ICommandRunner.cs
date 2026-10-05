@@ -13,4 +13,10 @@ public interface ICommandRunner
         IEnumerable<T> commands,
         CancellationToken token = default)
         where T : ICommand;
+
+    IAsyncEnumerable<string> ExecuteAndQuery<T>(
+        T command,
+        RequestTrace trace,
+        CancellationToken token = default)
+        where T : ICommand;
 }

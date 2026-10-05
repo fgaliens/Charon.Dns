@@ -11,6 +11,7 @@ namespace Charon.Dns;
 
 public class SmartDnsServer(
     ISmartRequestResolver smartRequestResolver,
+    IRequestInterceptor requestInterceptor,
     IResponseInterceptor responseInterceptor,
     ListeningSettings listeningSettings,
     DnsRecordsSettings dnsRecords,
@@ -50,6 +51,7 @@ public class SmartDnsServer(
             return Task.CompletedTask;
         }));
 
+        server.Subscribe(requestInterceptor);
         server.Subscribe(responseInterceptor);
 
         var listeningTasks = new List<Task>();
