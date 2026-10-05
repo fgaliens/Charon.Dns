@@ -62,7 +62,9 @@ namespace Charon.Dns.RequestResolving
                 if (shouldBeBlocked)
                 {
                     logger.Information("Dns request was blocked ({@Request})", request);
-                    return Response.FromRequest(request);
+                    var blockedResponse = Response.FromRequest(request);
+                    blockedResponse.ResponseCode = ResponseCode.NameError;
+                    return blockedResponse;
                 }
                 
                 if (shouldBeSecured)
