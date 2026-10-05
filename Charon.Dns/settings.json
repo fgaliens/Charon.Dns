@@ -64,6 +64,13 @@
     "Enabled": true,
     "TimeToLive": "00:05:00"
   },
+  "UserAccessControl": {
+    "Enabled": false,
+    "InactivityThreshold": "00:30:00",
+    "ControlledIps": [
+      "10.8.0.0/24"
+    ]
+  },
   "Routing": {
     "Period": "02:00:00",
     "BlockedHostNames": [
