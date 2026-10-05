@@ -1,3 +1,4 @@
+using Charon.Dns.AccessControl;
 using Charon.Dns.Jobs;
 using Charon.Dns.Lib.Tracing;
 using Charon.Dns.Net;
@@ -10,14 +11,16 @@ namespace Charon.Dns
     public class ServiceInitializer(
         ICommandRunner commandRunner,
         IJobRunner jobRunner,
+        IUserAccessControlManager accessControlManager,
         ListeningSettings listeningSettings,
         DnsChainSettings chainSettings)
     {
         public async Task Initialize()
         {
+            var index = 0;
+            
             foreach (var listeningSettingsItem in listeningSettings.Items)
             {
-                var index = 0;
                 if (!listeningSettingsItem.DebugOnly)
                 {
                     await commandRunner.Execute(new AddInterfaceForDnsCommand
@@ -44,6 +47,8 @@ namespace Charon.Dns
                 }, RequestTrace.Empty);
             }
             
+            await accessControlManager.RevertAllTaggedRules();
+
             jobRunner.Start();
         }
     }
