@@ -4,7 +4,6 @@ using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using Charon.Dns.AccessControl;
-using Charon.Dns.Lib.Tracing;
 using Charon.Dns.Settings;
 using Charon.Dns.SystemCommands;
 using Charon.Dns.SystemCommands.Implementations;
@@ -38,13 +37,13 @@ public class UserAccessControlManagerTest
             .SetupGet(x => x.UtcNow)
             .Returns(baseTime + DefaultInactivityThreshold * 1.5));
         services.SetupMockOf<ICommandRunner>(mock => mock
-            .Setup(x => x.Execute(It.IsAny<BlockClientRouteCommand>(), It.IsAny<RequestTrace>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.Execute(It.IsAny<BlockClientRouteCommand>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(true));
 
         await manager.EvaluateAndEnforce();
 
         services.GetMockOf<ICommandRunner>().Verify(
-            x => x.Execute(It.Is<BlockClientRouteCommand>(c => c.Ip.Equals(Ip)), It.IsAny<RequestTrace>(), It.IsAny<CancellationToken>()),
+            x => x.Execute(It.Is<BlockClientRouteCommand>(c => c.Ip.Equals(Ip)), It.IsAny<CancellationToken>()),
             Times.Once);
     }
 
@@ -61,14 +60,14 @@ public class UserAccessControlManagerTest
             .SetupGet(x => x.UtcNow)
             .Returns(baseTime + DefaultInactivityThreshold * 1.5));
         services.SetupMockOf<ICommandRunner>(mock => mock
-            .Setup(x => x.Execute(It.IsAny<BlockClientRouteCommand>(), It.IsAny<RequestTrace>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.Execute(It.IsAny<BlockClientRouteCommand>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(true));
 
         await manager.EvaluateAndEnforce();
         await manager.EvaluateAndEnforce();
 
         services.GetMockOf<ICommandRunner>().Verify(
-            x => x.Execute(It.IsAny<BlockClientRouteCommand>(), It.IsAny<RequestTrace>(), It.IsAny<CancellationToken>()),
+            x => x.Execute(It.IsAny<BlockClientRouteCommand>(), It.IsAny<CancellationToken>()),
             Times.Once);
     }
 
@@ -82,7 +81,7 @@ public class UserAccessControlManagerTest
         activityTracker.RecordActivity(Ip);
 
         services.SetupMockOf<ICommandRunner>(mock => mock
-            .Setup(x => x.Execute(It.IsAny<ICommand>(), It.IsAny<RequestTrace>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.Execute(It.IsAny<ICommand>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(true));
         services.SetupMockOf<IDateTimeProvider>(mock => mock
             .SetupGet(x => x.UtcNow)
@@ -98,7 +97,7 @@ public class UserAccessControlManagerTest
         await manager.EvaluateAndEnforce();
 
         services.GetMockOf<ICommandRunner>().Verify(
-            x => x.Execute(It.Is<UnblockClientRouteCommand>(c => c.Ip.Equals(Ip)), It.IsAny<RequestTrace>(), It.IsAny<CancellationToken>()),
+            x => x.Execute(It.Is<UnblockClientRouteCommand>(c => c.Ip.Equals(Ip)), It.IsAny<CancellationToken>()),
             Times.Once);
     }
 
@@ -115,14 +114,14 @@ public class UserAccessControlManagerTest
             .SetupGet(x => x.UtcNow)
             .Returns(baseTime + DefaultInactivityThreshold * 1.5));
         services.SetupMockOf<ICommandRunner>(mock => mock
-            .Setup(x => x.Execute(It.IsAny<BlockClientRouteCommand>(), It.IsAny<RequestTrace>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.Execute(It.IsAny<BlockClientRouteCommand>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(false));
 
         await manager.EvaluateAndEnforce();
         await manager.EvaluateAndEnforce();
 
         services.GetMockOf<ICommandRunner>().Verify(
-            x => x.Execute(It.IsAny<BlockClientRouteCommand>(), It.IsAny<RequestTrace>(), It.IsAny<CancellationToken>()),
+            x => x.Execute(It.IsAny<BlockClientRouteCommand>(), It.IsAny<CancellationToken>()),
             Times.Exactly(2));
     }
 
@@ -134,19 +133,19 @@ public class UserAccessControlManagerTest
 
         services.SetupMockOf<ICommandRunner>(mock =>
         {
-            mock.Setup(x => x.ExecuteAndQuery(It.IsAny<GetUfwStatusCommand>(), It.IsAny<RequestTrace>(), It.IsAny<CancellationToken>()))
+            mock.Setup(x => x.ExecuteAndQuery(It.IsAny<GetUfwStatusCommand>(), It.IsAny<CancellationToken>()))
                 .Returns(Lines(
                     "Status: active",
                     "[ 1] Anywhere on wg0        DENY FWD    10.8.0.2            # charon-dns-autoblock",
                     "[ 2] Anywhere on wg0        DENY FWD    10.8.0.3            # charon-dns-autoblock"));
-            mock.Setup(x => x.Execute(It.IsAny<UnblockClientRouteCommand>(), It.IsAny<RequestTrace>(), It.IsAny<CancellationToken>()))
+            mock.Setup(x => x.Execute(It.IsAny<UnblockClientRouteCommand>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(true);
         });
 
         await manager.RevertAllTaggedRules();
 
         services.GetMockOf<ICommandRunner>().Verify(
-            x => x.Execute(It.IsAny<UnblockClientRouteCommand>(), It.IsAny<RequestTrace>(), It.IsAny<CancellationToken>()),
+            x => x.Execute(It.IsAny<UnblockClientRouteCommand>(), It.IsAny<CancellationToken>()),
             Times.Exactly(2));
     }
 
@@ -157,7 +156,7 @@ public class UserAccessControlManagerTest
         var manager = services.GetRequiredService<IUserAccessControlManager>();
 
         services.SetupMockOf<ICommandRunner>(mock => mock
-            .Setup(x => x.ExecuteAndQuery(It.IsAny<GetUfwStatusCommand>(), It.IsAny<RequestTrace>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.ExecuteAndQuery(It.IsAny<GetUfwStatusCommand>(), It.IsAny<CancellationToken>()))
             .Returns(Lines("Status: inactive")));
 
         var act = async () => await manager.RevertAllTaggedRules();
@@ -172,7 +171,7 @@ public class UserAccessControlManagerTest
         var manager = services.GetRequiredService<IUserAccessControlManager>();
 
         services.SetupMockOf<ICommandRunner>(mock => mock
-            .Setup(x => x.ExecuteAndQuery(It.IsAny<GetUfwStatusCommand>(), It.IsAny<RequestTrace>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.ExecuteAndQuery(It.IsAny<GetUfwStatusCommand>(), It.IsAny<CancellationToken>()))
             .Returns(Lines("Status: inactive")));
 
         var act = async () => await manager.RevertAllTaggedRules();

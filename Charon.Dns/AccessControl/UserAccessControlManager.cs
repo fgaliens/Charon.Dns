@@ -1,6 +1,5 @@
 using System.Collections.Concurrent;
 using System.Net;
-using Charon.Dns.Lib.Tracing;
 using Charon.Dns.Settings;
 using Charon.Dns.SystemCommands;
 using Charon.Dns.SystemCommands.Implementations;
@@ -45,10 +44,8 @@ public class UserAccessControlManager(
 
     public async Task RevertAllTaggedRules()
     {
-        var trace = RequestTrace.Empty;
-
         var isUfwActive = await UfwStatusParser.IsActive(
-            commandRunner.ExecuteAndQuery(GetUfwStatusCommand.Instance, trace));
+            commandRunner.ExecuteAndQuery(GetUfwStatusCommand.Instance));
 
         if (!isUfwActive && settings.Enabled)
         {
@@ -60,13 +57,13 @@ public class UserAccessControlManager(
 
         try
         {
-            var lines = commandRunner.ExecuteAndQuery(GetUfwStatusCommand.Instance, trace);
+            var lines = commandRunner.ExecuteAndQuery(GetUfwStatusCommand.Instance);
             var blockedIps = UfwStatusParser.ExtractBlockedIps(lines, Constants.UserAccessControlComment);
 
             await foreach (var ip in blockedIps)
             {
                 count++;
-                await commandRunner.Execute(new UnblockClientRouteCommand { Ip = ip }, trace);
+                await commandRunner.Execute(new UnblockClientRouteCommand { Ip = ip });
             }
         }
         catch (Exception ex)
@@ -83,14 +80,13 @@ public class UserAccessControlManager(
 
     private async Task SetBlocked(IPAddress ip, bool shouldBlock)
     {
-        var trace = RequestTrace.Empty;
         logger.Information(
             "{Action} client {Ip} due to activity-based access control",
             shouldBlock ? "Blocking" : "Unblocking", ip);
 
         var success = shouldBlock
-            ? await commandRunner.Execute(new BlockClientRouteCommand { Ip = ip }, trace)
-            : await commandRunner.Execute(new UnblockClientRouteCommand { Ip = ip }, trace);
+            ? await commandRunner.Execute(new BlockClientRouteCommand { Ip = ip })
+            : await commandRunner.Execute(new UnblockClientRouteCommand { Ip = ip });
 
         if (success)
         {

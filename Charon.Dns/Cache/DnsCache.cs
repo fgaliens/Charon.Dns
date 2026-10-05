@@ -2,7 +2,6 @@ using System.Collections.Concurrent;
 using System.Diagnostics.CodeAnalysis;
 using Charon.Dns.Lib.Protocol;
 using Charon.Dns.Lib.Protocol.ResourceRecords;
-using Charon.Dns.Lib.Tracing;
 using Charon.Dns.Settings;
 using Charon.Dns.Utils;
 using Serilog;
@@ -12,27 +11,24 @@ namespace Charon.Dns.Cache;
 public class DnsCache(
     IDateTimeProvider dateTimeProvider,
     CacheSettings cacheSettings,
-    ILogger globalLogger) 
+    ILogger logger)
     : IDnsCache
 {
     private ConcurrentDictionary<IReadOnlyRequest, CacheEntry> _cache = new();
 
     public void AddResponse(
         IReadOnlyRequest request,
-        IReadOnlyResponse response,
-        RequestTrace trace)
+        IReadOnlyResponse response)
     {
         if (IsDisabled())
         {
             return;
         }
-        
+
         if (response.AnswerRecords.Count == 0)
         {
             return;
         }
-        
-        var logger = trace.Logger;
 
         var cacheTtl = response.AnswerRecords.Min(x => x.TimeToLive);
         cacheTtl = cacheTtl > TimeSpan.Zero ? cacheTtl : cacheSettings.TimeToLive;
@@ -53,11 +49,10 @@ public class DnsCache(
 
     public bool TryGetResponse(
         IReadOnlyRequest request,
-        RequestTrace trace,
         [NotNullWhen(true)] out IResponse? response)
     {
         response = null;
-        
+
         if (IsDisabled())
         {
             return false;
@@ -67,8 +62,7 @@ public class DnsCache(
         {
             return false;
         }
-        
-        var logger = trace.Logger;
+
         var cachedResponse = cachedResponseEntry.Response;
         var now = dateTimeProvider.UtcNow;
 

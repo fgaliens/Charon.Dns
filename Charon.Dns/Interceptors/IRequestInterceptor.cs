@@ -1,6 +1,6 @@
+using System.Net;
 using Charon.Dns.Lib.AsyncEvents;
 using Charon.Dns.Lib.Protocol;
-using Charon.Dns.Lib.Tracing;
 
 namespace Charon.Dns.Interceptors
 {
@@ -8,7 +8,7 @@ namespace Charon.Dns.Interceptors
     {
         Task Handle(
             IReadOnlyRequest request,
-            RequestTrace trace,
+            IPEndPoint remoteEndPoint,
             CancellationToken token = default);
     }
 }

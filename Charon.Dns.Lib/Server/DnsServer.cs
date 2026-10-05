@@ -11,6 +11,7 @@ using Charon.Dns.Lib.Protocol;
 using Charon.Dns.Lib.Tracing;
 using Charon.Dns.Utils.Units;
 using Serilog;
+using Serilog.Context;
 
 namespace Charon.Dns.Lib.Server
 {
@@ -60,6 +61,8 @@ namespace Charon.Dns.Lib.Server
             var requestId = requestCounter.Increment();
             var requestLogger = logger.ForContext("RequestId", requestId);
 
+            using var requestIdLogContext = LogContext.PushProperty("RequestId", requestId);
+
             var buffer = ArrayPool.Rent(MaxUdpRequestSize * 2);
             IPEndPoint? remote = null;
             RequestTrace? trace = null;
@@ -95,7 +98,6 @@ namespace Charon.Dns.Lib.Server
                 {
                     Request = request,
                     Response = response,
-                    Trace = trace,
                 });
 
                 requestLogger.Debug("Dns server: sending response to {Remote}", remote);

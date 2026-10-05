@@ -5,7 +5,7 @@ namespace Charon.Dns.Lib.Tracing;
 
 public record RequestTrace
 {
-    public static RequestTrace Empty { get; } = new RequestTrace
+    public static RequestTrace Empty { get; } = new()
     {
         Id = 0,
         RemoteEndPoint = new IPEndPoint(0, 0),

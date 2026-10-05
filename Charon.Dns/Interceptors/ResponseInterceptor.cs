@@ -2,7 +2,6 @@ using System.Diagnostics.CodeAnalysis;
 using Charon.Dns.Lib.AsyncEvents;
 using Charon.Dns.Lib.Protocol;
 using Charon.Dns.Lib.Protocol.ResourceRecords;
-using Charon.Dns.Lib.Tracing;
 using Charon.Dns.Net;
 using Charon.Dns.RequestResolving;
 using Charon.Dns.Routing;
@@ -13,17 +12,15 @@ namespace Charon.Dns.Interceptors;
 public class ResponseInterceptor(
     IHostNameAnalyzer hostNameAnalyzer,
     IRouteManager<IpV4Network> ipV4NetworkManager,
-    IRouteManager<IpV6Network> ipV6NetworkManager) 
+    IRouteManager<IpV6Network> ipV6NetworkManager,
+    ILogger logger)
     : IResponseInterceptor
 {
     public async Task Handle(
         IReadOnlyRequest request,
         IReadOnlyResponse response,
-        RequestTrace trace,
         CancellationToken token = default)
     {
-        var logger = trace.Logger;
-
         if (response.Truncated)
         {
             logger.Warning("Response {@Response} for request {@Request} has been truncated", response, request);
@@ -34,7 +31,6 @@ public class ResponseInterceptor(
 
         var shouldBeSecured = request.Questions.Any(x => hostNameAnalyzer.ShouldBeSecured(
             x.Name.ToString(),
-            trace,
             out connectionParams));
 
         if (!shouldBeSecured)
@@ -52,28 +48,28 @@ public class ResponseInterceptor(
         {
             if (answer.TryCastTo<CanonicalNameResourceRecord>(logger, RecordType.CNAME, out var canonicalNameRecord))
             { 
-                hostNameAnalyzer.AddSecuredDomainName(canonicalNameRecord.CanonicalDomainName.ToString(), connectionParams, trace);
+                hostNameAnalyzer.AddSecuredDomainName(canonicalNameRecord.CanonicalDomainName.ToString(), connectionParams);
             }
             else if (answer.TryCastTo<MailExchangeResourceRecord>(logger, RecordType.MX, out var mailExchangeRecord))
             { 
-                hostNameAnalyzer.AddSecuredDomainName(mailExchangeRecord.ExchangeDomainName.ToString(), connectionParams, trace);
+                hostNameAnalyzer.AddSecuredDomainName(mailExchangeRecord.ExchangeDomainName.ToString(), connectionParams);
             }
             else if (answer.TryCastTo<NameServerResourceRecord>(logger, RecordType.NS, out var nameServerRecord))
             { 
-                hostNameAnalyzer.AddSecuredDomainName(nameServerRecord.NSDomainName.ToString(), connectionParams, trace);
+                hostNameAnalyzer.AddSecuredDomainName(nameServerRecord.NSDomainName.ToString(), connectionParams);
             }
             else if (answer.TryCastTo<PointerResourceRecord>(logger, RecordType.PTR, out var pointerRecord))
             { 
-                hostNameAnalyzer.AddSecuredDomainName(pointerRecord.PointerDomainName.ToString(), connectionParams, trace);
+                hostNameAnalyzer.AddSecuredDomainName(pointerRecord.PointerDomainName.ToString(), connectionParams);
             }
             else if (answer.TryCastTo<ServiceResourceRecord>(logger, RecordType.SRV, out var serviceRecord))
             { 
-                hostNameAnalyzer.AddSecuredDomainName(serviceRecord.Target.ToString(), connectionParams, trace);
+                hostNameAnalyzer.AddSecuredDomainName(serviceRecord.Target.ToString(), connectionParams);
             }
             else if (answer.TryCastTo<StartOfAuthorityResourceRecord>(logger, RecordType.SOA, out var startOfAuthorityRecord))
             { 
-                hostNameAnalyzer.AddSecuredDomainName(startOfAuthorityRecord.MasterDomainName.ToString(), connectionParams, trace);
-                hostNameAnalyzer.AddSecuredDomainName(startOfAuthorityRecord.ResponsibleDomainName.ToString(), connectionParams, trace);
+                hostNameAnalyzer.AddSecuredDomainName(startOfAuthorityRecord.MasterDomainName.ToString(), connectionParams);
+                hostNameAnalyzer.AddSecuredDomainName(startOfAuthorityRecord.ResponsibleDomainName.ToString(), connectionParams);
             }
         }
 
@@ -85,8 +81,7 @@ public class ResponseInterceptor(
                 var ipV4Network = new IpV4Network(answer.Data, connectionParams!.IpV4RoutingSubnet);
                 var addRouteTask = ipV4NetworkManager.AddRoute(
                     ipV4Network,
-                    connectionParams.InterfaceName,
-                    trace);
+                    connectionParams.InterfaceName);
                 addRouteTasks.Add(addRouteTask);
             }
             else if (answer.Type is RecordType.AAAA)
@@ -94,8 +89,7 @@ public class ResponseInterceptor(
                 var ipV6Network = new IpV6Network(answer.Data, connectionParams!.IpV6RoutingSubnet);
                 var addRouteTask = ipV6NetworkManager.AddRoute(
                     ipV6Network,
-                    connectionParams.InterfaceName,
-                    trace);
+                    connectionParams.InterfaceName);
                 addRouteTasks.Add(addRouteTask);
             }
         }
@@ -105,7 +99,7 @@ public class ResponseInterceptor(
 
     async Task IAsyncObserver<OnResponseEventArgs>.OnEvent(OnResponseEventArgs eventArgs)
     {
-        await Handle(eventArgs.Request, eventArgs.Response, eventArgs.Trace);
+        await Handle(eventArgs.Request, eventArgs.Response);
     }
 
     Task IAsyncObserver<OnResponseEventArgs>.OnCompleted()

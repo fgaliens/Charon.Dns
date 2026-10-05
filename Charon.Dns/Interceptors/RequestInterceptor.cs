@@ -1,7 +1,7 @@
+using System.Net;
 using Charon.Dns.AccessControl;
 using Charon.Dns.Lib.AsyncEvents;
 using Charon.Dns.Lib.Protocol;
-using Charon.Dns.Lib.Tracing;
 using Charon.Dns.Settings;
 
 namespace Charon.Dns.Interceptors;
@@ -13,7 +13,7 @@ public class RequestInterceptor(
 {
     public Task Handle(
         IReadOnlyRequest request,
-        RequestTrace trace,
+        IPEndPoint remoteEndPoint,
         CancellationToken token = default)
     {
         if (!settings.Enabled)
@@ -21,7 +21,7 @@ public class RequestInterceptor(
             return Task.CompletedTask;
         }
 
-        var remoteIp = trace.RemoteEndPoint.Address;
+        var remoteIp = remoteEndPoint.Address;
         if (settings.ControlledIps.Any(network => network.Contains(remoteIp)))
         {
             activityTracker.RecordActivity(remoteIp);
@@ -32,7 +32,7 @@ public class RequestInterceptor(
 
     async Task IAsyncObserver<OnRequestEventArgs>.OnEvent(OnRequestEventArgs eventArgs)
     {
-        await Handle(eventArgs.Request, eventArgs.Trace);
+        await Handle(eventArgs.Request, eventArgs.Trace.RemoteEndPoint);
     }
 
     Task IAsyncObserver<OnRequestEventArgs>.OnCompleted()

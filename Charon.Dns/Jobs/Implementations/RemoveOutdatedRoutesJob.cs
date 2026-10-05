@@ -1,5 +1,4 @@
 using System.Net;
-using Charon.Dns.Lib.Tracing;
 using Charon.Dns.Net;
 using Charon.Dns.Routing;
 using Charon.Dns.Settings;
@@ -26,7 +25,7 @@ public class RemoveOutdatedRoutesJob(
             using var routeToUntrack = await ipV4NetworkUsageTracker.FindNextRouteToUntrack();
             if (routeToUntrack.Found)
             {
-                await ipV4NetworkManager.RemoveRoute(routeToUntrack, RequestTrace.Empty);
+                await ipV4NetworkManager.RemoveRoute(routeToUntrack);
             }
             ipV4RouteFound = routeToUntrack.Found;
         }
@@ -37,7 +36,7 @@ public class RemoveOutdatedRoutesJob(
             using var routeToUntrack = await ipV6NetworkUsageTracker.FindNextRouteToUntrack();
             if (routeToUntrack.Found)
             {
-                await ipV6NetworkManager.RemoveRoute(routeToUntrack, RequestTrace.Empty);
+                await ipV6NetworkManager.RemoveRoute(routeToUntrack);
             }
             ipV6RouteFound = routeToUntrack.Found;
         }
