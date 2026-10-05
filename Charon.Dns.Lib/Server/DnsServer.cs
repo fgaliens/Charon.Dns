@@ -1,7 +1,6 @@
-﻿#nullable enable
+#nullable enable
 using System;
 using System.Buffers;
-using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
@@ -18,7 +17,6 @@ namespace Charon.Dns.Lib.Server
     public class DnsServer(
         IRequestResolver resolver,
         IRequestCounter requestCounter,
-        int parallelizationFactor,
         ByteUnit socketBufferSize,
         ILogger logger)
             : IAsyncObservable<OnRequestEventArgs>,
@@ -37,29 +35,15 @@ namespace Charon.Dns.Lib.Server
 
         public async Task Listen(IPEndPoint endpoint, bool enableIpV6, CancellationToken cancellationToken = default)
         {
-            var tasks = new List<Task>(parallelizationFactor);
-            for (int i = 0; i < parallelizationFactor; i++)
+            var addressFamily = enableIpV6 ? AddressFamily.InterNetworkV6 : AddressFamily.InterNetwork;
+            using var socket = new Socket(addressFamily, SocketType.Dgram, ProtocolType.Udp);
+            socket.ReceiveBufferSize = socketBufferSize.Bytes;
+            socket.Bind(endpoint);
+
+            while (!cancellationToken.IsCancellationRequested)
             {
-                int socketIndex = i;
-                var task = Task.Run(async () =>
-                {
-                    var addressFamily = enableIpV6 ? AddressFamily.InterNetworkV6 : AddressFamily.InterNetwork;
-                    using var socket = new Socket(addressFamily, SocketType.Dgram, ProtocolType.Udp);
-                    socket.ReceiveBufferSize = socketBufferSize.Bytes;
-                    socket.ExclusiveAddressUse = false;
-                    socket.Bind(endpoint);
-
-                    while (!cancellationToken.IsCancellationRequested)
-                    {
-                        var buffer = ArrayPool.Rent(MaxUdpRequestSize * 2);
-                        var requestInfo = await socket.ReceiveFromAsync(buffer, endpoint, cancellationToken);
-                        await HandleRequest(socket, socketIndex, buffer, requestInfo, cancellationToken);
-                    }
-                }, cancellationToken);
-                tasks.Add(task);
+                await HandleRequest(socket, endpoint, cancellationToken);
             }
-
-            await Task.WhenAll(tasks);
         }
 
         private async Task OnError(Exception e, RequestTrace? trace)
@@ -71,32 +55,30 @@ namespace Charon.Dns.Lib.Server
             });
         }
 
-        private async Task HandleRequest(
-            Socket socket,
-            int socketIndex,
-            byte[] buffer,
-            SocketReceiveFromResult dataInfo,
-            CancellationToken cancellationToken)
+        private async Task HandleRequest(Socket socket, IPEndPoint endpoint, CancellationToken cancellationToken)
         {
             var requestId = requestCounter.Increment();
-
             var requestLogger = logger.ForContext("RequestId", requestId);
-            
-            var message = buffer[..dataInfo.ReceivedBytes];
-            var remote = (IPEndPoint)dataInfo.RemoteEndPoint;
-            var trace = new RequestTrace
-            {
-                Id = requestId,
-                RemoteEndPoint = remote,
-                Logger = requestLogger,
-            };
-            
-            requestLogger.Debug("Dns server (socket #{SocketIndex}): handling request from {Remote}", socketIndex, remote);
 
+            var buffer = ArrayPool.Rent(MaxUdpRequestSize * 2);
+            IPEndPoint? remote = null;
+            RequestTrace? trace = null;
             Request? request = null;
 
             try
             {
+                var requestInfo = await socket.ReceiveFromAsync(buffer, endpoint, cancellationToken);
+                var message = buffer[..requestInfo.ReceivedBytes];
+                remote = (IPEndPoint)requestInfo.RemoteEndPoint;
+                trace = new RequestTrace
+                {
+                    Id = requestId,
+                    RemoteEndPoint = remote,
+                    Logger = requestLogger,
+                };
+
+                requestLogger.Debug("Dns server: handling request from {Remote}", remote);
+
                 request = Request.FromArray(message);
 
                 await _requestEventObservable.SendEvent(new OnRequestEventArgs
@@ -107,25 +89,25 @@ namespace Charon.Dns.Lib.Server
 
                 IResponse response = await resolver.Resolve(request, trace, cancellationToken);
 
-                requestLogger.Debug("Dns server (socket #{SocketIndex}): got response from resolver", socketIndex);
-                    
+                requestLogger.Debug("Dns server: got response from resolver");
+
                 await _responseEventObservable.SendEvent(new OnResponseEventArgs
                 {
                     Request = request,
                     Response = response,
                     Trace = trace,
                 });
-                
-                requestLogger.Debug("Dns server (socket #{SocketIndex}): sending response to {Remote}", socketIndex, remote);
+
+                requestLogger.Debug("Dns server: sending response to {Remote}", remote);
 
                 await socket.SendToAsync(response.ToArray(), SocketFlags.None, remote, cancellationToken);
-                
-                requestLogger.Debug("Dns server (socket #{SocketIndex}): response sent to {Remote}", socketIndex, remote);
+
+                requestLogger.Debug("Dns server: response sent to {Remote}", remote);
             }
-            catch (Exception e)
+            catch (Exception e) when (remote != null)
             {
-                requestLogger.Error(e, "Dns server error (socket #{SocketIndex})", socketIndex);
-                
+                requestLogger.Error(e, "Dns server error");
+
                 await OnError(e, trace);
 
                 try
@@ -137,8 +119,8 @@ namespace Charon.Dns.Lib.Server
                 catch (Exception sendErrorException)
                 {
                     var aggregatedException = new AggregateException(e, sendErrorException);
-                    requestLogger.Fatal(aggregatedException, "Dns server fatal error. Unable to send response (socket #{SocketIndex})", socketIndex);
-                    
+                    requestLogger.Fatal(aggregatedException, "Dns server fatal error. Unable to send response");
+
                     await OnError(sendErrorException, trace);
                 }
             }
@@ -158,8 +140,8 @@ namespace Charon.Dns.Lib.Server
             }
 
             public async Task<IResponse> Resolve(
-                IRequest request, 
-                RequestTrace trace, 
+                IRequest request,
+                RequestTrace trace,
                 CancellationToken cancellationToken = default)
             {
                 IResponse? response = null;

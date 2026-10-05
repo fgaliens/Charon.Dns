@@ -7,12 +7,12 @@ namespace Charon.Dns.Cache;
 public interface IDnsCache
 {
     void AddResponse(
-        IRequest request, 
-        IResponse response, 
+        IReadOnlyRequest request,
+        IReadOnlyResponse response,
         RequestTrace trace);
     bool TryGetResponse(
-        IRequest request, 
-        RequestTrace trace, 
+        IReadOnlyRequest request,
+        RequestTrace trace,
         [NotNullWhen(true)] out IResponse? response);
     void RemoveOutdatedResponses();
 }
