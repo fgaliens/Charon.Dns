@@ -7,7 +7,6 @@ namespace Charon.Dns.Settings;
 
 public record ListeningSettings : ISettings<ListeningSettings>
 {
-    public required int MaxParallelRequestCount { get; init; }
     public required ByteUnit SocketBufferSize { get; init; }
     public required IReadOnlyCollection<ListeningRecord> Items { get; init; }
 
@@ -22,9 +21,6 @@ public record ListeningSettings : ISettings<ListeningSettings>
     public static ListeningSettings Initialize(IConfiguration config)
     {
         var serverSection = config.GetSection("Server");
-        var maxParallelRequestCount = serverSection
-            .GetSectionValue("MaxParallelRequestCount", 8)
-            .RestrictNotLessThen(1);
         var socketBufferSize = serverSection
             .GetSectionValue("SocketBufferSize", new ByteUnit(1024 * 1024));
         var listeningParams = serverSection
@@ -41,7 +37,6 @@ public record ListeningSettings : ISettings<ListeningSettings>
 
         return new ListeningSettings
         {
-            MaxParallelRequestCount = maxParallelRequestCount,
             SocketBufferSize = socketBufferSize,
             Items = listeningParams,
         };

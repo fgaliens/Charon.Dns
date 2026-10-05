@@ -40,9 +40,8 @@ public class SmartDnsServer(
             smartRequestResolver);
         
         var server = new DnsServer(
-            requestResolvers, 
-            RequestCounter, 
-            listeningSettings.MaxParallelRequestCount, 
+            requestResolvers,
+            RequestCounter,
             listeningSettings.SocketBufferSize,
             logger);
         server.Subscribe(AsyncObserver.Create<OnExceptionEventArgs>(eventArgs =>

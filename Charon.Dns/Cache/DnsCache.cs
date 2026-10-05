@@ -15,11 +15,11 @@ public class DnsCache(
     ILogger globalLogger) 
     : IDnsCache
 {
-    private ConcurrentDictionary<IRequest, CacheEntry> _cache = new();
-    
+    private ConcurrentDictionary<IReadOnlyRequest, CacheEntry> _cache = new();
+
     public void AddResponse(
-        IRequest request, 
-        IResponse response, 
+        IReadOnlyRequest request,
+        IReadOnlyResponse response,
         RequestTrace trace)
     {
         if (IsDisabled())
@@ -52,7 +52,7 @@ public class DnsCache(
     }
 
     public bool TryGetResponse(
-        IRequest request, 
+        IReadOnlyRequest request,
         RequestTrace trace,
         [NotNullWhen(true)] out IResponse? response)
     {
@@ -136,7 +136,7 @@ public class DnsCache(
     private readonly record struct CacheEntry
     {
         public required DateTimeOffset ValidUntil { get; init; }
-        public required IRequest Request { get; init; }
-        public required IResponse Response { get; init; }
+        public required IReadOnlyRequest Request { get; init; }
+        public required IReadOnlyResponse Response { get; init; }
     }
 }

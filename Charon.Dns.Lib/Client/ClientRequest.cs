@@ -50,6 +50,9 @@ namespace Charon.Dns.Lib.Client
             get { return _request.Questions; }
         }
 
+        IReadOnlyList<Question> IReadOnlyRequest.Questions => (IReadOnlyList<Question>)_request.Questions;
+        IReadOnlyList<IResourceRecord> IReadOnlyRequest.AdditionalRecords => (IReadOnlyList<IResourceRecord>)_request.AdditionalRecords;
+
         public int Size
         {
             get { return _request.Size; }

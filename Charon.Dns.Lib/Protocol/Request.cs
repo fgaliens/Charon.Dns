@@ -72,6 +72,9 @@ namespace Charon.Dns.Lib.Protocol
             get { return _additional; }
         }
 
+        IReadOnlyList<Question> IReadOnlyRequest.Questions => (IReadOnlyList<Question>)_questions;
+        IReadOnlyList<IResourceRecord> IReadOnlyRequest.AdditionalRecords => (IReadOnlyList<IResourceRecord>)_additional;
+
         public int Size
         {
             get
