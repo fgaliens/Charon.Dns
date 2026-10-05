@@ -1,6 +1,7 @@
 #nullable enable
 using System;
 using System.Buffers;
+using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
@@ -18,6 +19,7 @@ namespace Charon.Dns.Lib.Server
     public class DnsServer(
         IRequestResolver resolver,
         IRequestCounter requestCounter,
+        int parallelizationFactor,
         ByteUnit socketBufferSize,
         ILogger logger)
             : IAsyncObservable<OnRequestEventArgs>,
@@ -36,15 +38,26 @@ namespace Charon.Dns.Lib.Server
 
         public async Task Listen(IPEndPoint endpoint, bool enableIpV6, CancellationToken cancellationToken = default)
         {
-            var addressFamily = enableIpV6 ? AddressFamily.InterNetworkV6 : AddressFamily.InterNetwork;
-            using var socket = new Socket(addressFamily, SocketType.Dgram, ProtocolType.Udp);
-            socket.ReceiveBufferSize = socketBufferSize.Bytes;
-            socket.Bind(endpoint);
-
-            while (!cancellationToken.IsCancellationRequested)
+            var tasks = new List<Task>(parallelizationFactor);
+            for (var i = 0; i < parallelizationFactor; i++)
             {
-                await HandleRequest(socket, endpoint, cancellationToken);
+                var task = Task.Run(async () =>
+                {
+                    var addressFamily = enableIpV6 ? AddressFamily.InterNetworkV6 : AddressFamily.InterNetwork;
+                    using var socket = new Socket(addressFamily, SocketType.Dgram, ProtocolType.Udp);
+                    socket.ReceiveBufferSize = socketBufferSize.Bytes;
+                    socket.ExclusiveAddressUse = false;
+                    socket.Bind(endpoint);
+
+                    while (!cancellationToken.IsCancellationRequested)
+                    {
+                        await HandleRequest(socket, endpoint, cancellationToken);
+                    }
+                }, cancellationToken);
+                tasks.Add(task);
             }
+
+            await Task.WhenAll(tasks);
         }
 
         private async Task OnError(Exception e, RequestTrace? trace)
