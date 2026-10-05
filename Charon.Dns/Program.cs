@@ -1,4 +1,5 @@
 ﻿using System.Runtime.CompilerServices;
+using Charon.Dns.AccessControl;
 using Charon.Dns.Cache;
 using Charon.Dns.Extensions;
 using Charon.Dns.Interceptors;
@@ -69,16 +70,20 @@ static class Program
                 .AddRequestResolving()
                 .AddSingleton<ICommandRunner, CommandRunner>()
                 .AddSingleton<IResponseInterceptor, ResponseInterceptor>()
+                .AddSingleton<IRequestInterceptor, RequestInterceptor>()
                 .AddRouteManagement()
+                .AddUserAccessControl()
                 .AddJobs(cfg => cfg
                     .AddJob<RemoveOutdatedRoutesJob>()
-                    .AddJob<RemoveOutdatedCacheEntriesJob>())
+                    .AddJob<RemoveOutdatedCacheEntriesJob>()
+                    .AddJob<EnforceUserAccessControlJob>())
                 .AddSingleton<IConfiguration>(config)
                 .AddSettings<ListeningSettings>()
                 .AddSettings<DnsRecordsSettings>()
                 .AddSettings<DnsChainSettings>()
                 .AddSettings<RoutingSettings>()
                 .AddSettings<CacheSettings>()
+                .AddSettings<UserAccessControlSettings>()
                 .AddSingleton<IDateTimeProvider, DateTimeProvider>()
                 .AddSingleton<ILogger>(logger)
                 .BuildServiceProvider();
