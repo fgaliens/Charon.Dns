@@ -1,6 +1,5 @@
 using Charon.Dns.Lib.AsyncEvents;
 using Charon.Dns.Lib.Protocol;
-using Charon.Dns.Lib.Tracing;
 
 namespace Charon.Dns.Interceptors
 {
@@ -9,7 +8,6 @@ namespace Charon.Dns.Interceptors
         Task Handle(
             IReadOnlyRequest request,
             IReadOnlyResponse response,
-            RequestTrace trace,
             CancellationToken token = default);
     }
 

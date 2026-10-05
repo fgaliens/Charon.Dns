@@ -1,14 +1,11 @@
-using Charon.Dns.Lib.Tracing;
-
 namespace Charon.Dns.SystemCommands;
 
 public interface ICommandRunner
 {
     Task<bool> Execute<T>(T command,
-        RequestTrace trace,
         CancellationToken token = default)
         where T : ICommand;
-    
+
     Task<bool> ExecuteBatch<T>(
         IEnumerable<T> commands,
         CancellationToken token = default)
@@ -16,7 +13,6 @@ public interface ICommandRunner
 
     IAsyncEnumerable<string> ExecuteAndQuery<T>(
         T command,
-        RequestTrace trace,
         CancellationToken token = default)
         where T : ICommand;
 }

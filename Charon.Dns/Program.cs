@@ -43,6 +43,7 @@ static class Program
 
         await using var logger = new LoggerConfiguration()
             .MinimumLevel.Is(LogEventLevel.Debug)
+            .Enrich.FromLogContext()
             .Destructure.With(new LoggingDestructuringPolicies())
             .WriteTo.Console(
                 outputTemplate: "[{Timestamp:HH:mm:ss.fff}][{Level:u3}][#{RequestId}] {Message:lj}{NewLine}{Exception}",

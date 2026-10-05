@@ -17,13 +17,13 @@ namespace Charon.Dns.RequestResolving
             RequestTrace trace,
             CancellationToken cancellationToken = default)
         {
-            if (dnsCache.TryGetResponse(request, trace, out var cachedResponse))
+            if (dnsCache.TryGetResponse(request, out var cachedResponse))
             {
                 return cachedResponse;
             }
-            
+
             var response = await ResolveInternal(request, trace, cancellationToken);
-            dnsCache.AddResponse(request, response, trace);
+            dnsCache.AddResponse(request, response);
             
             trace.Logger.Debug("Got response {@Response}", response);
             
@@ -46,13 +46,13 @@ namespace Charon.Dns.RequestResolving
                 {
                     var hostName = question.Name.ToString();
                     
-                    if (hostNameAnalyzer.ShouldBeBlocked(hostName, trace))
+                    if (hostNameAnalyzer.ShouldBeBlocked(hostName))
                     {
                         shouldBeBlocked = true;
                         break;
                     }
-                    
-                    if (hostNameAnalyzer.ShouldBeSecured(hostName, trace))
+
+                    if (hostNameAnalyzer.ShouldBeSecured(hostName))
                     {
                         shouldBeSecured = true;
                         break;

@@ -1,7 +1,4 @@
 using System;
-using System.Net;
-using AutoFixture;
-using Charon.Dns.Lib.Tracing;
 using Charon.Dns.RequestResolving;
 using Charon.Dns.Settings;
 using FluentAssertions;
@@ -15,8 +12,6 @@ namespace Charon.Dns.Tests.RequestResolving;
 [TestSubject(typeof(HostNameAnalyzer))]
 public class HostNameAnalyzerTest
 {
-    private readonly Fixture _fixture = new();
-    
     [Theory]
     [InlineData("instagram.com")]
     [InlineData("Instagram.Com")]
@@ -44,23 +39,16 @@ public class HostNameAnalyzerTest
         };
 
         var loggerMock = Mock.Of<ILogger>();
-        var trace = new RequestTrace
-        {
-            Id = _fixture.Create<ulong>(),
-            RemoteEndPoint = _fixture.Create<IPEndPoint>(),
-            Logger = loggerMock,
-        };
-
         var analyzer = new HostNameAnalyzer(settings, loggerMock);
-        
+
         // Act
-        var result = analyzer.ShouldBeSecured(hostName, trace, out var connectionParams);
-        
+        var result = analyzer.ShouldBeSecured(hostName, out var connectionParams);
+
         // Assert
         result.Should().BeTrue();
         connectionParams.Should().NotBeNull();
     }
-    
+
     [Theory]
     [InlineData("instagram.com")]
     [InlineData("cdninstagram.com")]
@@ -87,23 +75,16 @@ public class HostNameAnalyzerTest
         };
 
         var loggerMock = Mock.Of<ILogger>();
-        var trace = new RequestTrace
-        {
-            Id = _fixture.Create<ulong>(),
-            RemoteEndPoint = _fixture.Create<IPEndPoint>(),
-            Logger = loggerMock,
-        };
-        
         var analyzer = new HostNameAnalyzer(settings, loggerMock);
-        
+
         // Act
-        var result = analyzer.ShouldBeSecured(hostName, trace, out var connectionParams);
-        
+        var result = analyzer.ShouldBeSecured(hostName, out var connectionParams);
+
         // Assert
         result.Should().BeFalse();
         connectionParams.Should().BeNull();
     }
-    
+
     [Theory]
     [InlineData("instagram.com")]
     [InlineData("Instagram.Com")]
@@ -131,23 +112,16 @@ public class HostNameAnalyzerTest
         };
 
         var loggerMock = Mock.Of<ILogger>();
-        var trace = new RequestTrace
-        {
-            Id = _fixture.Create<ulong>(),
-            RemoteEndPoint = _fixture.Create<IPEndPoint>(),
-            Logger = loggerMock,
-        };
-        
         var analyzer = new HostNameAnalyzer(settings, loggerMock);
-        
+
         // Act
-        var result = analyzer.ShouldBeSecured(hostName, trace, out var connectionParams);
-        
+        var result = analyzer.ShouldBeSecured(hostName, out var connectionParams);
+
         // Assert
         result.Should().BeTrue();
         connectionParams.Should().NotBeNull();
     }
-    
+
     [Theory]
     [InlineData("instagra2.com")]
     [InlineData("example.instagra2.com")]
@@ -174,23 +148,16 @@ public class HostNameAnalyzerTest
         };
 
         var loggerMock = Mock.Of<ILogger>();
-        var trace = new RequestTrace
-        {
-            Id = _fixture.Create<ulong>(),
-            RemoteEndPoint = _fixture.Create<IPEndPoint>(),
-            Logger = loggerMock,
-        };
-        
         var analyzer = new HostNameAnalyzer(settings, loggerMock);
-        
+
         // Act
-        var result = analyzer.ShouldBeSecured(hostName, trace, out var connectionParams);
-        
+        var result = analyzer.ShouldBeSecured(hostName, out var connectionParams);
+
         // Assert
         result.Should().BeFalse();
         connectionParams.Should().BeNull();
     }
-    
+
     [Theory]
     [InlineData("adv.instagram.com")]
     [InlineData("adv.Instagram.Com")]
@@ -212,29 +179,22 @@ public class HostNameAnalyzerTest
                     MatchedBySubstringHostNames = []
                 }
             ],
-            BlockedHostNames = 
+            BlockedHostNames =
             [
                 "adv.instagram.com",
             ],
         };
 
         var loggerMock = Mock.Of<ILogger>();
-        var trace = new RequestTrace
-        {
-            Id = _fixture.Create<ulong>(),
-            RemoteEndPoint = _fixture.Create<IPEndPoint>(),
-            Logger = loggerMock,
-        };
-        
         var analyzer = new HostNameAnalyzer(settings, loggerMock);
-        
+
         // Act
-        var result = analyzer.ShouldBeBlocked(hostName, trace);
-        
+        var result = analyzer.ShouldBeBlocked(hostName);
+
         // Assert
         result.Should().BeTrue();
     }
-    
+
     [Theory]
     [InlineData("instagram.com")]
     [InlineData("mail.instagram.com")]
@@ -257,25 +217,18 @@ public class HostNameAnalyzerTest
                     MatchedBySubstringHostNames = []
                 }
             ],
-            BlockedHostNames = 
+            BlockedHostNames =
             [
                 "adv.instagram.com",
             ],
         };
 
         var loggerMock = Mock.Of<ILogger>();
-        var trace = new RequestTrace
-        {
-            Id = _fixture.Create<ulong>(),
-            RemoteEndPoint = _fixture.Create<IPEndPoint>(),
-            Logger = loggerMock,
-        };
-        
         var analyzer = new HostNameAnalyzer(settings, loggerMock);
-        
+
         // Act
-        var result = analyzer.ShouldBeBlocked(hostName, trace);
-        
+        var result = analyzer.ShouldBeBlocked(hostName);
+
         // Assert
         result.Should().BeFalse();
     }
