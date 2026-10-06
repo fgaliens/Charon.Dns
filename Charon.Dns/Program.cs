@@ -21,6 +21,7 @@ using Serilog.Sinks.SystemConsole.Themes;
 
 [assembly: InternalsVisibleTo("Charon.Dns.Tests")]
 [assembly: InternalsVisibleTo("Charon.Dns.EndToEndTests")]
+[assembly: AssemblyInformationalVersion("1.6.2")]
 
 namespace Charon.Dns;
 
