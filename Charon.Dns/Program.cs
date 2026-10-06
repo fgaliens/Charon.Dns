@@ -19,9 +19,9 @@ using Serilog;
 using Serilog.Events;
 using Serilog.Sinks.SystemConsole.Themes;
 
+[assembly: AssemblyInformationalVersion("1.6.2")]
 [assembly: InternalsVisibleTo("Charon.Dns.Tests")]
 [assembly: InternalsVisibleTo("Charon.Dns.EndToEndTests")]
-[assembly: AssemblyInformationalVersion("1.6.2")]
 
 namespace Charon.Dns;
 
@@ -31,7 +31,7 @@ static class Program
         .GetCustomAttribute<AssemblyInformationalVersionAttribute>()!
         .InformationalVersion;
 
-    public async static Task Main(string[] args)
+    public static async Task Main(string[] args)
     {
         if (IsVersionRequested(args))
         {
