@@ -21,7 +21,12 @@ public class UserAccessControlSettings : ISettings<UserAccessControlSettings>
             .GetSection("ControlledIps")
             .GetChildren()
             .Select(x => x.GetSectionValue<IPNetwork>())
+            .DefaultIfEmpty(new IPNetwork(IPAddress.Any, 0))
             .ToArray();
+        
+#if DEBUG
+        inactivityThreshold = TimeSpan.FromMinutes(1);
+#endif
 
         return new()
         {

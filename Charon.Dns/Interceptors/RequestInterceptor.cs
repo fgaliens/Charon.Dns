@@ -7,27 +7,25 @@ using Charon.Dns.Settings;
 namespace Charon.Dns.Interceptors;
 
 public class RequestInterceptor(
-    IClientActivityTracker activityTracker,
+    IUserAccessControlManager userAccessControlManager,
     UserAccessControlSettings settings)
     : IRequestInterceptor
 {
-    public Task Handle(
+    public async Task Handle(
         IReadOnlyRequest request,
         IPEndPoint remoteEndPoint,
         CancellationToken token = default)
     {
         if (!settings.Enabled)
         {
-            return Task.CompletedTask;
+            return;
         }
 
         var remoteIp = remoteEndPoint.Address;
         if (settings.ControlledIps.Any(network => network.Contains(remoteIp)))
         {
-            activityTracker.RecordActivity(remoteIp);
+            await userAccessControlManager.UnblockUser(remoteIp);
         }
-
-        return Task.CompletedTask;
     }
 
     async Task IAsyncObserver<OnRequestEventArgs>.OnEvent(OnRequestEventArgs eventArgs)

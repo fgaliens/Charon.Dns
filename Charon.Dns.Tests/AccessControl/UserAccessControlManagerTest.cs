@@ -4,6 +4,7 @@ using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using Charon.Dns.AccessControl;
+using Charon.Dns.Extensions;
 using Charon.Dns.Settings;
 using Charon.Dns.SystemCommands;
 using Charon.Dns.SystemCommands.Implementations;
@@ -23,6 +24,7 @@ public class UserAccessControlManagerTest
 {
     private static readonly TimeSpan DefaultInactivityThreshold = TimeSpan.FromMinutes(30);
     private static readonly IPAddress Ip = IPAddress.Parse("10.8.0.2");
+    private static readonly IPNetwork IpNetwork = Ip.ToIPNetwork();
 
     [Fact]
     public async Task EvaluateAndEnforce_BlocksClient_WhenInactiveLongerThanThreshold()
@@ -30,20 +32,20 @@ public class UserAccessControlManagerTest
         var baseTime = DateTimeOffset.UtcNow;
         var services = GetServiceProvider(mock => mock.SetupGet(x => x.UtcNow).Returns(baseTime));
         var manager = services.GetRequiredService<IUserAccessControlManager>();
-        var activityTracker = services.GetRequiredService<IClientActivityTracker>();
-        activityTracker.RecordActivity(Ip);
+        services.SetupMockOf<ICommandRunner>(mock => mock
+            .Setup(x => x.Execute(It.IsAny<ICommand>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true));
+
+        await manager.UnblockUser(Ip);
 
         services.SetupMockOf<IDateTimeProvider>(mock => mock
             .SetupGet(x => x.UtcNow)
             .Returns(baseTime + DefaultInactivityThreshold * 1.5));
-        services.SetupMockOf<ICommandRunner>(mock => mock
-            .Setup(x => x.Execute(It.IsAny<BlockClientRouteCommand>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(true));
 
         await manager.EvaluateAndEnforce();
 
         services.GetMockOf<ICommandRunner>().Verify(
-            x => x.Execute(It.Is<BlockClientRouteCommand>(c => c.Ip.Equals(Ip)), It.IsAny<CancellationToken>()),
+            x => x.Execute(It.Is<RevokeClientRouteCommand>(c => c.Ip.Equals(IpNetwork)), It.IsAny<CancellationToken>()),
             Times.Once);
     }
 
@@ -53,21 +55,21 @@ public class UserAccessControlManagerTest
         var baseTime = DateTimeOffset.UtcNow;
         var services = GetServiceProvider(mock => mock.SetupGet(x => x.UtcNow).Returns(baseTime));
         var manager = services.GetRequiredService<IUserAccessControlManager>();
-        var activityTracker = services.GetRequiredService<IClientActivityTracker>();
-        activityTracker.RecordActivity(Ip);
+        services.SetupMockOf<ICommandRunner>(mock => mock
+            .Setup(x => x.Execute(It.IsAny<ICommand>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true));
+
+        await manager.UnblockUser(Ip);
 
         services.SetupMockOf<IDateTimeProvider>(mock => mock
             .SetupGet(x => x.UtcNow)
             .Returns(baseTime + DefaultInactivityThreshold * 1.5));
-        services.SetupMockOf<ICommandRunner>(mock => mock
-            .Setup(x => x.Execute(It.IsAny<BlockClientRouteCommand>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(true));
 
         await manager.EvaluateAndEnforce();
         await manager.EvaluateAndEnforce();
 
         services.GetMockOf<ICommandRunner>().Verify(
-            x => x.Execute(It.IsAny<BlockClientRouteCommand>(), It.IsAny<CancellationToken>()),
+            x => x.Execute(It.IsAny<RevokeClientRouteCommand>(), It.IsAny<CancellationToken>()),
             Times.Once);
     }
 
@@ -97,7 +99,7 @@ public class UserAccessControlManagerTest
         await manager.EvaluateAndEnforce();
 
         services.GetMockOf<ICommandRunner>().Verify(
-            x => x.Execute(It.Is<UnblockClientRouteCommand>(c => c.Ip.Equals(Ip)), It.IsAny<CancellationToken>()),
+            x => x.Execute(It.Is<AllowClientRouteCommand>(c => c.Ip.Equals(IpNetwork)), It.IsAny<CancellationToken>()),
             Times.Once);
     }
 
@@ -107,21 +109,24 @@ public class UserAccessControlManagerTest
         var baseTime = DateTimeOffset.UtcNow;
         var services = GetServiceProvider(mock => mock.SetupGet(x => x.UtcNow).Returns(baseTime));
         var manager = services.GetRequiredService<IUserAccessControlManager>();
-        var activityTracker = services.GetRequiredService<IClientActivityTracker>();
-        activityTracker.RecordActivity(Ip);
+        services.SetupMockOf<ICommandRunner>(mock => mock
+            .Setup(x => x.Execute(It.IsAny<ICommand>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true));
+
+        await manager.UnblockUser(Ip);
 
         services.SetupMockOf<IDateTimeProvider>(mock => mock
             .SetupGet(x => x.UtcNow)
             .Returns(baseTime + DefaultInactivityThreshold * 1.5));
         services.SetupMockOf<ICommandRunner>(mock => mock
-            .Setup(x => x.Execute(It.IsAny<BlockClientRouteCommand>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.Execute(It.IsAny<RevokeClientRouteCommand>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(false));
 
         await manager.EvaluateAndEnforce();
         await manager.EvaluateAndEnforce();
 
         services.GetMockOf<ICommandRunner>().Verify(
-            x => x.Execute(It.IsAny<BlockClientRouteCommand>(), It.IsAny<CancellationToken>()),
+            x => x.Execute(It.IsAny<RevokeClientRouteCommand>(), It.IsAny<CancellationToken>()),
             Times.Exactly(2));
     }
 
@@ -137,8 +142,8 @@ public class UserAccessControlManagerTest
                 .Returns(Lines(
                     "Status: active",
                     "[ 1] Anywhere on wg0        DENY FWD    10.8.0.2            # charon-dns-autoblock",
-                    "[ 2] Anywhere on wg0        DENY FWD    10.8.0.3            # charon-dns-autoblock"));
-            mock.Setup(x => x.Execute(It.IsAny<UnblockClientRouteCommand>(), It.IsAny<CancellationToken>()))
+                    "[ 2] Anywhere on wg0        ALLOW FWD    10.8.0.3            # charon-dns-autoblock"));
+            mock.Setup(x => x.Execute(It.IsAny<ICommand>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(true);
         });
 
@@ -146,7 +151,10 @@ public class UserAccessControlManagerTest
 
         services.GetMockOf<ICommandRunner>().Verify(
             x => x.Execute(It.IsAny<UnblockClientRouteCommand>(), It.IsAny<CancellationToken>()),
-            Times.Exactly(2));
+            Times.Exactly(1));
+        services.GetMockOf<ICommandRunner>().Verify(
+            x => x.Execute(It.IsAny<RevokeClientRouteCommand>(), It.IsAny<CancellationToken>()),
+            Times.Exactly(1));
     }
 
     [Fact]

@@ -5,7 +5,7 @@ namespace Charon.Dns.SystemCommands.Implementations;
 
 public readonly struct UnblockClientRouteCommand : ICommand
 {
-    public required IPAddress Ip { get; init; }
+    public required IPNetwork Ip { get; init; }
 
     public void BuildCommand(StringBuilder commandBuilder)
     {
