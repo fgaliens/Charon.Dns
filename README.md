@@ -39,6 +39,23 @@ Additionally, you can:
 - Block analytics and tracking domains so they never resolve
 - Use Charon.Dns as a standard DNS resolver for A record lookups
 
+## Usage
+
+Run the server (requires root privileges on Linux for route management):
+
+```bash
+dotnet Charon.Dns.dll
+```
+
+Command-line options:
+- `-v`, `--version` — print the application version and exit.
+
+Any `settings.json` key can also be overridden via command-line arguments, e.g.:
+
+```bash
+dotnet Charon.Dns.dll --LogLevel=Warning --FileLogLevel=Warning
+```
+
 ## Configuration
 
 Charon.Dns is configured by editing the `settings.json` file. **Note:** The server must be restarted after any configuration changes.
