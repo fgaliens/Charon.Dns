@@ -28,12 +28,12 @@
       "ResolvingConcurrencyLimit": 2,
       "SocketBufferSize": "512Kb",
       "DefaultServers": [
-        "77.88.8.8",
+        "77.88.8.8:53",
         "77.88.8.1"
       ],
       "SecuredServers": [
         {
-          "Ip": "1.1.1.1",
+          "Ip": "1.1.1.1:53",
           "RouteThroughInterface": "wg0"
         },
         {

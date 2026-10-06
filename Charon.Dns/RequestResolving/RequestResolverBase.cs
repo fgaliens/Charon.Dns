@@ -11,22 +11,18 @@ namespace Charon.Dns.RequestResolving;
 
 public class RequestResolverBase : IRequestResolver
 {
-    private const int DefaultDnsPort = 53; 
-        
     private readonly IResolvingStrategy _resolvingStrategy;
     private readonly UdpRequestResolver[] _innerResolvers;
 
     public RequestResolverBase(
         IResolvingStrategy resolvingStrategy,
-        IEnumerable<IPAddress> chainDnsServers,
+        IEnumerable<IPEndPoint> chainDnsServers,
         ByteUnit socketBufferSize,
         ILogger logger)
     {
         _resolvingStrategy = resolvingStrategy;
         _innerResolvers = chainDnsServers
-            .Select(x => new UdpRequestResolver(
-                new IPEndPoint(x, DefaultDnsPort), 
-                socketBufferSize, logger))
+            .Select(x => new UdpRequestResolver(x, socketBufferSize, logger))
             .ToArray();
     }
 

@@ -10,8 +10,8 @@ namespace Charon.Dns.RequestResolving
         ILogger logger) 
         : RequestResolverBase(
             resolvingStrategy,
-            dnsChainSettings.DefaultServers, 
+            dnsChainSettings.DefaultServers.Select(x => x.EndPoint),
             dnsChainSettings.SocketBufferSize,
-            logger), 
+            logger),
             IDefaultRequestResolver;
 }
