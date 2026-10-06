@@ -32,15 +32,6 @@ namespace Charon.Dns.Lib.Server
 
         private const int MaxUdpRequestSize = 4096;
 
-        // ExclusiveAddressUse = false only grants SO_REUSEADDR on Unix: it lets several sockets
-        // bind the same address/port, but without SO_REUSEPORT the kernel still funnels every
-        // unicast datagram to a single one of them, so the extra sockets never receive anything.
-        private const int SolSocketLinux = 1;
-        private const int SoReusePortLinux = 15;
-        private const int SolSocketBsd = 0xffff;
-        private const int SoReusePortBsd = 0x0200;
-        private static readonly byte[] ReusePortEnabled = BitConverter.GetBytes(1);
-
         private readonly AsyncObservable<OnRequestEventArgs> _requestEventObservable = new();
         private readonly AsyncObservable<OnResponseEventArgs> _responseEventObservable = new();
         private readonly AsyncObservable<OnExceptionEventArgs> _exceptionEventObservable = new();
@@ -54,11 +45,7 @@ namespace Charon.Dns.Lib.Server
                 var task = Task.Run(async () =>
                 {
                     var addressFamily = enableIpV6 ? AddressFamily.InterNetworkV6 : AddressFamily.InterNetwork;
-                    using var socket = new Socket(addressFamily, SocketType.Dgram, ProtocolType.Udp);
-                    socket.ReceiveBufferSize = socketBufferSize.Bytes;
-                    socket.ExclusiveAddressUse = false;
-                    EnableReusePort(socket);
-                    socket.Bind(endpoint);
+                    using var socket = CreateSocket(addressFamily, endpoint);
 
                     while (!cancellationToken.IsCancellationRequested)
                     {
@@ -156,23 +143,23 @@ namespace Charon.Dns.Lib.Server
             }
         }
 
-        private void EnableReusePort(Socket socket)
+        private Socket CreateSocket(AddressFamily addressFamily, IPEndPoint endpoint)
         {
-            try
+            var socket = new Socket(addressFamily, SocketType.Dgram, ProtocolType.Udp);
+            socket.ReceiveBufferSize = socketBufferSize.Bytes;
+            socket.ExclusiveAddressUse = false;
+
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
             {
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-                {
-                    socket.SetRawSocketOption(SolSocketLinux, SoReusePortLinux, ReusePortEnabled);
-                }
-                else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-                {
-                    socket.SetRawSocketOption(SolSocketBsd, SoReusePortBsd, ReusePortEnabled);
-                }
+                // ExclusiveAddressUse = false only grants SO_REUSEADDR: multiple sockets can bind
+                // the same address/port, but the kernel still funnels every unicast datagram to
+                // just one of them. SO_REUSEPORT (option 15) makes Linux hash-distribute traffic
+                // across all of them instead; macOS/BSD's SO_REUSEPORT doesn't do this for UDP.
+                socket.SetRawSocketOption(1, 15, BitConverter.GetBytes(1));
             }
-            catch (SocketException e)
-            {
-                logger.Warning(e, "Unable to enable SO_REUSEPORT. Parallel UDP request handling will fall back to a single active socket");
-            }
+
+            socket.Bind(endpoint);
+            return socket;
         }
 
         public class FallbackRequestResolver : IRequestResolver
