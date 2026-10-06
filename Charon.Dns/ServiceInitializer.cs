@@ -20,21 +20,18 @@ namespace Charon.Dns
             
             foreach (var listeningSettingsItem in listeningSettings.Items)
             {
-                if (!listeningSettingsItem.DebugOnly)
+                await commandRunner.Execute(new AddInterfaceForDnsCommand
                 {
-                    await commandRunner.Execute(new AddInterfaceForDnsCommand
-                    {
-                        InterfaceIndex = index,
-                    });
+                    InterfaceIndex = index,
+                });
 
-                    await commandRunner.Execute(new SetIpForDnsInterfaceCommand
-                    {
-                        InterfaceIndex = index,
-                        InterfaceAddress = listeningSettingsItem.Address,
-                    });
-                    
-                    index++;
-                }
+                await commandRunner.Execute(new SetIpForDnsInterfaceCommand
+                {
+                    InterfaceIndex = index,
+                    InterfaceAddress = listeningSettingsItem.Address,
+                });
+
+                index++;
             }
             
             foreach (var securedDnsServer in chainSettings.SecuredServers)

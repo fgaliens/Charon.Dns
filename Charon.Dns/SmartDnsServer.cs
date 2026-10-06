@@ -58,13 +58,6 @@ public class SmartDnsServer(
         var listeningTasks = new List<Task>();
         foreach (var listeningSettingsItem in listeningSettings.Items)
         {
-#if !DEBUG
-            if (listeningSettingsItem.DebugOnly)
-            {
-                continue;
-            }
-#endif
-            
             var task = Task.Run(async () =>
             {
                 logger.Information("Listening on {Ip}:{Port}.",

@@ -10,11 +10,6 @@
         "Port": 53
       },
       {
-        "Address": "127.0.0.1",
-        "Port": 53,
-        "DebugOnly": true
-      },
-      {
         "Address": "10.0.0.53",
         "Port": 53
       }
