@@ -6,34 +6,11 @@ namespace Charon.Dns.Lib.Protocol.ResourceRecords
 {
     public class StartOfAuthorityResourceRecord : BaseResourceRecord
     {
-        private static IResourceRecord Create(Domain domain, Domain master, Domain responsible, long serial,
-                TimeSpan refresh, TimeSpan retry, TimeSpan expire, TimeSpan minTtl, TimeSpan ttl)
-        {
-            ByteStream data = new ByteStream(Options.SIZE + master.Size + responsible.Size);
-            Options tail = new Options()
-            {
-                SerialNumber = serial,
-                RefreshInterval = refresh,
-                RetryInterval = retry,
-                ExpireInterval = expire,
-                MinimumTimeToLive = minTtl
-            };
-
-            data
-                .Append(master.ToArray())
-                .Append(responsible.ToArray())
-                .Append(Marshalling.Struct.GetBytes(tail));
-
-            return new ResourceRecord(domain, data.ToArray(), RecordType.SOA, RecordClass.IN, ttl);
-        }
-
         public StartOfAuthorityResourceRecord(IResourceRecord record, byte[] message, int dataOffset)
-            : base(record)
+            : base(Rebuild(record, message, dataOffset, out var master, out var responsible, out var tail))
         {
-            MasterDomainName = Domain.FromArray(message, dataOffset, out dataOffset);
-            ResponsibleDomainName = Domain.FromArray(message, dataOffset, out dataOffset);
-
-            Options tail = Marshalling.Struct.GetStruct<Options>(message, dataOffset, Options.SIZE);
+            MasterDomainName = master;
+            ResponsibleDomainName = responsible;
 
             SerialNumber = tail.SerialNumber;
             RefreshInterval = tail.RefreshInterval;
@@ -73,6 +50,39 @@ namespace Charon.Dns.Lib.Protocol.ResourceRecords
         public override string ToString()
         {
             return Stringify().Add("MasterDomainName", "ResponsibleDomainName", "SerialNumber").ToString();
+        }
+
+        private static IResourceRecord Create(Domain domain, Domain master, Domain responsible, long serial,
+                TimeSpan refresh, TimeSpan retry, TimeSpan expire, TimeSpan minTtl, TimeSpan ttl)
+        {
+            ByteStream data = new ByteStream(Options.SIZE + master.Size + responsible.Size);
+            Options tail = new Options()
+            {
+                SerialNumber = serial,
+                RefreshInterval = refresh,
+                RetryInterval = retry,
+                ExpireInterval = expire,
+                MinimumTimeToLive = minTtl
+            };
+
+            data
+                .Append(master.ToArray())
+                .Append(responsible.ToArray())
+                .Append(Marshalling.Struct.GetBytes(tail));
+
+            return new ResourceRecord(domain, data.ToArray(), RecordType.SOA, RecordClass.IN, ttl);
+        }
+
+        private static IResourceRecord Rebuild(IResourceRecord record, byte[] message, int dataOffset,
+                out Domain master, out Domain responsible, out Options tail)
+        {
+            master = Domain.FromArray(message, dataOffset, out dataOffset);
+            responsible = Domain.FromArray(message, dataOffset, out dataOffset);
+
+            tail = Marshalling.Struct.GetStruct<Options>(message, dataOffset, Options.SIZE);
+
+            return Create(record.Name, master, responsible, tail.SerialNumber, tail.RefreshInterval,
+                tail.RetryInterval, tail.ExpireInterval, tail.MinimumTimeToLive, record.TimeToLive);
         }
 
         [Marshalling.Endian(Marshalling.Endianness.Big)]

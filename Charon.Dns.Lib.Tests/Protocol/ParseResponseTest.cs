@@ -61,7 +61,7 @@ namespace Charon.Dns.Lib.Tests.Protocol
 
             Assert.Equal(1, response.Id);
             Assert.True(response.RecursionAvailable);
-            Assert.Equal(101, response.Size);
+            Assert.Equal(115, response.Size);
             Assert.Equal(1, response.Questions.Count);
             Assert.Equal(1, response.AnswerRecords.Count);
             Assert.Equal(1, response.AuthorityRecords.Count);
@@ -92,7 +92,7 @@ namespace Charon.Dns.Lib.Tests.Protocol
             record = response.AdditionalRecords[0];
 
             Assert.Equal("www", record.Name.ToString());
-            Assert.Equal(Helper.GetArray<byte>(192, 12), record.Data);
+            Assert.Equal(Helper.GetArray<byte>(3, 119, 119, 119, 6, 103, 111, 111, 103, 108, 101, 3, 99, 111, 109, 0), record.Data);
             Assert.Equal(RecordType.CNAME, record.Type);
             Assert.Equal(RecordClass.ANY, record.Class);
             Assert.Equal(TimeSpan.FromSeconds(1), record.TimeToLive);
