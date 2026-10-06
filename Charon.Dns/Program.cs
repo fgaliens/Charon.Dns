@@ -31,14 +31,22 @@ static class Program
         .GetCustomAttribute<AssemblyInformationalVersionAttribute>()!
         .InformationalVersion;
 
-    public static async Task Main(string[] args)
+    public static async Task<int> Main(string[] args)
     {
-        if (IsVersionRequested(args))
+        var rootCommand = new RootCommand("Charon.Dns - a lightweight DNS server")
         {
-            Console.WriteLine(AppVersion);
-            return;
-        }
+            TreatUnmatchedTokensAsErrors = false,
+        };
 
+        rootCommand.Options.OfType<VersionOption>().Single().Aliases.Add("-v");
+
+        rootCommand.SetAction((_, _) => RunServerAsync(args));
+
+        return await rootCommand.Parse(args).InvokeAsync();
+    }
+
+    private static async Task RunServerAsync(string[] args)
+    {
         var config = new ConfigurationBuilder()
             .SetBasePath(Directory.GetCurrentDirectory())
 #if DEBUG
@@ -135,20 +143,5 @@ static class Program
 
             return LogEventLevel.Debug;
         }
-    }
-
-    private static bool IsVersionRequested(string[] args)
-    {
-        var rootCommand = new RootCommand("Charon.Dns - a lightweight DNS server")
-        {
-            TreatUnmatchedTokensAsErrors = false,
-        };
-
-        var versionOption = rootCommand.Options.OfType<VersionOption>().Single();
-        versionOption.Aliases.Add("-v");
-
-        var parseResult = rootCommand.Parse(args);
-
-        return parseResult.GetResult(versionOption) is not null;
     }
 }
