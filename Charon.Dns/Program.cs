@@ -1,4 +1,5 @@
 ﻿using System.CommandLine;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using Charon.Dns.AccessControl;
 using Charon.Dns.Cache;
@@ -25,7 +26,9 @@ namespace Charon.Dns;
 
 static class Program
 {
-    private const string AppVersion = "1.6.2";
+    private static readonly string AppVersion = Assembly.GetExecutingAssembly()
+        .GetCustomAttribute<AssemblyInformationalVersionAttribute>()!
+        .InformationalVersion;
 
     public async static Task Main(string[] args)
     {
