@@ -1,4 +1,3 @@
-using System.Net;
 using Charon.Dns.Extensions;
 using Charon.Dns.RequestResolving.ResolvingStrategies;
 using Charon.Dns.Utils.Units;
@@ -11,7 +10,7 @@ public record DnsChainSettings : ISettings<DnsChainSettings>
     public required ResolvingStrategy ResolvingStrategy { get; init; }
     public required int ResolvingConcurrencyLimit { get; init; }
     public required ByteUnit SocketBufferSize { get; init; }
-    public required IReadOnlyCollection<IPAddress> DefaultServers { get; init; }
+    public required IReadOnlyCollection<DnsServerAddress> DefaultServers { get; init; }
     public required IReadOnlyCollection<SecuredServerSettingsItem> SecuredServers { get; init; }
 
     public static DnsChainSettings Initialize(IConfiguration config)
@@ -24,14 +23,14 @@ public record DnsChainSettings : ISettings<DnsChainSettings>
         var defaultServers = dnsChainConfig
             .GetSection("DefaultServers")
             .GetChildren()
-            .Select(x => x.GetSectionValue<IPAddress>())
+            .Select(x => x.GetSectionValue<DnsServerAddress>())
             .ToArray();
         var securedServers = dnsChainConfig
             .GetSection("SecuredServers")
             .GetChildren()
             .Select(x =>new SecuredServerSettingsItem
             {
-                Ip = x.GetSectionValue<IPAddress>("Ip"),
+                Address = x.GetSectionValue<DnsServerAddress>("Ip"),
                 InterfaceToRouteThrough = x.GetSectionValue("RouteThroughInterface"),
             })
             .ToArray();
@@ -49,6 +48,6 @@ public record DnsChainSettings : ISettings<DnsChainSettings>
 
 public record SecuredServerSettingsItem
 {
-    public required IPAddress Ip { get; init; }
+    public required DnsServerAddress Address { get; init; }
     public required string InterfaceToRouteThrough { get; init; }
 }

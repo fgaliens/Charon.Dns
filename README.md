@@ -86,13 +86,13 @@ When built in `Debug` configuration, the server loads `settings.debug.json` inst
       "ResolvingStrategy": "RoundRobin", // Resolving strategy (options: Random, Parallel, RoundRobin)
       "ResolvingConcurrencyLimit": 2, // Maximum number of outgoing connections to external DNS servers
       "SocketBufferSize": "512Kb", // UDP socket buffer size for outgoing resolver connections
-      "DefaultServers": [ // DNS servers for standard resolution
-        "77.88.8.8",
+      "DefaultServers": [ // DNS servers for standard resolution; port defaults to 53, add ":port" to override
+        "77.88.8.8:53",
         "77.88.8.1"
       ],
       "SecuredServers": [ // DNS servers and interfaces for domains requiring special routing
         {
-          "Ip": "1.1.1.1",
+          "Ip": "1.1.1.1:53", // Same ":port" syntax is supported here
           "RouteThroughInterface": "wg0"
         },
         {
