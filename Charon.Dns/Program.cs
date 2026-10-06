@@ -30,7 +30,11 @@ static class Program
     {
         var config = new ConfigurationBuilder()
             .SetBasePath(Directory.GetCurrentDirectory())
+#if DEBUG
+            .AddJsonFile("settings.debug.json")
+#else
             .AddJsonFile("settings.json")
+#endif
             .AddCommandLine(args)
             .Build();
         
@@ -103,16 +107,12 @@ static class Program
 
         LogEventLevel GetConsoleLogLevel()
         {
-#if DEBUG
-            return LogEventLevel.Debug;
-#else
             if (Enum.TryParse<LogEventLevel>(config["LogLevel"], out var logLevel))
             {
                 return logLevel;
             }
 
             return LogEventLevel.Information;
-#endif
         }
         
         LogEventLevel GetFileLogLevel()

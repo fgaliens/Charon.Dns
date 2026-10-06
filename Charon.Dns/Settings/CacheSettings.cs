@@ -13,10 +13,6 @@ public class CacheSettings : ISettings<CacheSettings>
         var cacheSection = config.GetSection("Cache");
         var enabled = cacheSection.GetSectionValue("Enabled", true);
         var timeToLive = cacheSection.GetSectionValue("TimeToLive", TimeSpan.Zero);
-        
-#if DEBUG
-        timeToLive = TimeSpan.FromSeconds(30);
-#endif
 
         return new()
         {
