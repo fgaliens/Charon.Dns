@@ -33,15 +33,13 @@ static class Program
 
     public static async Task<int> Main(string[] args)
     {
-        var rootCommand = new RootCommand("Charon.Dns - a lightweight DNS server")
+        var rootCommand = new RootCommand("Charon.Dns - a DNS server with dynamic traffic routing")
         {
             TreatUnmatchedTokensAsErrors = false,
         };
 
         rootCommand.Options.OfType<VersionOption>().Single().Aliases.Add("-v");
-
         rootCommand.SetAction((_, _) => RunServerAsync(args));
-
         return await rootCommand.Parse(args).InvokeAsync();
     }
 
