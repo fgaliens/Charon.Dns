@@ -1,4 +1,5 @@
-﻿using System.Runtime.CompilerServices;
+﻿using System.CommandLine;
+using System.Runtime.CompilerServices;
 using Charon.Dns.AccessControl;
 using Charon.Dns.Cache;
 using Charon.Dns.Extensions;
@@ -28,6 +29,12 @@ static class Program
 
     public async static Task Main(string[] args)
     {
+        if (IsVersionRequested(args))
+        {
+            Console.WriteLine(AppVersion);
+            return;
+        }
+
         var config = new ConfigurationBuilder()
             .SetBasePath(Directory.GetCurrentDirectory())
 #if DEBUG
@@ -124,5 +131,20 @@ static class Program
 
             return LogEventLevel.Debug;
         }
+    }
+
+    private static bool IsVersionRequested(string[] args)
+    {
+        var rootCommand = new RootCommand("Charon.Dns - a lightweight DNS server")
+        {
+            TreatUnmatchedTokensAsErrors = false,
+        };
+
+        var versionOption = rootCommand.Options.OfType<VersionOption>().Single();
+        versionOption.Aliases.Add("-v");
+
+        var parseResult = rootCommand.Parse(args);
+
+        return parseResult.GetResult(versionOption) is not null;
     }
 }
