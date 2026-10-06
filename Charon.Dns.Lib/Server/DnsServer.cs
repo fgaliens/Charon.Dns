@@ -4,6 +4,7 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Charon.Dns.Lib.AsyncEvents;
@@ -31,6 +32,15 @@ namespace Charon.Dns.Lib.Server
 
         private const int MaxUdpRequestSize = 4096;
 
+        // ExclusiveAddressUse = false only grants SO_REUSEADDR on Unix: it lets several sockets
+        // bind the same address/port, but without SO_REUSEPORT the kernel still funnels every
+        // unicast datagram to a single one of them, so the extra sockets never receive anything.
+        private const int SolSocketLinux = 1;
+        private const int SoReusePortLinux = 15;
+        private const int SolSocketBsd = 0xffff;
+        private const int SoReusePortBsd = 0x0200;
+        private static readonly byte[] ReusePortEnabled = BitConverter.GetBytes(1);
+
         private readonly AsyncObservable<OnRequestEventArgs> _requestEventObservable = new();
         private readonly AsyncObservable<OnResponseEventArgs> _responseEventObservable = new();
         private readonly AsyncObservable<OnExceptionEventArgs> _exceptionEventObservable = new();
@@ -47,6 +57,7 @@ namespace Charon.Dns.Lib.Server
                     using var socket = new Socket(addressFamily, SocketType.Dgram, ProtocolType.Udp);
                     socket.ReceiveBufferSize = socketBufferSize.Bytes;
                     socket.ExclusiveAddressUse = false;
+                    EnableReusePort(socket);
                     socket.Bind(endpoint);
 
                     while (!cancellationToken.IsCancellationRequested)
@@ -142,6 +153,25 @@ namespace Charon.Dns.Lib.Server
             finally
             {
                 ArrayPool.Return(buffer, clearArray: true);
+            }
+        }
+
+        private void EnableReusePort(Socket socket)
+        {
+            try
+            {
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+                {
+                    socket.SetRawSocketOption(SolSocketLinux, SoReusePortLinux, ReusePortEnabled);
+                }
+                else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+                {
+                    socket.SetRawSocketOption(SolSocketBsd, SoReusePortBsd, ReusePortEnabled);
+                }
+            }
+            catch (SocketException e)
+            {
+                logger.Warning(e, "Unable to enable SO_REUSEPORT. Parallel UDP request handling will fall back to a single active socket");
             }
         }
 
