@@ -19,7 +19,7 @@ using Serilog;
 using Serilog.Events;
 using Serilog.Sinks.SystemConsole.Themes;
 
-[assembly: AssemblyInformationalVersion("1.6.2")]
+[assembly: AssemblyInformationalVersion("1.7.0")]
 [assembly: InternalsVisibleTo("Charon.Dns.Tests")]
 [assembly: InternalsVisibleTo("Charon.Dns.EndToEndTests")]
 
