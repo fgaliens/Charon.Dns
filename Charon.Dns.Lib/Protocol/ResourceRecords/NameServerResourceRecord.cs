@@ -5,9 +5,9 @@ namespace Charon.Dns.Lib.Protocol.ResourceRecords
     public class NameServerResourceRecord : BaseResourceRecord
     {
         public NameServerResourceRecord(IResourceRecord record, byte[] message, int dataOffset)
-            : base(record)
+            : base(Rebuild(record, message, dataOffset, out var nsDomain))
         {
-            NSDomainName = Domain.FromArray(message, dataOffset);
+            NSDomainName = nsDomain;
         }
 
         public NameServerResourceRecord(Domain domain, Domain nsDomain, TimeSpan ttl = default(TimeSpan)) :
@@ -21,6 +21,12 @@ namespace Charon.Dns.Lib.Protocol.ResourceRecords
         public override string ToString()
         {
             return Stringify().Add("NSDomainName").ToString();
+        }
+
+        private static IResourceRecord Rebuild(IResourceRecord record, byte[] message, int dataOffset, out Domain nsDomain)
+        {
+            nsDomain = Domain.FromArray(message, dataOffset);
+            return new ResourceRecord(record.Name, nsDomain.ToArray(), record.Type, record.Class, record.TimeToLive);
         }
     }
 }

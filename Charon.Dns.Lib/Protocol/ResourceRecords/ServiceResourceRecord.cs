@@ -5,32 +5,13 @@ namespace Charon.Dns.Lib.Protocol.ResourceRecords
 {
     public class ServiceResourceRecord : BaseResourceRecord
     {
-        private static IResourceRecord Create(Domain domain, ushort priority, ushort weight, ushort port, Domain target, TimeSpan ttl)
+        public ServiceResourceRecord(IResourceRecord record, byte[] message, int dataOffset)
+            : base(Rebuild(record, message, dataOffset, out var head, out var target))
         {
-            byte[] trg = target.ToArray();
-            byte[] data = new byte[Head.SIZE + trg.Length];
-
-            Head head = new Head()
-            {
-                Priority = priority,
-                Weight = weight,
-                Port = port
-            };
-
-            Marshalling.Struct.GetBytes(head).CopyTo(data, 0);
-            trg.CopyTo(data, Head.SIZE);
-
-            return new ResourceRecord(domain, data, RecordType.SRV, RecordClass.IN, ttl);
-        }
-
-        public ServiceResourceRecord(IResourceRecord record, byte[] message, int dataOffset) : base(record)
-        {
-            Head head = Marshalling.Struct.GetStruct<Head>(message, dataOffset, Head.SIZE);
-
             Priority = head.Priority;
             Weight = head.Weight;
             Port = head.Port;
-            Target = Domain.FromArray(message, dataOffset + Head.SIZE);
+            Target = target;
         }
 
         public ServiceResourceRecord(Domain domain, ushort priority, ushort weight, ushort port, Domain target, TimeSpan ttl = default(TimeSpan)) :
@@ -50,6 +31,32 @@ namespace Charon.Dns.Lib.Protocol.ResourceRecords
         public override string ToString()
         {
             return Stringify().Add("Priority", "Weight", "Port", "Target").ToString();
+        }
+
+        private static IResourceRecord Create(Domain domain, ushort priority, ushort weight, ushort port, Domain target, TimeSpan ttl)
+        {
+            byte[] trg = target.ToArray();
+            byte[] data = new byte[Head.SIZE + trg.Length];
+
+            Head head = new Head()
+            {
+                Priority = priority,
+                Weight = weight,
+                Port = port
+            };
+
+            Marshalling.Struct.GetBytes(head).CopyTo(data, 0);
+            trg.CopyTo(data, Head.SIZE);
+
+            return new ResourceRecord(domain, data, RecordType.SRV, RecordClass.IN, ttl);
+        }
+
+        private static IResourceRecord Rebuild(IResourceRecord record, byte[] message, int dataOffset, out Head head, out Domain target)
+        {
+            head = Marshalling.Struct.GetStruct<Head>(message, dataOffset, Head.SIZE);
+            target = Domain.FromArray(message, dataOffset + Head.SIZE);
+
+            return Create(record.Name, head.Priority, head.Weight, head.Port, target, record.TimeToLive);
         }
 
         [Marshalling.Endian(Marshalling.Endianness.Big)]

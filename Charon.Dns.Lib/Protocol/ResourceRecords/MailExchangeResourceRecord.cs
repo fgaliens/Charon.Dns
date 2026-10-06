@@ -6,6 +6,28 @@ namespace Charon.Dns.Lib.Protocol.ResourceRecords
     {
         private const int PREFERENCE_SIZE = 2;
 
+        public MailExchangeResourceRecord(IResourceRecord record, byte[] message, int dataOffset)
+            : base(Rebuild(record, message, dataOffset, out var preference, out var exchange))
+        {
+            Preference = preference;
+            ExchangeDomainName = exchange;
+        }
+
+        public MailExchangeResourceRecord(Domain domain, int preference, Domain exchange, TimeSpan ttl = default(TimeSpan)) :
+            base(Create(domain, preference, exchange, ttl))
+        {
+            Preference = preference;
+            ExchangeDomainName = exchange;
+        }
+
+        public int Preference { get; }
+        public Domain ExchangeDomainName { get; }
+
+        public override string ToString()
+        {
+            return Stringify().Add("Preference", "ExchangeDomainName").ToString();
+        }
+
         private static IResourceRecord Create(Domain domain, int preference, Domain exchange, TimeSpan ttl)
         {
             byte[] pref = BitConverter.GetBytes((ushort)preference);
@@ -22,36 +44,22 @@ namespace Charon.Dns.Lib.Protocol.ResourceRecords
             return new ResourceRecord(domain, data, RecordType.MX, RecordClass.IN, ttl);
         }
 
-        public MailExchangeResourceRecord(IResourceRecord record, byte[] message, int dataOffset)
-            : base(record)
+        private static IResourceRecord Rebuild(IResourceRecord record, byte[] message, int dataOffset, out int preference, out Domain exchange)
         {
-            byte[] preference = new byte[MailExchangeResourceRecord.PREFERENCE_SIZE];
-            Array.Copy(message, dataOffset, preference, 0, preference.Length);
+            byte[] preferenceBytes = new byte[PREFERENCE_SIZE];
+            Array.Copy(message, dataOffset, preferenceBytes, 0, preferenceBytes.Length);
 
             if (BitConverter.IsLittleEndian)
             {
-                Array.Reverse(preference);
+                Array.Reverse(preferenceBytes);
             }
 
-            dataOffset += MailExchangeResourceRecord.PREFERENCE_SIZE;
+            dataOffset += PREFERENCE_SIZE;
 
-            Preference = BitConverter.ToUInt16(preference, 0);
-            ExchangeDomainName = Domain.FromArray(message, dataOffset);
-        }
+            preference = BitConverter.ToUInt16(preferenceBytes, 0);
+            exchange = Domain.FromArray(message, dataOffset);
 
-        public MailExchangeResourceRecord(Domain domain, int preference, Domain exchange, TimeSpan ttl = default(TimeSpan)) :
-            base(Create(domain, preference, exchange, ttl))
-        {
-            Preference = preference;
-            ExchangeDomainName = exchange;
-        }
-
-        public int Preference { get; }
-        public Domain ExchangeDomainName { get; }
-
-        public override string ToString()
-        {
-            return Stringify().Add("Preference", "ExchangeDomainName").ToString();
+            return Create(record.Name, preference, exchange, record.TimeToLive);
         }
     }
 }

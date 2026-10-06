@@ -1,13 +1,13 @@
-﻿using System;
+using System;
 
 namespace Charon.Dns.Lib.Protocol.ResourceRecords
 {
     public class CanonicalNameResourceRecord : BaseResourceRecord
     {
         public CanonicalNameResourceRecord(IResourceRecord record, byte[] message, int dataOffset)
-            : base(record)
+            : base(Rebuild(record, message, dataOffset, out var cname))
         {
-            CanonicalDomainName = Domain.FromArray(message, dataOffset);
+            CanonicalDomainName = cname;
         }
 
         public CanonicalNameResourceRecord(Domain domain, Domain cname, TimeSpan ttl = default(TimeSpan)) :
@@ -21,6 +21,12 @@ namespace Charon.Dns.Lib.Protocol.ResourceRecords
         public override string ToString()
         {
             return Stringify().Add("CanonicalDomainName").ToString();
+        }
+
+        private static IResourceRecord Rebuild(IResourceRecord record, byte[] message, int dataOffset, out Domain cname)
+        {
+            cname = Domain.FromArray(message, dataOffset);
+            return new ResourceRecord(record.Name, cname.ToArray(), record.Type, record.Class, record.TimeToLive);
         }
     }
 }
