@@ -131,7 +131,14 @@ namespace Charon.Dns.Lib.Protocol
 
         public byte[] ToArray()
         {
-            return Marshalling.Struct.GetBytes(this);
+            var result = new byte[HeaderSize];
+            WriteTo(result);
+            return result;
+        }
+
+        public void WriteTo(Span<byte> destination)
+        {
+            Marshalling.Struct.GetBytes(this, destination);
         }
 
         public override string ToString()

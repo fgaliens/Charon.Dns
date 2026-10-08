@@ -28,12 +28,12 @@ namespace Charon.Dns.Lib.Protocol.ResourceRecords
 
         private static IResourceRecord Create(Domain domain, IList<CharacterString> characterStrings, TimeSpan ttl)
         {
-            byte[] data = new byte[characterStrings.Sum(c => c.Size)];
-            int offset = 0;
+            var data = new byte[characterStrings.Sum(c => c.Size)];
+            var offset = 0;
 
-            foreach (CharacterString characterString in characterStrings)
+            foreach (var characterString in characterStrings)
             {
-                characterString.ToArray().CopyTo(data, offset);
+                characterString.WriteTo(data.AsSpan(offset, characterString.Size));
                 offset += characterString.Size;
             }
 

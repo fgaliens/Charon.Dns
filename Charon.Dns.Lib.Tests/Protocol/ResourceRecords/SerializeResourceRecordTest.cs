@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using Charon.Dns.Lib.Protocol;
 using Charon.Dns.Lib.Protocol.ResourceRecords;
 using Xunit;
@@ -104,6 +105,74 @@ namespace Charon.Dns.Lib.Tests.Protocol.ResourceRecords
             ServiceResourceRecord srv = new ServiceResourceRecord(domain, 10, 60, 8080, target, new TimeSpan(0));
 
             Assert.Equal(content, srv.ToArray());
+        }
+
+        [Fact]
+        public void MxResourceRecordWithEmptyDomainAndSingleLabelExchange()
+        {
+            Domain domain = new Domain(Helper.GetArray<string>());
+            Domain exchange = new Domain(Helper.GetArray("a"));
+            MailExchangeResourceRecord mx = new MailExchangeResourceRecord(domain, 10, exchange, new TimeSpan(0));
+
+            byte[] expected = Helper.GetArray<byte>(
+                0,                   // empty domain name (root)
+                0, 15,                // Type = MX
+                0, 1,                 // Class = IN
+                0, 0, 0, 0,           // TTL = 0
+                0, 5,                 // DataLength = 2 (preference) + 3 (exchange "a")
+                0, 10,                // Preference
+                1, (byte)'a', 0       // Exchange domain wire bytes
+            );
+
+            Assert.Equal(expected, mx.ToArray());
+        }
+
+        [Fact]
+        public void SoaResourceRecordWithEmptyDomainAndSingleLabelMasterResponsible()
+        {
+            Domain domain = new Domain(Helper.GetArray<string>());
+            Domain master = new Domain(Helper.GetArray("a"));
+            Domain responsible = new Domain(Helper.GetArray("b"));
+            StartOfAuthorityResourceRecord soa = new StartOfAuthorityResourceRecord(
+                domain, master, responsible, 1,
+                TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(3), TimeSpan.FromSeconds(4), TimeSpan.FromSeconds(5),
+                new TimeSpan(0));
+
+            byte[] expected = Helper.GetArray<byte>(
+                0,                    // empty domain name (root)
+                0, 6,                 // Type = SOA
+                0, 1,                 // Class = IN
+                0, 0, 0, 0,           // TTL = 0
+                0, 26,                // DataLength = 3 (master) + 3 (responsible) + 20 (options)
+                1, (byte)'a', 0,      // master domain wire bytes
+                1, (byte)'b', 0,      // responsible domain wire bytes
+                0, 0, 0, 1,           // serial
+                0, 0, 0, 2,           // refresh
+                0, 0, 0, 3,           // retry
+                0, 0, 0, 4,           // expire
+                0, 0, 0, 5            // minimum ttl
+            );
+
+            Assert.Equal(expected, soa.ToArray());
+        }
+
+        [Fact]
+        public void TxtResourceRecordWithEmptyDomainAndSingleCharacterString()
+        {
+            Domain domain = new Domain(Helper.GetArray<string>());
+            IList<CharacterString> text = CharacterString.FromString("hello");
+            TextResourceRecord txt = new TextResourceRecord(domain, text, new TimeSpan(0));
+
+            byte[] expected = Helper.GetArray<byte>(
+                0,                    // empty domain name (root)
+                0, 16,                // Type = TXT
+                0, 1,                 // Class = IN
+                0, 0, 0, 0,           // TTL = 0
+                0, 6,                 // DataLength = 1 (length byte) + 5 ("hello")
+                5, (byte)'h', (byte)'e', (byte)'l', (byte)'l', (byte)'o'
+            );
+
+            Assert.Equal(expected, txt.ToArray());
         }
     }
 }

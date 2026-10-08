@@ -87,24 +87,27 @@ namespace Charon.Dns.Lib.Protocol
 
         private static string FormatReverseIp(IPAddress ip)
         {
-            byte[] address = ip.GetAddressBytes();
+            Span<byte> address = stackalloc byte[16];
+            ip.TryWriteBytes(address, out var written);
+            address = address[..written];
 
-            if (address.Length == 4)
+            if (written == 4)
             {
-                return string.Join(".", address.Reverse().Select(b => b.ToString())) + ".in-addr.arpa";
+                return string.Join(".", address.ToArray().Reverse().Select(b => b.ToString())) + ".in-addr.arpa";
             }
 
-            byte[] nibbles = new byte[address.Length * 2];
+            Span<byte> nibbles = stackalloc byte[32];
+            nibbles = nibbles[..(written * 2)];
 
-            for (int i = 0, j = 0; i < address.Length; i++, j = 2 * i)
+            for (int i = 0, j = 0; i < written; i++, j = 2 * i)
             {
-                byte b = address[i];
+                var b = address[i];
 
                 nibbles[j] = b.GetBitValueAt(4, 4);
                 nibbles[j + 1] = b.GetBitValueAt(0, 4);
             }
 
-            return string.Join(".", nibbles.Reverse().Select(b => b.ToString("x"))) + ".ip6.arpa";
+            return string.Join(".", nibbles.ToArray().Reverse().Select(b => b.ToString("x"))) + ".ip6.arpa";
         }
 
         private static bool IsAsciiAlphabet(byte b)
@@ -158,18 +161,23 @@ namespace Charon.Dns.Lib.Protocol
 
         public byte[] ToArray()
         {
-            byte[] result = new byte[Size];
-            int offset = 0;
+            var result = new byte[Size];
+            WriteTo(result);
+            return result;
+        }
 
-            foreach (byte[] label in _labels)
+        public void WriteTo(Span<byte> destination)
+        {
+            var offset = 0;
+
+            foreach (var label in _labels)
             {
-                result[offset++] = (byte)label.Length;
-                label.CopyTo(result, offset);
+                destination[offset++] = (byte)label.Length;
+                label.AsSpan().CopyTo(destination[offset..]);
                 offset += label.Length;
             }
 
-            result[offset] = 0;
-            return result;
+            destination[offset] = 0;
         }
 
         public string ToString(Encoding encoding)

@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using Charon.Dns.Lib.Protocol.Utils;
 
@@ -72,13 +73,15 @@ namespace Charon.Dns.Lib.Protocol
 
         public byte[] ToArray()
         {
-            ByteStream result = new ByteStream(Size);
+            var result = new byte[Size];
+            WriteTo(result);
+            return result;
+        }
 
-            result
-                .Append(domain.ToArray())
-                .Append(Marshalling.Struct.GetBytes(new Tail { Type = Type, Class = Class }));
-
-            return result.ToArray();
+        public void WriteTo(Span<byte> destination)
+        {
+            domain.WriteTo(destination);
+            Marshalling.Struct.GetBytes(new Tail { Type = Type, Class = Class }, destination[domain.Size..]);
         }
 
         public override string ToString()

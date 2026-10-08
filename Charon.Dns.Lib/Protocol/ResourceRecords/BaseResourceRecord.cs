@@ -52,6 +52,11 @@ namespace Charon.Dns.Lib.Protocol.ResourceRecords
             return record.ToArray();
         }
 
+        public void WriteTo(Span<byte> destination)
+        {
+            record.WriteTo(destination);
+        }
+
         internal ObjectStringifier Stringify()
         {
             return ObjectStringifier.New(this)

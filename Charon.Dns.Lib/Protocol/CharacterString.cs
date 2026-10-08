@@ -94,10 +94,15 @@ namespace Charon.Dns.Lib.Protocol
 
         public byte[] ToArray()
         {
-            byte[] result = new byte[Size];
-            result[0] = (byte)data.Length;
-            data.CopyTo(result, 1);
+            var result = new byte[Size];
+            WriteTo(result);
             return result;
+        }
+
+        public void WriteTo(Span<byte> destination)
+        {
+            destination[0] = (byte)data.Length;
+            data.AsSpan().CopyTo(destination[1..]);
         }
 
         public string ToString(Encoding encoding)

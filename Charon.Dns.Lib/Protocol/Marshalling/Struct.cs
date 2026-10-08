@@ -1,16 +1,22 @@
 ﻿using System;
-using System.Runtime.InteropServices;
+using System.Buffers;
 using System.Reflection;
 using System.Linq;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace Charon.Dns.Lib.Protocol.Marshalling
 {
     public static class Struct
     {
-        private static byte[] ConvertEndian<T>(byte[] data)
+        // Every real caller passes a struct of 4-20 bytes (Header/Tail/Head/Options). The fallback
+        // only matters for a hypothetical external caller passing an unusually large T.
+        private const int MaxStackAllocSize = 256;
+
+        private static void ConvertEndian<T>(Span<byte> data)
         {
-            Type type = typeof(T);
-            FieldInfo[] fields = type.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+            var type = typeof(T);
+            var fields = type.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
             EndianAttribute endian = null;
 
             if (type.GetTypeInfo().IsDefined(typeof(EndianAttribute), false))
@@ -18,109 +24,84 @@ namespace Charon.Dns.Lib.Protocol.Marshalling
                 endian = (EndianAttribute)type.GetTypeInfo().GetCustomAttributes(typeof(EndianAttribute), false).First();
             }
 
-            foreach (FieldInfo field in fields)
+            foreach (var field in fields)
             {
                 if (endian == null && !field.IsDefined(typeof(EndianAttribute), false))
                 {
                     continue;
                 }
 
-                int offset = Marshal.OffsetOf<T>(field.Name).ToInt32();
+                var offset = Marshal.OffsetOf<T>(field.Name).ToInt32();
 #pragma warning disable 618
-                int length = Marshal.SizeOf(field.FieldType);
+                var length = Marshal.SizeOf(field.FieldType);
 #pragma warning restore 618
                 endian = endian ?? (EndianAttribute)field.GetCustomAttributes(typeof(EndianAttribute), false).First();
 
                 if (endian.Endianness == Endianness.Big && BitConverter.IsLittleEndian ||
                         endian.Endianness == Endianness.Little && !BitConverter.IsLittleEndian)
                 {
-                    Array.Reverse(data, offset, length);
+                    data.Slice(offset, length).Reverse();
                 }
             }
-
-            return data;
         }
-        
-//         [Experimental("Mem1")]
-//         private static void ConvertEndian<T>(Span<byte> data)
-//         {
-//             Type type = typeof(T);
-//             FieldInfo[] fields = type.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
-//             EndianAttribute endian = null;
-//
-//             if (type.GetTypeInfo().IsDefined(typeof(EndianAttribute), false))
-//             {
-//                 endian = (EndianAttribute)type.GetTypeInfo().GetCustomAttributes(typeof(EndianAttribute), false).First();
-//             }
-//
-//             foreach (FieldInfo field in fields)
-//             {
-//                 if (endian == null && !field.IsDefined(typeof(EndianAttribute), false))
-//                 {
-//                     continue;
-//                 }
-//
-//                 int offset = Marshal.OffsetOf<T>(field.Name).ToInt32();
-// #pragma warning disable 618
-//                 int length = Marshal.SizeOf(field.FieldType);
-// #pragma warning restore 618
-//                 endian = endian ?? (EndianAttribute)field.GetCustomAttributes(typeof(EndianAttribute), false).First();
-//
-//                 if (endian.Endianness == Endianness.Big && BitConverter.IsLittleEndian ||
-//                     endian.Endianness == Endianness.Little && !BitConverter.IsLittleEndian)
-//                 {
-//                     data[offset..length].Reverse();
-//                 }
-//             }
-//         }
 
         public static T GetStruct<T>(byte[] data) where T : struct
         {
-            return GetStruct<T>(data, 0, data.Length);
+            return GetStruct<T>(data.AsSpan());
         }
 
         public static T GetStruct<T>(byte[] data, int offset, int length) where T : struct
         {
-            byte[] buffer = new byte[length];
-            Array.Copy(data, offset, buffer, 0, buffer.Length);
+            return GetStruct<T>(new ReadOnlySpan<byte>(data, offset, length));
+        }
 
-            GCHandle handle = GCHandle.Alloc(ConvertEndian<T>(buffer), GCHandleType.Pinned);
+        public static T GetStruct<T>(ReadOnlySpan<byte> data) where T : struct
+        {
+            var size = Unsafe.SizeOf<T>();
+            if (data.Length < size)
+            {
+                throw new ArgumentException("Data too short", nameof(data));
+            }
 
+            if (size <= MaxStackAllocSize)
+            {
+                Span<byte> buffer = stackalloc byte[size];
+                data[..size].CopyTo(buffer);
+                ConvertEndian<T>(buffer);
+                return MemoryMarshal.Read<T>(buffer);
+            }
+
+            var rented = ArrayPool<byte>.Shared.Rent(size);
             try
             {
-                return Marshal.PtrToStructure<T>(handle.AddrOfPinnedObject());
+                var buffer = rented.AsSpan(0, size);
+                data[..size].CopyTo(buffer);
+                ConvertEndian<T>(buffer);
+                return MemoryMarshal.Read<T>(buffer);
             }
             finally
             {
-                handle.Free();
+                ArrayPool<byte>.Shared.Return(rented);
             }
         }
-        
-        // [Experimental("Mem1")]
-        // public static T GetStruct<T>(ReadOnlyMemory<byte> data) where T : struct
-        // {
-        //     Span<byte> buffer = stackalloc byte[data.Length];
-        //     data.Span.CopyTo(buffer);
-        //     
-        //     ConvertEndian<T>(buffer);
-        //     
-        //     return MemoryMarshal.Read<T>(buffer);
-        // }
 
         public static byte[] GetBytes<T>(T obj) where T : struct
         {
-            byte[] data = new byte[Marshal.SizeOf(obj)];
-            GCHandle handle = GCHandle.Alloc(data, GCHandleType.Pinned);
+            var data = new byte[Unsafe.SizeOf<T>()];
+            GetBytes(obj, data);
+            return data;
+        }
 
-            try
+        public static void GetBytes<T>(T obj, Span<byte> destination) where T : struct
+        {
+            var size = Unsafe.SizeOf<T>();
+            if (destination.Length < size)
             {
-                Marshal.StructureToPtr(obj, handle.AddrOfPinnedObject(), false);
-                return ConvertEndian<T>(data);
+                throw new ArgumentException("Destination too small", nameof(destination));
             }
-            finally
-            {
-                handle.Free();
-            }
+
+            MemoryMarshal.Write(destination, in obj);
+            ConvertEndian<T>(destination[..size]);
         }
     }
 }

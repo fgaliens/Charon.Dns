@@ -107,20 +107,26 @@ namespace Charon.Dns.Lib.Protocol.ResourceRecords
 
         public byte[] ToArray()
         {
-            ByteStream result = new ByteStream(Size);
+            var result = new byte[Size];
+            WriteTo(result);
+            return result;
+        }
 
-            result
-                .Append(_domain.ToArray())
-                .Append(Marshalling.Struct.GetBytes<Tail>(new Tail()
-                {
-                    Type = Type,
-                    Class = Class,
-                    TimeToLive = _ttl,
-                    DataLength = _data.Length
-                }))
-                .Append(_data);
+        public void WriteTo(Span<byte> destination)
+        {
+            _domain.WriteTo(destination);
+            var offset = _domain.Size;
 
-            return result.ToArray();
+            Marshalling.Struct.GetBytes(new Tail()
+            {
+                Type = Type,
+                Class = Class,
+                TimeToLive = _ttl,
+                DataLength = _data.Length
+            }, destination.Slice(offset, Tail.SIZE));
+            offset += Tail.SIZE;
+
+            _data.AsSpan().CopyTo(destination[offset..]);
         }
 
         public override string ToString()

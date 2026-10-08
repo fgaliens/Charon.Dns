@@ -1,5 +1,7 @@
 ﻿#nullable enable
 using System;
+using System.Buffers;
+using System.Buffers.Binary;
 using System.IO;
 using System.Net.Sockets;
 using System.Threading;
@@ -26,18 +28,25 @@ namespace Charon.Dns.Lib.Client.RequestResolver
                 await tcp.ConnectAsync(_dns.Address, _dns.Port).ConfigureAwait(false);
 
                 Stream stream = tcp.GetStream();
-                byte[] buffer = request.ToArray();
-                byte[] length = BitConverter.GetBytes((ushort)buffer.Length);
+                var requestSize = request.Size;
+                var requestBuffer = ArrayPool<byte>.Shared.Rent(requestSize);
 
-                if (BitConverter.IsLittleEndian)
+                try
                 {
-                    Array.Reverse(length);
+                    request.WriteTo(requestBuffer.AsSpan(0, requestSize));
+
+                    var lengthPrefix = new byte[2];
+                    BinaryPrimitives.WriteUInt16BigEndian(lengthPrefix, (ushort)requestSize);
+
+                    await stream.WriteAsync(lengthPrefix, cancellationToken).ConfigureAwait(false);
+                    await stream.WriteAsync(requestBuffer.AsMemory(0, requestSize), cancellationToken).ConfigureAwait(false);
+                }
+                finally
+                {
+                    ArrayPool<byte>.Shared.Return(requestBuffer);
                 }
 
-                await stream.WriteAsync(length, 0, length.Length, cancellationToken).ConfigureAwait(false);
-                await stream.WriteAsync(buffer, 0, buffer.Length, cancellationToken).ConfigureAwait(false);
-
-                buffer = new byte[2];
+                byte[] buffer = new byte[2];
                 await Read(stream, buffer, cancellationToken).ConfigureAwait(false);
 
                 if (BitConverter.IsLittleEndian)
