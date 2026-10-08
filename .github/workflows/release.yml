@@ -21,9 +21,9 @@ jobs:
       - name: Read version from Program.cs
         id: version
         run: |
-          VERSION=$(grep -oP '(?<=AppVersion = ")[^"]+' Charon.Dns/Program.cs)
+          VERSION=$(grep -oP '(?<=AssemblyInformationalVersion\(")[^"]+' Charon.Dns/Program.cs)
           if [ -z "$VERSION" ]; then
-            echo "Could not extract AppVersion from Charon.Dns/Program.cs" >&2
+            echo "Could not extract AssemblyInformationalVersion from Charon.Dns/Program.cs" >&2
             exit 1
           fi
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
