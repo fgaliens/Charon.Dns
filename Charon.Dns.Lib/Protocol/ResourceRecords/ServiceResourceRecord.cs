@@ -35,18 +35,17 @@ namespace Charon.Dns.Lib.Protocol.ResourceRecords
 
         private static IResourceRecord Create(Domain domain, ushort priority, ushort weight, ushort port, Domain target, TimeSpan ttl)
         {
-            byte[] trg = target.ToArray();
-            byte[] data = new byte[Head.SIZE + trg.Length];
+            var data = new byte[Head.SIZE + target.Size];
 
-            Head head = new Head()
+            var head = new Head()
             {
                 Priority = priority,
                 Weight = weight,
                 Port = port
             };
 
-            Marshalling.Struct.GetBytes(head).CopyTo(data, 0);
-            trg.CopyTo(data, Head.SIZE);
+            Marshalling.Struct.GetBytes(head, data.AsSpan(0, Head.SIZE));
+            target.WriteTo(data.AsSpan(Head.SIZE));
 
             return new ResourceRecord(domain, data, RecordType.SRV, RecordClass.IN, ttl);
         }

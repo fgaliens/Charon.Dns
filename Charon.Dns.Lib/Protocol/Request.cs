@@ -106,14 +106,35 @@ namespace Charon.Dns.Lib.Protocol
         public byte[] ToArray()
         {
             UpdateHeader();
-            ByteStream result = new ByteStream(Size);
+            var result = new byte[Size];
+            WriteToCore(result);
+            return result;
+        }
 
-            result
-                .Append(_header.ToArray())
-                .Append(_questions.Select(q => q.ToArray()))
-                .Append(_additional.Select(a => a.ToArray()));
+        public void WriteTo(Span<byte> destination)
+        {
+            UpdateHeader();
+            WriteToCore(destination);
+        }
 
-            return result.ToArray();
+        private void WriteToCore(Span<byte> destination)
+        {
+            _header.WriteTo(destination[.._header.Size]);
+            var offset = _header.Size;
+
+            offset = WriteEntries(_questions, destination, offset);
+            WriteEntries(_additional, destination, offset);
+        }
+
+        private static int WriteEntries<T>(IList<T> entries, Span<byte> destination, int offset) where T : IMessageEntry
+        {
+            foreach (var entry in entries)
+            {
+                entry.WriteTo(destination.Slice(offset, entry.Size));
+                offset += entry.Size;
+            }
+
+            return offset;
         }
 
         public override string ToString()

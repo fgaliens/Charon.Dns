@@ -1,4 +1,6 @@
-﻿namespace Charon.Dns.Lib.Protocol
+﻿using System;
+
+namespace Charon.Dns.Lib.Protocol
 {
     public interface IMessageEntry
     {
@@ -8,5 +10,7 @@
 
         int Size { get; }
         byte[] ToArray();
+
+        void WriteTo(Span<byte> destination) => ToArray().AsSpan().CopyTo(destination);
     }
 }

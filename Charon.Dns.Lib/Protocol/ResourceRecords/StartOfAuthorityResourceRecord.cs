@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Runtime.InteropServices;
-using Charon.Dns.Lib.Protocol.Utils;
 
 namespace Charon.Dns.Lib.Protocol.ResourceRecords
 {
@@ -55,8 +54,8 @@ namespace Charon.Dns.Lib.Protocol.ResourceRecords
         private static IResourceRecord Create(Domain domain, Domain master, Domain responsible, long serial,
                 TimeSpan refresh, TimeSpan retry, TimeSpan expire, TimeSpan minTtl, TimeSpan ttl)
         {
-            ByteStream data = new ByteStream(Options.SIZE + master.Size + responsible.Size);
-            Options tail = new Options()
+            var data = new byte[master.Size + responsible.Size + Options.SIZE];
+            var tail = new Options()
             {
                 SerialNumber = serial,
                 RefreshInterval = refresh,
@@ -65,12 +64,14 @@ namespace Charon.Dns.Lib.Protocol.ResourceRecords
                 MinimumTimeToLive = minTtl
             };
 
-            data
-                .Append(master.ToArray())
-                .Append(responsible.ToArray())
-                .Append(Marshalling.Struct.GetBytes(tail));
+            var offset = 0;
+            master.WriteTo(data.AsSpan(offset, master.Size));
+            offset += master.Size;
+            responsible.WriteTo(data.AsSpan(offset, responsible.Size));
+            offset += responsible.Size;
+            Marshalling.Struct.GetBytes(tail, data.AsSpan(offset, Options.SIZE));
 
-            return new ResourceRecord(domain, data.ToArray(), RecordType.SOA, RecordClass.IN, ttl);
+            return new ResourceRecord(domain, data, RecordType.SOA, RecordClass.IN, ttl);
         }
 
         private static IResourceRecord Rebuild(IResourceRecord record, byte[] message, int dataOffset,

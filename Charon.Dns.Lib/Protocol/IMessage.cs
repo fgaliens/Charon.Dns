@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
 namespace Charon.Dns.Lib.Protocol
 {
@@ -8,5 +9,7 @@ namespace Charon.Dns.Lib.Protocol
 
         int Size { get; }
         byte[] ToArray();
+
+        void WriteTo(Span<byte> destination) => ToArray().AsSpan().CopyTo(destination);
     }
 }

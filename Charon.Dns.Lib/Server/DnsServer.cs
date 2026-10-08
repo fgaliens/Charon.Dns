@@ -113,7 +113,7 @@ namespace Charon.Dns.Lib.Server
 
                 requestLogger.Debug("Dns server: sending response to {Remote}", remote);
 
-                await socket.SendToAsync(response.ToArray(), SocketFlags.None, remote, cancellationToken);
+                await SendResponse(socket, response, remote, cancellationToken);
 
                 requestLogger.Debug("Dns server: response sent to {Remote}", remote);
             }
@@ -127,7 +127,7 @@ namespace Charon.Dns.Lib.Server
                 {
                     var response = Response.FromRequest(request);
                     response.ResponseCode = ResponseCode.ServerFailure;
-                    await socket.SendToAsync(response.ToArray(), SocketFlags.None, remote, cancellationToken);
+                    await SendResponse(socket, response, remote, cancellationToken);
                 }
                 catch (Exception sendErrorException)
                 {
@@ -140,6 +140,22 @@ namespace Charon.Dns.Lib.Server
             finally
             {
                 ArrayPool.Return(buffer, clearArray: true);
+            }
+        }
+
+        private static async Task SendResponse(Socket socket, IResponse response, IPEndPoint remote, CancellationToken cancellationToken)
+        {
+            var responseSize = response.Size;
+            var responseBuffer = ArrayPool.Rent(responseSize);
+
+            try
+            {
+                response.WriteTo(responseBuffer.AsSpan(0, responseSize));
+                await socket.SendToAsync(responseBuffer.AsMemory(0, responseSize), SocketFlags.None, remote, cancellationToken);
+            }
+            finally
+            {
+                ArrayPool.Return(responseBuffer, clearArray: true);
             }
         }
 

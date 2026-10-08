@@ -35,6 +35,13 @@ namespace Charon.Dns.Lib.Protocol.Utils
             return buffer;
         }
 
+        public Span<byte> Reserve(int length)
+        {
+            var span = buffer.AsSpan(offset, length);
+            offset += length;
+            return span;
+        }
+
         public void Reset()
         {
             this.offset = 0;

@@ -88,15 +88,26 @@ public class UdpRequestResolver : IRequestResolver, IDisposable
         
         logger.Debug("Request resolving. Mapping request id {ExtId} -> {IntId}", originalRequestId, internalRequestId);
         
-        var requestData = request.ToArray();
-        var messageHeader = requestData.DnsMessage.Header; 
-        messageHeader.Id = internalRequestId;
-        
-        await _socket.SendToAsync(
-            requestData, 
-            SocketFlags.None, 
-            _dnsEndpoint,
-            linkedCancellationToken);
+        var requestSize = request.Size;
+        var requestBuffer = _arrayPool.Rent(requestSize);
+
+        try
+        {
+            request.WriteTo(requestBuffer.AsSpan(0, requestSize));
+            var requestMemory = requestBuffer.AsMemory(0, requestSize);
+            var messageHeader = requestMemory.DnsMessage.Header;
+            messageHeader.Id = internalRequestId;
+
+            await _socket.SendToAsync(
+                requestMemory,
+                SocketFlags.None,
+                _dnsEndpoint,
+                linkedCancellationToken);
+        }
+        finally
+        {
+            _arrayPool.Return(requestBuffer);
+        }
         
         var taskCompletionSource = new TaskCompletionSource<IResponse>();
         
