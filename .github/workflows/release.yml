@@ -50,27 +50,27 @@ jobs:
         if: steps.existing.outputs.exists == 'false'
         run: dotnet test DNS.sln -c Release --filter "FullyQualifiedName!~EndToEnd"
 
-      - name: Publish linux-x64
+      - name: Publish and package
         if: steps.existing.outputs.exists == 'false'
-        run: >
-          dotnet publish Charon.Dns/Charon.Dns.csproj
-          -c Release
-          -r linux-x64
-          --self-contained true
-          -p:PublishSingleFile=true
-          -o ./publish-output
-
-      - name: Package release archive
-        if: steps.existing.outputs.exists == 'false'
-        id: package
         run: |
-          ARCHIVE="Charon.Dns.Linux.${{ steps.version.outputs.tag }}.zip"
-          chmod +x publish-output/Charon.Dns
           mkdir -p dist
-          cp publish-output/Charon.Dns dist/
-          cp publish-output/settings.json dist/
-          (cd dist && zip -X "../$ARCHIVE" Charon.Dns settings.json)
-          echo "archive=$ARCHIVE" >> "$GITHUB_OUTPUT"
+          for RID in linux-x64 linux-arm64; do
+            dotnet publish Charon.Dns/Charon.Dns.csproj \
+              -c Release \
+              -r "$RID" \
+              --self-contained true \
+              -p:PublishSingleFile=true \
+              -o "./publish-output/$RID"
+
+            STAGE="./stage/$RID"
+            mkdir -p "$STAGE"
+            cp "publish-output/$RID/Charon.Dns" "$STAGE/"
+            cp "publish-output/$RID/settings.json" "$STAGE/"
+            cp install.sh "$STAGE/"
+            chmod +x "$STAGE/Charon.Dns" "$STAGE/install.sh"
+
+            tar -czf "dist/Charon.Dns.$RID.tar.gz" -C "$STAGE" Charon.Dns settings.json install.sh
+          done
 
       - name: Create GitHub release
         if: steps.existing.outputs.exists == 'false'
@@ -79,4 +79,4 @@ jobs:
           tag_name: ${{ steps.version.outputs.tag }}
           name: "Charon.Dns ${{ steps.version.outputs.tag }}"
           generate_release_notes: true
-          files: ${{ steps.package.outputs.archive }}
+          files: dist/*.tar.gz

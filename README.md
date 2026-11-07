@@ -43,12 +43,50 @@ Additionally, you can:
 - Use Charon.Dns as a standard DNS resolver for lookups of any record type
 - Automatically cut off network access for clients that stop using the VPN, and restore it once they're active again
 
-## Usage
+## Installation
 
-Run the server (requires root privileges on Linux for route management):
+Install (or update) the latest release as a systemd service:
 
 ```bash
-dotnet Charon.Dns.dll
+curl -fsSL https://raw.githubusercontent.com/fgaliens/DNS/master/install.sh | sudo bash -s -- --dir /etc/charon-dns
+```
+
+The installer:
+- detects the system architecture (`x86_64` and `aarch64`/`arm64`, e.g. Raspberry Pi with a 64-bit OS) and downloads the matching build from the latest GitHub release;
+- installs the `Charon.Dns` binary and the `install.sh` script into the installation directory;
+- on first install generates templates for `settings.json`, `hosts_blacklist.txt` and `other_hosts.txt` and creates and enables a `charon-dns` systemd service (not started — edit `settings.json` first, then run `sudo systemctl start charon-dns`);
+- never modifies existing configuration files or existing systemd units.
+
+To update an existing installation, run the script that lies next to the application:
+
+```bash
+sudo /etc/charon-dns/install.sh
+```
+
+The installation directory and the service name are detected automatically: from the script location, the `.service-name` file in the installation directory or existing systemd units running `Charon.Dns`. If the service is running, it is stopped for the update and started again afterwards.
+
+Installer options:
+
+| Option | Description |
+|---|---|
+| `-d`, `--dir <path>` | Installation directory (asked interactively if not set; default `/etc/charon-dns`) |
+| `-s`, `--service <name>` | systemd service name (default: detected, or `charon-dns`) |
+| `-f`, `--force` | Reinstall even if the latest version is already installed |
+| `-h`, `--help` | Show help |
+
+Useful commands:
+
+```bash
+sudo systemctl start|stop|restart charon-dns
+journalctl -u charon-dns -f   # logs are also written to <install dir>/logs
+```
+
+## Usage
+
+Run the server (requires root privileges on Linux for route management) from the directory containing `settings.json`:
+
+```bash
+sudo ./Charon.Dns
 ```
 
 Command-line options:
@@ -57,7 +95,7 @@ Command-line options:
 Any `settings.json` key can also be overridden via command-line arguments, e.g.:
 
 ```bash
-dotnet Charon.Dns.dll --LogLevel=Warning --FileLogLevel=Warning
+sudo ./Charon.Dns --LogLevel=Warning --FileLogLevel=Warning
 ```
 
 ## Configuration
