@@ -54,7 +54,7 @@ curl -fsSL https://raw.githubusercontent.com/fgaliens/DNS/master/install.sh | su
 The installer:
 - detects the system architecture (`x86_64` and `aarch64`/`arm64`, e.g. Raspberry Pi with a 64-bit OS) and downloads the matching build from the latest GitHub release;
 - installs the `Charon.Dns` binary and the `install.sh` script into the installation directory;
-- on first install generates templates for `settings.json`, `hosts_blacklist.txt` and `other_hosts.txt` and creates and enables a `charon-dns` systemd service (not started — edit `settings.json` first, then run `sudo systemctl start charon-dns`);
+- on first install generates templates for `settings.json`, `routing.json`, `hosts_blacklist.txt` and `other_hosts.txt` and creates and enables a `charon-dns` systemd service (not started — edit `settings.json` and `routing.json` first, then run `sudo systemctl start charon-dns`);
 - never modifies existing configuration files or existing systemd units.
 
 To update an existing installation, run the script that lies next to the application:
@@ -92,7 +92,7 @@ sudo ./Charon.Dns
 Command-line options:
 - `-v`, `--version` — print the application version and exit.
 
-Any `settings.json` key can also be overridden via command-line arguments, e.g.:
+Any configuration key (from `settings.json`, `routing.json` or `zones.json`) can also be overridden via command-line arguments, e.g.:
 
 ```bash
 sudo ./Charon.Dns --LogLevel=Warning --FileLogLevel=Warning
@@ -100,9 +100,9 @@ sudo ./Charon.Dns --LogLevel=Warning --FileLogLevel=Warning
 
 ## Configuration
 
-Charon.Dns is configured by editing the `settings.json` file. **Note:** The server must be restarted after any configuration changes.
+Charon.Dns is configured by editing the `settings.json` (server, upstream DNS, cache, access control), `routing.json` (traffic routing and blocking) and `zones.json` (local zones) files, located in the working directory. **Note:** The server must be restarted after any configuration changes.
 
-When built in `Debug` configuration, the server loads `settings.debug.json` and `zones.debug.json` instead — useful for local development without touching your production config. Both debug files are git-ignored.
+When built in `Debug` configuration, the server loads `settings.debug.json`, `routing.debug.json` and `zones.debug.json` instead — useful for local development without touching your production config. All debug files are git-ignored.
 
 ### settings.json Structure
 
@@ -150,7 +150,14 @@ When built in `Debug` configuration, the server loads `settings.debug.json` and 
     "ControlledIps": [ // Subnets whose clients are subject to this control
       "10.8.0.0/24"
     ]
-  },
+  }
+}
+```
+
+### routing.json Structure
+
+```json
+{
   "Routing": {
     "Period": "02:00:00", // Duration for which routes are added
     "BlockedHostNames": [ // List of domains to block
@@ -176,6 +183,8 @@ When built in `Debug` configuration, the server loads `settings.debug.json` and 
   }
 }
 ```
+
+Installations upgraded from versions before 2.0.0 may still have the `Routing` section in `settings.json` — it keeps working (`install.sh` doesn't create `routing.json` for them). To move it, cut the section into `routing.json`; it must not be present in both files, as their contents are merged.
 
 ### zones.json Structure
 

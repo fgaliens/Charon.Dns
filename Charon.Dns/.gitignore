@@ -3,3 +3,4 @@ other_hosts.txt
 start-docker.sh
 settings.debug.json
 zones.debug.json
+routing.debug.json

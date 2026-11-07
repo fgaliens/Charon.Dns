@@ -67,10 +67,11 @@ jobs:
             cp "publish-output/$RID/Charon.Dns" "$STAGE/"
             cp "publish-output/$RID/settings.json" "$STAGE/"
             cp "publish-output/$RID/zones.json" "$STAGE/"
+            cp "publish-output/$RID/routing.json" "$STAGE/"
             cp install.sh "$STAGE/"
             chmod +x "$STAGE/Charon.Dns" "$STAGE/install.sh"
 
-            tar -czf "dist/Charon.Dns.$RID.tar.gz" -C "$STAGE" Charon.Dns settings.json zones.json install.sh
+            tar -czf "dist/Charon.Dns.$RID.tar.gz" -C "$STAGE" Charon.Dns settings.json routing.json zones.json install.sh
           done
 
       - name: Create GitHub release

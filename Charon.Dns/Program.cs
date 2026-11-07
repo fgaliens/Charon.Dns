@@ -50,9 +50,11 @@ static class Program
 #if DEBUG
             .AddJsonFile("settings.debug.json")
             .AddJsonFile("zones.debug.json")
+            .AddJsonFile("routing.debug.json")
 #else
             .AddJsonFile("settings.json")
             .AddJsonFile("zones.json")
+            .AddJsonFile("routing.json", optional: true)
 #endif
             .AddCommandLine(args)
             .Build();

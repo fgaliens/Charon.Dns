@@ -300,7 +300,20 @@ write_templates() {
     "Enabled": false,
     "InactivityThreshold": "00:30:00",
     "ControlledIps": []
-  },
+  }
+}
+EOF
+
+    # Created only on first install: installations upgraded from older versions
+    # keep "Routing" in settings.json, and both files would be merged together
+    write_if_missing "$INSTALL_DIR/routing.json" <<'EOF'
+{
+  // Domain-based traffic routing and host name blocking.
+  // Restart the service after editing this file.
+  //
+  // "BySubstring" matches any host name containing the string,
+  // "ByDomainName" matches the domain and all of its subdomains.
+  // "file:<path>" in a host name list includes host names from the file.
   "Routing": {
     "Period": "02:00:00",
     "BlockedHostNames": [
@@ -327,7 +340,7 @@ EOF
     write_if_missing "$INSTALL_DIR/hosts_blacklist.txt" <<'EOF'
 # Blocked host names.
 #
-# Referenced from settings.json: "Routing" -> "BlockedHostNames" -> "file:hosts_blacklist.txt".
+# Referenced from routing.json: "Routing" -> "BlockedHostNames" -> "file:hosts_blacklist.txt".
 # Put one host name per line. Only exact host names are blocked (case-insensitive),
 # subdomains must be listed separately.
 # Empty lines and lines starting with '#' are ignored.
@@ -341,7 +354,7 @@ EOF
     write_if_missing "$INSTALL_DIR/other_hosts.txt" <<'EOF'
 # Host names to route through the interface of the routing item that references this file.
 #
-# Referenced from settings.json: "Routing" -> "Items" -> "HostNameMatches" -> "ByDomainName" -> "file:other_hosts.txt".
+# Referenced from routing.json: "Routing" -> "Items" -> "HostNameMatches" -> "ByDomainName" -> "file:other_hosts.txt".
 # Put one domain name per line. The domain and all of its subdomains are matched
 # (e.g. "example.com" also matches "www.example.com").
 # Empty lines and lines starting with '#' are ignored.
@@ -460,7 +473,7 @@ main() {
     echo
     log "Charon.Dns $latest installed to $INSTALL_DIR"
     if [[ $was_active -eq 0 ]]; then
-        echo "    Edit $INSTALL_DIR/settings.json (and zones.json for local records), then start the service:"
+        echo "    Edit $INSTALL_DIR/settings.json and routing.json (and zones.json for local records), then start the service:"
         echo "      sudo systemctl start $SERVICE_NAME"
     fi
     echo "    Logs:   journalctl -u $SERVICE_NAME -f   (or $INSTALL_DIR/logs)"
