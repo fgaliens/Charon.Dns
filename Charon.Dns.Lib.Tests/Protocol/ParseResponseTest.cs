@@ -61,7 +61,8 @@ namespace Charon.Dns.Lib.Tests.Protocol
 
             Assert.Equal(1, response.Id);
             Assert.True(response.RecursionAvailable);
-            Assert.Equal(115, response.Size);
+            // Size of the serialized message with compressed names, the fixture itself is 101 bytes
+            Assert.Equal(84, response.Size);
             Assert.Equal(1, response.Questions.Count);
             Assert.Equal(1, response.AnswerRecords.Count);
             Assert.Equal(1, response.AuthorityRecords.Count);

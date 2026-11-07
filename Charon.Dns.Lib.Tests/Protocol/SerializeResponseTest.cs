@@ -60,7 +60,8 @@ namespace Charon.Dns.Lib.Tests.Protocol
             response.Id = 1;
             response.RecursionAvailable = true;
 
-            byte[] content = Helper.ReadFixture("Response", "id-ra_all");
+            // Owner name of the answer is compressed to a pointer to the question name
+            var content = Helper.ReadFixture("Response", "id-ra_all-compressed");
 
             Assert.Equal(content, response.ToArray());
         }

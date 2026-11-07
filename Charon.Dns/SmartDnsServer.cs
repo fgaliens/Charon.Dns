@@ -44,7 +44,8 @@ public class SmartDnsServer(
             RequestCounter,
             listeningSettings.MaxParallelRequestCount,
             listeningSettings.SocketBufferSize,
-            logger);
+            logger,
+            recursionAvailable: true);
         server.Subscribe(AsyncObserver.Create<OnExceptionEventArgs>(eventArgs =>
         {
             logger.Error(eventArgs.Exception, "Error occured");

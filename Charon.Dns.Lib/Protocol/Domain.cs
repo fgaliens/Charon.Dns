@@ -15,6 +15,10 @@ namespace Charon.Dns.Lib.Protocol
         private const byte AsciiLowercaseLast = 122;
         private const byte AsciiUppercaseMask = 223;
 
+        // RFC 1035, 2.3.4
+        public const int MaxLabelLength = 63;
+        public const int MaxNameSize = 255;
+
         private readonly byte[][] _labels;
 
         public static Domain FromString(string domain)
@@ -49,11 +53,10 @@ namespace Charon.Dns.Lib.Protocol
                     ushort pointer = lengthOrPointer.GetBitValueAt(0, 6);
                     offset = (pointer << 8) | message[offset];
 
-                    if (visitedOffsetPointers.Contains(offset))
+                    if (!visitedOffsetPointers.Add(offset))
                     {
                         throw new ArgumentException("Compression pointer loop detected");
                     }
-                    visitedOffsetPointers.Add(offset);
 
                     continue;
                 }
@@ -142,17 +145,53 @@ namespace Charon.Dns.Lib.Protocol
 
         public Domain(byte[][] labels)
         {
+            Validate(labels);
             _labels = labels;
         }
 
         public Domain(string[] labels, Encoding encoding)
+            : this(labels.Select(label => encoding.GetBytes(label)).ToArray())
         {
-            _labels = labels.Select(label => encoding.GetBytes(label)).ToArray();
         }
 
-        public Domain(string domain) : this(domain.Split('.')) { }
+        /// <summary>
+        /// "" and "." are the root, a trailing dot of an absolute name is ignored.
+        /// </summary>
+        public Domain(string domain) : this(SplitLabels(domain)) { }
 
         public Domain(string[] labels) : this(labels, Encoding.ASCII) { }
+
+        private static string[] SplitLabels(string domain)
+        {
+            if (domain is "" or ".")
+            {
+                return [];
+            }
+
+            var relativeName = domain.EndsWith('.') ? domain[..^1] : domain;
+            return relativeName.Split('.');
+        }
+
+        private static void Validate(byte[][] labels)
+        {
+            // Every label is prefixed by its length, the name ends with the zero length root label
+            var size = 1;
+
+            foreach (var label in labels)
+            {
+                size += label.Length switch
+                {
+                    0 => throw new ArgumentException("Domain name contains an empty label"),
+                    > MaxLabelLength => throw new ArgumentException($"Domain name label is longer than {MaxLabelLength} bytes"),
+                    _ => label.Length + 1
+                };
+            }
+
+            if (size > MaxNameSize)
+            {
+                throw new ArgumentException($"Domain name is longer than {MaxNameSize} bytes");
+            }
+        }
 
         public bool TryGetParent(out Domain parent)
         {

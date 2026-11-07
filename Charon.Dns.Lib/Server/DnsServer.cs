@@ -2,6 +2,7 @@
 using System;
 using System.Buffers;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
@@ -10,6 +11,7 @@ using System.Threading.Tasks;
 using Charon.Dns.Lib.AsyncEvents;
 using Charon.Dns.Lib.Client.RequestResolver;
 using Charon.Dns.Lib.Protocol;
+using Charon.Dns.Lib.Protocol.ResourceRecords;
 using Charon.Dns.Lib.Tracing;
 using Charon.Dns.Utils.Units;
 using Serilog;
@@ -22,7 +24,8 @@ namespace Charon.Dns.Lib.Server
         IRequestCounter requestCounter,
         int parallelizationFactor,
         ByteUnit socketBufferSize,
-        ILogger logger)
+        ILogger logger,
+        bool recursionAvailable = false)
             : IAsyncObservable<OnRequestEventArgs>,
             IAsyncObservable<OnResponseEventArgs>,
             IAsyncObservable<OnExceptionEventArgs>,
@@ -31,6 +34,11 @@ namespace Charon.Dns.Lib.Server
         private static readonly ArrayPool<byte> ArrayPool = ArrayPool<byte>.Shared;
 
         private const int MaxUdpRequestSize = 4096;
+        // RFC 1035, 4.2.1: without EDNS a UDP message is limited to 512 bytes
+        private const int MinUdpPayloadSize = 512;
+        // Recommended by DNS Flag Day 2020 to avoid IP fragmentation
+        private const RecordClass AdvertisedUdpPayloadSize = (RecordClass)1232;
+        private static readonly Domain RootName = new(string.Empty);
 
         private readonly AsyncObservable<OnRequestEventArgs> _requestEventObservable = new();
         private readonly AsyncObservable<OnResponseEventArgs> _responseEventObservable = new();
@@ -78,11 +86,12 @@ namespace Charon.Dns.Lib.Server
             IPEndPoint? remote = null;
             RequestTrace? trace = null;
             Request? request = null;
+            byte[]? message = null;
 
             try
             {
                 var requestInfo = await socket.ReceiveFromAsync(buffer, endpoint, cancellationToken);
-                var message = buffer[..requestInfo.ReceivedBytes];
+                message = buffer[..requestInfo.ReceivedBytes];
                 remote = (IPEndPoint)requestInfo.RemoteEndPoint;
                 trace = new RequestTrace
                 {
@@ -113,7 +122,7 @@ namespace Charon.Dns.Lib.Server
 
                 requestLogger.Debug("Dns server: sending response to {Remote}", remote);
 
-                await SendResponse(socket, response, remote, cancellationToken);
+                await SendResponse(socket, response, request, remote, cancellationToken);
 
                 requestLogger.Debug("Dns server: response sent to {Remote}", remote);
             }
@@ -125,9 +134,11 @@ namespace Charon.Dns.Lib.Server
 
                 try
                 {
-                    var response = Response.FromRequest(request);
-                    response.ResponseCode = ResponseCode.ServerFailure;
-                    await SendResponse(socket, response, remote, cancellationToken);
+                    var errorResponse = CreateErrorResponse(request, message);
+                    if (errorResponse is not null)
+                    {
+                        await SendResponse(socket, errorResponse, request, remote, cancellationToken);
+                    }
                 }
                 catch (Exception sendErrorException)
                 {
@@ -143,9 +154,61 @@ namespace Charon.Dns.Lib.Server
             }
         }
 
-        private static async Task SendResponse(Socket socket, IResponse response, IPEndPoint remote, CancellationToken cancellationToken)
+        private Response? CreateErrorResponse(Request? request, byte[]? message)
         {
+            if (request is not null)
+            {
+                var serverFailure = Response.FromRequest(request);
+                serverFailure.ResponseCode = ResponseCode.ServerFailure;
+                serverFailure.RecursionAvailable = recursionAvailable;
+
+                // RFC 6891, 7: a response to an EDNS request carries an OPT record
+                if (request.AdditionalRecords.Any(record => record.Type == RecordType.OPT))
+                {
+                    var opt = new ResourceRecord(RootName, [], RecordType.OPT, AdvertisedUdpPayloadSize);
+                    serverFailure.AdditionalRecords.Add(opt);
+                }
+
+                return serverFailure;
+            }
+
+            if (message is null || message.Length < Header.HeaderSize)
+            {
+                return null;
+            }
+
+            // A response is never answered, otherwise two servers could answer each other endlessly
+            var header = Header.FromArray(message);
+            if (header.Response)
+            {
+                return null;
+            }
+
+            return new Response
+            {
+                Id = header.Id,
+                OperationCode = header.OperationCode,
+                RecursionDesired = header.RecursionDesired,
+                RecursionAvailable = recursionAvailable,
+                ResponseCode = ResponseCode.FormatError,
+            };
+        }
+
+        private static async Task SendResponse(
+            Socket socket,
+            IResponse response,
+            IReadOnlyRequest? request,
+            IPEndPoint remote,
+            CancellationToken cancellationToken)
+        {
+            var maxResponseSize = GetMaxResponseSize(request);
             var responseSize = response.Size;
+            if (responseSize > maxResponseSize)
+            {
+                response = Truncate(response);
+                responseSize = response.Size;
+            }
+
             var responseBuffer = ArrayPool.Rent(responseSize);
 
             try
@@ -157,6 +220,53 @@ namespace Charon.Dns.Lib.Server
             {
                 ArrayPool.Return(responseBuffer, clearArray: true);
             }
+        }
+
+        /// <summary>
+        /// RFC 6891, 6.2.5: a payload size less than 512 is treated as 512.
+        /// </summary>
+        internal static int GetMaxResponseSize(IReadOnlyRequest? request)
+        {
+            if (request is null)
+            {
+                return MinUdpPayloadSize;
+            }
+
+            foreach (var record in request.AdditionalRecords)
+            {
+                if (record.Type == RecordType.OPT)
+                {
+                    int payloadSize = (ushort)record.Class;
+                    return Math.Max(MinUdpPayloadSize, payloadSize);
+                }
+            }
+
+            return MinUdpPayloadSize;
+        }
+
+        /// <summary>
+        /// RFC 2181, 9: records are dropped and the TC flag is set, so the client may retry over TCP.
+        /// The OPT record is kept, as it describes the server rather than the answer.
+        /// </summary>
+        internal static Response Truncate(IReadOnlyResponse response)
+        {
+            var truncated = new Response(response)
+            {
+                Truncated = true,
+            };
+            truncated.AnswerRecords.Clear();
+            truncated.AuthorityRecords.Clear();
+
+            var additionalRecords = truncated.AdditionalRecords;
+            for (var i = additionalRecords.Count - 1; i >= 0; i--)
+            {
+                if (additionalRecords[i].Type != RecordType.OPT)
+                {
+                    additionalRecords.RemoveAt(i);
+                }
+            }
+
+            return truncated;
         }
 
         private Socket CreateSocket(AddressFamily addressFamily, IPEndPoint endpoint)

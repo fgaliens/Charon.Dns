@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Linq;
 using Charon.Dns.Lib.Protocol.ResourceRecords;
@@ -177,7 +178,28 @@ namespace Charon.Dns.Lib.Protocol
             set { header.ResponseCode = value; }
         }
 
+        /// <summary>
+        /// Size of the message with compressed domain names.
+        /// </summary>
         public int Size
+        {
+            get
+            {
+                var uncompressedSize = UncompressedSize;
+                var buffer = ArrayPool<byte>.Shared.Rent(uncompressedSize);
+
+                try
+                {
+                    return WriteCompressed(buffer.AsSpan(0, uncompressedSize));
+                }
+                finally
+                {
+                    ArrayPool<byte>.Shared.Return(buffer);
+                }
+            }
+        }
+
+        private int UncompressedSize
         {
             get
             {
@@ -191,38 +213,50 @@ namespace Charon.Dns.Lib.Protocol
 
         public byte[] ToArray()
         {
-            UpdateHeader();
-            var result = new byte[Size];
-            WriteToCore(result);
-            return result;
+            var buffer = new byte[UncompressedSize];
+            var size = WriteCompressed(buffer);
+            Array.Resize(ref buffer, size);
+            return buffer;
         }
 
         public void WriteTo(Span<byte> destination)
         {
+            WriteCompressed(destination);
+        }
+
+        private int WriteCompressed(Span<byte> destination)
+        {
             UpdateHeader();
-            WriteToCore(destination);
-        }
 
-        private void WriteToCore(Span<byte> destination)
-        {
-            header.WriteTo(destination[..header.Size]);
-            var offset = header.Size;
+            var writer = new MessageWriter(destination);
 
-            offset = WriteEntries(questions, destination, offset);
-            offset = WriteEntries(answers, destination, offset);
-            offset = WriteEntries(authority, destination, offset);
-            WriteEntries(additional, destination, offset);
-        }
-
-        private static int WriteEntries<T>(IList<T> entries, Span<byte> destination, int offset) where T : IMessageEntry
-        {
-            foreach (var entry in entries)
+            try
             {
-                entry.WriteTo(destination.Slice(offset, entry.Size));
-                offset += entry.Size;
-            }
+                writer.WriteHeader(header);
 
-            return offset;
+                foreach (var question in questions)
+                {
+                    writer.WriteQuestion(question);
+                }
+
+                WriteRecords(ref writer, answers);
+                WriteRecords(ref writer, authority);
+                WriteRecords(ref writer, additional);
+
+                return writer.Position;
+            }
+            finally
+            {
+                writer.Dispose();
+            }
+        }
+
+        private static void WriteRecords(ref MessageWriter writer, IList<IResourceRecord> records)
+        {
+            foreach (var record in records)
+            {
+                writer.WriteRecord(record);
+            }
         }
 
         public override string ToString()

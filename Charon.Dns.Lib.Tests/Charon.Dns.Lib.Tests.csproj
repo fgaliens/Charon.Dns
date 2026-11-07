@@ -13,6 +13,7 @@
     <None Remove="Fixtures\ResourceRecord\*" />
     <None Remove="Fixtures\Response\*" />
     <None Remove="Fixtures\CharacterString\*" />
+    <None Remove="Fixtures\Upstream\*" />
   </ItemGroup>
 
   <ItemGroup>
@@ -35,6 +36,9 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="Fixtures\CharacterString\*">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Fixtures\Upstream\*">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
   </ItemGroup>

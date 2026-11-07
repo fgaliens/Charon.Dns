@@ -154,7 +154,7 @@ namespace Charon.Dns.Lib.Protocol
             Span<byte> buffer = stackalloc byte[128 / 8];
             if (withId)
             {
-                BinaryPrimitives.WriteUInt16BigEndian(buffer[..1], id);
+                BinaryPrimitives.WriteUInt16BigEndian(buffer[..2], id);
             }
             buffer[2] = flag0;
             buffer[3] = flag1;
