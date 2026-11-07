@@ -219,7 +219,44 @@ write_if_missing() {
     fi
 }
 
+write_zones_template() {
+    write_if_missing "$INSTALL_DIR/zones.json" <<'EOF'
+{
+  // Local DNS zones the server is authoritative for.
+  // Names inside a zone are answered locally only (including "not found"), they are never forwarded upstream.
+  // Restart the service after editing this file.
+  //
+  // Names: "@" is the zone origin, "name." (trailing dot) is absolute, any other name is relative to the origin.
+  // Supported types and values:
+  //   A / AAAA  - "10.0.0.1" / "fd00::1"
+  //   CNAME, NS, PTR - "target"
+  //   MX        - "<preference> <exchange>"
+  //   SRV       - "<priority> <weight> <port> <target>"
+  //   TXT       - "any text"
+  // "ResolveOnlyIfRequestCameFrom" returns the record only to the given client IP.
+  //
+  // Example:
+  // "Zones": [
+  //   {
+  //     "Origin": "my.home",
+  //     "Records": [
+  //       { "Name": "@",   "Type": "A",     "Value": "10.10.1.25" },
+  //       { "Name": "@",   "Type": "A",     "Value": "192.168.1.1", "ResolveOnlyIfRequestCameFrom": "10.10.1.1" },
+  //       { "Name": "nas", "Type": "CNAME", "Value": "@" },
+  //       { "Name": "@",   "Type": "MX",    "Value": "10 mail" }
+  //     ]
+  //   }
+  // ]
+  "DefaultTtl": "00:05:00",
+  "Zones": []
+}
+EOF
+}
+
 write_templates() {
+    # Created separately, so upgrades from versions without zones get it too
+    write_zones_template
+
     if [[ -e "$INSTALL_DIR/settings.json" ]]; then
         log "Keeping existing configuration files"
         return
@@ -253,9 +290,6 @@ write_templates() {
           "RouteThroughInterface": "wg0"
         }
       ]
-    },
-    "DnsRecords": {
-      "A": []
     }
   },
   "Cache": {
@@ -426,7 +460,7 @@ main() {
     echo
     log "Charon.Dns $latest installed to $INSTALL_DIR"
     if [[ $was_active -eq 0 ]]; then
-        echo "    Edit $INSTALL_DIR/settings.json, then start the service:"
+        echo "    Edit $INSTALL_DIR/settings.json (and zones.json for local records), then start the service:"
         echo "      sudo systemctl start $SERVICE_NAME"
     fi
     echo "    Logs:   journalctl -u $SERVICE_NAME -f   (or $INSTALL_DIR/logs)"

@@ -1,3 +1,5 @@
 other_hosts.txt
 /logs
 start-docker.sh
+settings.debug.json
+zones.debug.json

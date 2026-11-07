@@ -197,7 +197,8 @@ namespace Charon.Dns.Lib.Server
                 foreach (var resolver in _resolvers)
                 {
                     response = await resolver.Resolve(request, trace, cancellationToken);
-                    if (response.AnswerRecords.Count > 0)
+                    // Authoritative response is final even without answers (NXDOMAIN / NODATA)
+                    if (response.AnswerRecords.Count > 0 || response.AuthorativeServer)
                     {
                         break;
                     }

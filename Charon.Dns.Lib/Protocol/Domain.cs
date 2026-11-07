@@ -154,6 +154,18 @@ namespace Charon.Dns.Lib.Protocol
 
         public Domain(string[] labels) : this(labels, Encoding.ASCII) { }
 
+        public bool TryGetParent(out Domain parent)
+        {
+            if (_labels.Length <= 1)
+            {
+                parent = null;
+                return false;
+            }
+
+            parent = new Domain(_labels[1..]);
+            return true;
+        }
+
         public int Size
         {
             get { return _labels.Sum(l => l.Length) + _labels.Length + 1; }

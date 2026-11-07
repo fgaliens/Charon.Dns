@@ -1,0 +1,12 @@
+{
+  "DefaultTtl": "00:05:00",
+  "Zones": [
+    {
+      "Origin": "my.home",
+      "Records": [
+        { "Name": "@", "Type": "A", "Value": "10.11.1.2" },
+        { "Name": "@", "Type": "A", "Value": "192.168.1.1", "ResolveOnlyIfRequestCameFrom": "127.0.0.1" }
+      ]
+    }
+  ]
+}

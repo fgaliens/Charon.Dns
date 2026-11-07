@@ -49,8 +49,10 @@ static class Program
             .SetBasePath(Directory.GetCurrentDirectory())
 #if DEBUG
             .AddJsonFile("settings.debug.json")
+            .AddJsonFile("zones.debug.json")
 #else
             .AddJsonFile("settings.json")
+            .AddJsonFile("zones.json")
 #endif
             .AddCommandLine(args)
             .Build();
@@ -102,6 +104,7 @@ static class Program
                 .AddSingleton<IConfiguration>(config)
                 .AddSettings<ListeningSettings>()
                 .AddSettings<DnsRecordsSettings>()
+                .AddSettings<ZonesSettings>()
                 .AddSettings<DnsChainSettings>()
                 .AddSettings<RoutingSettings>()
                 .AddSettings<CacheSettings>()

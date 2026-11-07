@@ -29,23 +29,6 @@
           "RouteThroughInterface": "wg0"
         }
       ]
-    },
-    "DnsRecords": {
-      "A": [
-        {
-          "Name": "my.home",
-          "Address": "10.11.1.2"
-        },
-        {
-          "Name": "my.hm",
-          "Address": "10.11.1.2"
-        },
-        {
-          "Name": "my.hm",
-          "Address": "192.168.1.1",
-          "ResolveOnlyIfRequestCameFrom": "127.0.0.1"
-        }
-      ]
     }
   },
   "Cache": {

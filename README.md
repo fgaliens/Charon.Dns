@@ -26,7 +26,7 @@ Charon.Dns solves this by automatically adding routes whenever it receives DNS q
 Automatically adds Linux routes for domains as they are queried, enabling selective routing through specific gateways.
 
 ### 🔍 DNS Resolution
-Resolves any query type (A, AAAA, CNAME, MX, SOA, SRV, TXT, etc.) by forwarding it to upstream DNS servers. Can also answer directly from a small set of locally configured static records — currently `A` only — without a round trip upstream (see `DnsRecords` in Configuration).
+Resolves any query type (A, AAAA, CNAME, MX, SOA, SRV, TXT, etc.) by forwarding it to upstream DNS servers. Can also serve local zones authoritatively (A, AAAA, CNAME, MX, NS, PTR, SRV, TXT) without a round trip upstream (see `zones.json` in Configuration).
 
 ### 🚫 Domain Blocking
 Blocks unwanted domains by adding them to a blacklist — perfect for blocking analytics trackers, advertising domains, or any other undesirable destinations.
@@ -102,7 +102,7 @@ sudo ./Charon.Dns --LogLevel=Warning --FileLogLevel=Warning
 
 Charon.Dns is configured by editing the `settings.json` file. **Note:** The server must be restarted after any configuration changes.
 
-When built in `Debug` configuration, the server loads `settings.debug.json` instead — useful for local development without touching your production config.
+When built in `Debug` configuration, the server loads `settings.debug.json` and `zones.debug.json` instead — useful for local development without touching your production config. Both debug files are git-ignored.
 
 ### settings.json Structure
 
@@ -136,19 +136,6 @@ When built in `Debug` configuration, the server loads `settings.debug.json` inst
         {
           "Ip": "8.8.8.8",
           "RouteThroughInterface": "wg0"
-        }
-      ]
-    },
-    "DnsRecords": { // Local static records the server answers directly, without querying upstream
-      "A": [ // Only the A record type is supported here
-        {
-          "Name": "my.home",
-          "Address": "10.10.1.25"
-        },
-        {
-          "Name": "my.home",
-          "Address": "192.168.1.1",
-          "ResolveOnlyIfRequestCameFrom": "10.10.1.1" // Conditional response based on source IP
         }
       ]
     }
@@ -189,6 +176,44 @@ When built in `Debug` configuration, the server loads `settings.debug.json` inst
   }
 }
 ```
+
+### zones.json Structure
+
+Local zones live in `zones.json` next to `settings.json` and are loaded the same way (`zones.debug.json` in `Debug`). `install.sh` creates it if missing. The server is authoritative for every name inside a zone: missing names get `NXDOMAIN`, missing record types get an empty answer (both with the zone `SOA` in the authority section), and such queries are never forwarded upstream. `CNAME` records pointing inside local zones are followed.
+
+```json
+{
+  "DefaultTtl": "00:05:00", // TTL for records without their own "Ttl"
+  "Zones": [
+    {
+      "Origin": "my.home", // Zone name
+      "Ttl": "00:05:00", // Optional, overrides DefaultTtl for this zone
+      "Soa": { // Optional, these are the defaults
+        "PrimaryNameServer": "ns",
+        "ResponsibleMailbox": "hostmaster",
+        "Serial": 1,
+        "Refresh": "01:00:00",
+        "Retry": "00:10:00",
+        "Expire": "1.00:00:00",
+        "MinimumTtl": "00:05:00" // Defaults to the zone TTL
+      },
+      "Records": [
+        { "Name": "@", "Type": "A", "Value": "10.10.1.25" },
+        { "Name": "@", "Type": "A", "Value": "192.168.1.1", "ResolveOnlyIfRequestCameFrom": "10.10.1.1" }, // Returned only to this client
+        { "Name": "@", "Type": "AAAA", "Value": "fd00::25" },
+        { "Name": "nas", "Type": "CNAME", "Value": "@" },
+        { "Name": "@", "Type": "MX", "Value": "10 mail" }, // "<preference> <exchange>"
+        { "Name": "@", "Type": "TXT", "Value": "v=spf1 -all" },
+        { "Name": "_http._tcp", "Type": "SRV", "Value": "0 5 80 nas", "Ttl": "01:00:00" } // "<priority> <weight> <port> <target>"
+      ]
+    }
+  ]
+}
+```
+
+Names in `Name` and in domain parts of `Value`: `@` is the zone origin, a name ending with a dot (`example.com.`) is absolute, any other name is relative to the origin (`nas` → `nas.my.home`).
+
+The legacy `Server:DnsRecords:A` section of `settings.json` is still read, but deprecated: its records are answered non-authoritatively and a warning is logged on startup.
 
 ## Requirements
 

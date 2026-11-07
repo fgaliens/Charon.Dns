@@ -11,6 +11,8 @@ RUN dotnet restore "Charon.Dns/Charon.Dns.csproj"
 COPY . .
 RUN rm Charon.Dns/settings.json
 RUN mv Charon.Dns/settings.docker.json Charon.Dns/settings.json
+RUN rm Charon.Dns/zones.json
+RUN mv Charon.Dns/zones.docker.json Charon.Dns/zones.json
 WORKDIR "/src/Charon.Dns"
 RUN dotnet build "./Charon.Dns.csproj" -c $BUILD_CONFIGURATION -o /app/build
 

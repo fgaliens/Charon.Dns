@@ -5,6 +5,7 @@ using Charon.Dns.Lib.Server;
 using Charon.Dns.RequestResolving;
 using Charon.Dns.Settings;
 using Charon.Dns.Utils;
+using Charon.Dns.Zones;
 using Serilog;
 
 namespace Charon.Dns;
@@ -14,6 +15,7 @@ public class SmartDnsServer(
     IRequestInterceptor requestInterceptor,
     IResponseInterceptor responseInterceptor,
     ListeningSettings listeningSettings,
+    ZonesSettings zonesSettings,
     DnsRecordsSettings dnsRecords,
     CacheSettings cacheSettings,
     ILogger logger)
@@ -27,17 +29,14 @@ public class SmartDnsServer(
         var cancellationToken = _cancellationTokenSource.Token;
         cancellationToken.ThrowIfCancellationRequested();
         
-        var masterFile = new MasterFile(cacheSettings.TimeToLive);
-        foreach (var aRecord in dnsRecords.ARecords)
-        {
-            masterFile.AddIpAddressResourceRecord(
-                aRecord.Name, 
-                aRecord.Address,
-                aRecord.ResolveOnlyIfRequestCameFrom);
-        }
+        var zoneResolver = ZoneResolverFactory.Create(
+            zonesSettings,
+            dnsRecords,
+            cacheSettings.TimeToLive,
+            logger);
 
         var requestResolvers = new DnsServer.FallbackRequestResolver(
-            masterFile,
+            zoneResolver,
             smartRequestResolver);
         
         var server = new DnsServer(

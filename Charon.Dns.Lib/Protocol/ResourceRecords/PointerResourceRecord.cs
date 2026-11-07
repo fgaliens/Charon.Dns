@@ -12,7 +12,12 @@ namespace Charon.Dns.Lib.Protocol.ResourceRecords
         }
 
         public PointerResourceRecord(IPAddress ip, Domain pointer, TimeSpan ttl = default(TimeSpan)) :
-            base(new ResourceRecord(Domain.PointerName(ip), pointer.ToArray(), RecordType.PTR, RecordClass.IN, ttl))
+            this(Domain.PointerName(ip), pointer, ttl)
+        {
+        }
+
+        public PointerResourceRecord(Domain name, Domain pointer, TimeSpan ttl = default(TimeSpan)) :
+            base(new ResourceRecord(name, pointer.ToArray(), RecordType.PTR, RecordClass.IN, ttl))
         {
             PointerDomainName = pointer;
         }
