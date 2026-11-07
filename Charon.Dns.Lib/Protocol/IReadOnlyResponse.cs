@@ -10,6 +10,7 @@ namespace Charon.Dns.Lib.Protocol
         IReadOnlyList<IResourceRecord> AnswerRecords { get; }
         IReadOnlyList<IResourceRecord> AuthorityRecords { get; }
         IReadOnlyList<IResourceRecord> AdditionalRecords { get; }
+        bool RecursionDesired { get; }
         bool RecursionAvailable { get; }
         bool AuthenticData { get; }
         bool CheckingDisabled { get; }

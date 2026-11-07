@@ -64,6 +64,7 @@ namespace Charon.Dns.RequestResolving
                     logger.Information("Dns request was blocked ({@Request})", request);
                     var blockedResponse = Response.FromRequest(request);
                     blockedResponse.ResponseCode = ResponseCode.NameError;
+                    blockedResponse.RecursionAvailable = true;
                     return blockedResponse;
                 }
                 

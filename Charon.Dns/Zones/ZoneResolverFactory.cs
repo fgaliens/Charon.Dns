@@ -18,7 +18,9 @@ public static class ZoneResolverFactory
         TimeSpan legacyTtl,
         ILogger logger)
     {
-        var builder = new ZoneResolverBuilder();
+        // Names outside of zones are resolved by upstream servers
+        var builder = new ZoneResolverBuilder()
+            .WithRecursionAvailable();
 
         try
         {

@@ -6,6 +6,7 @@ using Charon.Dns.Lib.Protocol.Utils;
 
 namespace Charon.Dns.Lib.Protocol
 {
+    // TODO: Refactoring: code style + namespace
     public class Response : IResponse
     {
         private Header header;
@@ -19,6 +20,7 @@ namespace Charon.Dns.Lib.Protocol
             Response response = new Response();
 
             response.Id = request.Id;
+            response.RecursionDesired = request.RecursionDesired;
 
             foreach (Question question in request.Questions)
             {
@@ -86,8 +88,12 @@ namespace Charon.Dns.Lib.Protocol
             this.header.Response = true;
 
             Id = response.Id;
+            RecursionDesired = response.RecursionDesired;
             RecursionAvailable = response.RecursionAvailable;
+            AuthenticData = response.AuthenticData;
+            CheckingDisabled = response.CheckingDisabled;
             AuthorativeServer = response.AuthorativeServer;
+            Truncated = response.Truncated;
             OperationCode = response.OperationCode;
             ResponseCode = response.ResponseCode;
         }
@@ -121,6 +127,12 @@ namespace Charon.Dns.Lib.Protocol
         {
             get { return header.Id; }
             set { header.Id = value; }
+        }
+
+        public bool RecursionDesired
+        {
+            get { return header.RecursionDesired; }
+            set { header.RecursionDesired = value; }
         }
 
         public bool RecursionAvailable

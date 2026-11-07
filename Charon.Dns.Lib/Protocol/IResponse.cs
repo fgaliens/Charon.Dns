@@ -10,6 +10,7 @@ namespace Charon.Dns.Lib.Protocol
         new IList<IResourceRecord> AnswerRecords { get; }
         new IList<IResourceRecord> AuthorityRecords { get; }
         new IList<IResourceRecord> AdditionalRecords { get; }
+        new bool RecursionDesired { get; set; }
         new bool RecursionAvailable { get; set; }
         new bool AuthenticData { get; set; }
         new bool CheckingDisabled { get; set; }

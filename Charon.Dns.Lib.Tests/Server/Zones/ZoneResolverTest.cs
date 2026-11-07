@@ -257,6 +257,40 @@ namespace Charon.Dns.Lib.Tests.Server.Zones
             Assert.Equal(1, nextResolver.Calls);
         }
 
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task RecursionAvailable_DependsOnBuilderOption(bool recursionAvailable)
+        {
+            var soa = CreateSoa(Origin);
+            var builder = new ZoneResolverBuilder().AddZone(soa);
+            if (recursionAvailable)
+            {
+                builder.WithRecursionAvailable();
+            }
+            var resolver = builder.Build();
+
+            var response = await Resolve(resolver, "my.home", RecordType.SOA);
+
+            Assert.Equal(recursionAvailable, response.RecursionAvailable);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task RecursionDesired_IsCopiedFromRequest(bool recursionDesired)
+        {
+            var resolver = CreateZone(_ => { });
+            var question = new Question(Origin, RecordType.SOA);
+            IRequest request = new Request();
+            request.RecursionDesired = recursionDesired;
+            request.Questions.Add(question);
+
+            var response = await resolver.Resolve(request, RequestTrace.Empty);
+
+            Assert.Equal(recursionDesired, response.RecursionDesired);
+        }
+
         private static ZoneResolver CreateZone(Action<ZoneResolverBuilder> configure)
         {
             var soa = CreateSoa(Origin);

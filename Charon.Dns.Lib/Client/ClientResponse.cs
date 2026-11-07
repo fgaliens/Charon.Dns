@@ -7,12 +7,12 @@ namespace Charon.Dns.Lib.Client
 {
     public class ClientResponse : IResponse
     {
-        private IResponse response;
-        private byte[] message;
+        private readonly IResponse _response;
+        private readonly byte[] _message;
 
         public static ClientResponse FromArray(IRequest request, byte[] message)
         {
-            Response response = Response.FromArray(message);
+            var response = Response.FromArray(message);
             return new ClientResponse(request, response, message);
         }
 
@@ -20,106 +20,101 @@ namespace Charon.Dns.Lib.Client
         {
             Request = request;
 
-            this.message = message;
-            this.response = response;
+            _message = message;
+            _response = response;
         }
 
         internal ClientResponse(IRequest request, IResponse response)
         {
             Request = request;
 
-            this.message = response.ToArray();
-            this.response = response;
+            _message = response.ToArray();
+            _response = response;
         }
 
         public IRequest Request { get; }
 
         public int Id
         {
-            get { return response.Id; }
+            get => _response.Id;
             set { }
         }
 
-        public IList<IResourceRecord> AnswerRecords
-        {
-            get { return response.AnswerRecords; }
-        }
+        public IList<IResourceRecord> AnswerRecords => 
+            _response.AnswerRecords;
 
-        public IList<IResourceRecord> AuthorityRecords
-        {
-            get { return new ReadOnlyCollection<IResourceRecord>(response.AuthorityRecords); }
-        }
+        public IList<IResourceRecord> AuthorityRecords => 
+            new ReadOnlyCollection<IResourceRecord>(_response.AuthorityRecords);
 
-        public IList<IResourceRecord> AdditionalRecords
+        public IList<IResourceRecord> AdditionalRecords => 
+            new ReadOnlyCollection<IResourceRecord>(_response.AdditionalRecords);
+
+        public bool RecursionDesired
         {
-            get { return new ReadOnlyCollection<IResourceRecord>(response.AdditionalRecords); }
+            get => _response.RecursionDesired;
+            set { }
         }
 
         public bool RecursionAvailable
         {
-            get { return response.RecursionAvailable; }
+            get => _response.RecursionAvailable;
             set { }
         }
 
         public bool AuthenticData
         {
-            get { return response.AuthenticData; }
+            get => _response.AuthenticData;
             set { }
         }
 
         public bool CheckingDisabled
         {
-            get { return response.CheckingDisabled; }
+            get => _response.CheckingDisabled;
             set { }
         }
 
         public bool AuthorativeServer
         {
-            get { return response.AuthorativeServer; }
+            get => _response.AuthorativeServer;
             set { }
         }
 
         public bool Truncated
         {
-            get { return response.Truncated; }
+            get => _response.Truncated;
             set { }
         }
 
         public OperationCode OperationCode
         {
-            get { return response.OperationCode; }
+            get => _response.OperationCode;
             set { }
         }
 
         public ResponseCode ResponseCode
         {
-            get { return response.ResponseCode; }
+            get => _response.ResponseCode;
             set { }
         }
 
-        public IList<Question> Questions
-        {
-            get { return new ReadOnlyCollection<Question>(response.Questions); }
-        }
+        public IList<Question> Questions => 
+            new ReadOnlyCollection<Question>(_response.Questions);
 
-        IReadOnlyList<Question> IReadOnlyResponse.Questions => (IReadOnlyList<Question>)response.Questions;
-        IReadOnlyList<IResourceRecord> IReadOnlyResponse.AnswerRecords => (IReadOnlyList<IResourceRecord>)response.AnswerRecords;
-        IReadOnlyList<IResourceRecord> IReadOnlyResponse.AuthorityRecords => (IReadOnlyList<IResourceRecord>)response.AuthorityRecords;
-        IReadOnlyList<IResourceRecord> IReadOnlyResponse.AdditionalRecords => (IReadOnlyList<IResourceRecord>)response.AdditionalRecords;
+        IReadOnlyList<Question> IReadOnlyResponse.Questions => (IReadOnlyList<Question>)_response.Questions;
+        IReadOnlyList<IResourceRecord> IReadOnlyResponse.AnswerRecords => (IReadOnlyList<IResourceRecord>)_response.AnswerRecords;
+        IReadOnlyList<IResourceRecord> IReadOnlyResponse.AuthorityRecords => (IReadOnlyList<IResourceRecord>)_response.AuthorityRecords;
+        IReadOnlyList<IResourceRecord> IReadOnlyResponse.AdditionalRecords => (IReadOnlyList<IResourceRecord>)_response.AdditionalRecords;
 
-        public int Size
-        {
-            get { return message.Length; }
-        }
+        public int Size => _message.Length;
 
         public byte[] ToArray()
         {
-            return message;
+            return _message;
         }
 
         public override string ToString()
         {
-            return response.ToString();
+            return _response.ToString();
         }
     }
 }

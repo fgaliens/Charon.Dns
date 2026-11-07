@@ -12,6 +12,18 @@ namespace Charon.Dns.Lib.Server.Zones
     {
         private readonly Dictionary<Domain, (StartOfAuthorityResourceRecord Soa, Dictionary<Domain, DomainRecords> Nodes)> _zones = new();
         private readonly Dictionary<Domain, DomainRecords> _standalone = new();
+        private bool _recursionAvailable;
+
+        /// <summary>
+        /// Marks responses as coming from a server that resolves other names recursively,
+        /// e.g. when the resolver is a part of a fallback chain with upstream servers.
+        /// </summary>
+        public ZoneResolverBuilder WithRecursionAvailable()
+        {
+            _recursionAvailable = true;
+
+            return this;
+        }
 
         public ZoneResolverBuilder AddZone(StartOfAuthorityResourceRecord soa)
         {
@@ -72,7 +84,7 @@ namespace Charon.Dns.Lib.Server.Zones
             var frozenZones = zones.ToFrozenDictionary();
             var frozenStandalone = _standalone.ToFrozenDictionary();
 
-            return new ZoneResolver(frozenZones, frozenStandalone);
+            return new ZoneResolver(frozenZones, frozenStandalone, _recursionAvailable);
         }
 
         private static void AddTo(

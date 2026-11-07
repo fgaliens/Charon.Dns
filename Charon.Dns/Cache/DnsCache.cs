@@ -14,7 +14,7 @@ public class DnsCache(
     ILogger logger)
     : IDnsCache
 {
-    private ConcurrentDictionary<IReadOnlyRequest, CacheEntry> _cache = new();
+    private readonly ConcurrentDictionary<IReadOnlyRequest, CacheEntry> _cache = new(CachedRequestComparer.Instance);
 
     public void AddResponse(
         IReadOnlyRequest request,
@@ -34,11 +34,19 @@ public class DnsCache(
         cacheTtl = cacheTtl > TimeSpan.Zero ? cacheTtl : cacheSettings.TimeToLive;
         var validUntil = dateTimeProvider.UtcNow + cacheTtl;
 
+        // The response is shared between clients, so it must not carry the cookie of the first one
+        var sharedResponse = new Response(response);
+        var additionalRecords = sharedResponse.AdditionalRecords;
+        for (var i = 0; i < additionalRecords.Count; i++)
+        {
+            additionalRecords[i] = additionalRecords[i].WithoutCookie();
+        }
+
         var responseEntry = new CacheEntry
         {
             ValidUntil = validUntil,
             Request = request,
-            Response = response,
+            Response = sharedResponse,
         };
             
         if (_cache.TryAdd(request, responseEntry))

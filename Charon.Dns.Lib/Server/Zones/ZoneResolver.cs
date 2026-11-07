@@ -22,13 +22,16 @@ namespace Charon.Dns.Lib.Server.Zones
 
         private readonly FrozenDictionary<Domain, Zone> _zones;
         private readonly FrozenDictionary<Domain, DomainRecords> _standalone;
+        private readonly bool _recursionAvailable;
 
         internal ZoneResolver(
             FrozenDictionary<Domain, Zone> zones,
-            FrozenDictionary<Domain, DomainRecords> standalone)
+            FrozenDictionary<Domain, DomainRecords> standalone,
+            bool recursionAvailable)
         {
             _zones = zones;
             _standalone = standalone;
+            _recursionAvailable = recursionAvailable;
         }
 
         public Task<IResponse> Resolve(
@@ -37,6 +40,7 @@ namespace Charon.Dns.Lib.Server.Zones
             CancellationToken cancellationToken = default)
         {
             var response = Response.FromRequest(request);
+            response.RecursionAvailable = _recursionAvailable;
             var remoteAddress = trace.RemoteEndPoint.Address;
 
             foreach (var question in request.Questions)
