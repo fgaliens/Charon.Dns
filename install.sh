@@ -331,7 +331,7 @@ EOF
   "Routing": {
     "RouteIdleTimeout": "02:00:00",
     "BlockedHosts": [
-      "file:hosts_blacklist.txt"
+      "file:blocked_hosts.txt"
     ],
     "Rules": [
       {
@@ -342,7 +342,7 @@ EOF
           "Substrings": [],
           "Domains": [
             "example.com",
-            "file:other_hosts.txt"
+            "file:other_domains.txt"
           ]
         }
       }
@@ -351,10 +351,10 @@ EOF
 }
 EOF
 
-    write_if_missing "$INSTALL_DIR/hosts_blacklist.txt" <<'EOF'
+    write_if_missing "$INSTALL_DIR/blocked_hosts.txt" <<'EOF'
 # Blocked host names.
 #
-# Referenced from routing.json: "Routing" -> "BlockedHosts" -> "file:hosts_blacklist.txt".
+# Referenced from routing.json: "Routing" -> "BlockedHosts" -> "file:blocked_hosts.txt".
 # Put one host name per line. Only exact host names are blocked (case-insensitive),
 # subdomains must be listed separately.
 # Empty lines and lines starting with '#' are ignored.
@@ -365,10 +365,10 @@ EOF
 # ads.example.net
 EOF
 
-    write_if_missing "$INSTALL_DIR/other_hosts.txt" <<'EOF'
+    write_if_missing "$INSTALL_DIR/other_domains.txt" <<'EOF'
 # Host names to route through the interface of the routing item that references this file.
 #
-# Referenced from routing.json: "Routing" -> "Rules" -> "Match" -> "Domains" -> "file:other_hosts.txt".
+# Referenced from routing.json: "Routing" -> "Rules" -> "Match" -> "Domains" -> "file:other_domains.txt".
 # Put one domain name per line. The domain and all of its subdomains are matched
 # (e.g. "example.com" also matches "www.example.com").
 # Empty lines and lines starting with '#' are ignored.

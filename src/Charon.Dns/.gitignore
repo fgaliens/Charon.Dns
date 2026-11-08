@@ -1,4 +1,4 @@
-other_hosts.txt
+other_domains.txt
 /logs
 start-docker.sh
 settings.debug.json

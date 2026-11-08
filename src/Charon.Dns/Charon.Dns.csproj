@@ -45,10 +45,10 @@
       <None Update="routing.debug.json">
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       </None>
-      <None Update="hosts_blacklist.txt">
+      <None Update="blocked_hosts.txt">
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       </None>
-      <None Update="other_hosts.txt">
+      <None Update="other_domains.txt">
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       </None>
       <None Update="settings.docker.json">

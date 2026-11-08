@@ -168,7 +168,7 @@ pip-log.txt
 .DS_Store
 /.vs
 
-other_hosts.txt
+other_domains.txt
 # Rider
 .idea/
 *.DotSettings

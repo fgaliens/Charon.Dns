@@ -12,7 +12,7 @@
       "checkip.amazonaws.com",
       "ipify.org",
 
-      "file:hosts_blacklist.txt"
+      "file:blocked_hosts.txt"
     ],
     "Rules": [
       {
@@ -140,7 +140,7 @@
             "lnkd.in",
             "licdn.cn",
             "linkedin.cn",
-            "file:other_hosts.txt"
+            "file:other_domains.txt"
           ]
         }
       }
