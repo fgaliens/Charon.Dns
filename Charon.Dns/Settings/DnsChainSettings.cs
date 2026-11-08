@@ -9,7 +9,7 @@ public record DnsChainSettings : ISettings<DnsChainSettings>
 {
     public required ResolvingStrategy ResolvingStrategy { get; init; }
     public required ByteUnit SocketBufferSize { get; init; }
-    public required IReadOnlyCollection<DnsServerAddress> DefaultServers { get; init; }
+    public required IReadOnlyCollection<UpstreamServerSettingsItem> DefaultServers { get; init; }
     public required IReadOnlyCollection<RoutedServerSettingsItem> RoutedServers { get; init; }
 
     public static DnsChainSettings Initialize(IConfiguration config)
@@ -20,14 +20,14 @@ public record DnsChainSettings : ISettings<DnsChainSettings>
         var defaultServers = upstreamConfig
             .GetSection("DefaultServers")
             .GetChildren()
-            .Select(x => x.GetSectionValue<DnsServerAddress>())
+            .Select(UpstreamServerSettingsItem.Initialize)
             .ToArray();
         var routedServers = upstreamConfig
             .GetSection("RoutedServers")
             .GetChildren()
             .Select(x => new RoutedServerSettingsItem
             {
-                Address = x.GetSectionValue<DnsServerAddress>("Address"),
+                Upstream = UpstreamServerSettingsItem.Initialize(x),
                 InterfaceToRouteThrough = x.GetSectionValue("Interface"),
             })
             .ToArray();
@@ -44,6 +44,6 @@ public record DnsChainSettings : ISettings<DnsChainSettings>
 
 public record RoutedServerSettingsItem
 {
-    public required DnsServerAddress Address { get; init; }
+    public required UpstreamServerSettingsItem Upstream { get; init; }
     public required string InterfaceToRouteThrough { get; init; }
 }

@@ -82,4 +82,29 @@ public static class ConfigurationExtensions
         return defaultValue;
         
     }
+
+    /// <summary>
+    /// Unlike <see cref="GetSectionEnumValue{T}"/>, fails on an unknown value instead of falling back to the default.
+    /// </summary>
+    public static T GetStrictSectionEnumValue<T>(this IConfigurationSection section, string key, T defaultValue) where T : struct, Enum
+    {
+        var rawValue = section.GetSection(key).Value;
+        if (rawValue is null)
+        {
+            return defaultValue;
+        }
+
+        // Only names are accepted: Enum.TryParse also accepts numbers
+        var isName = rawValue.Length > 0 && char.IsAsciiLetter(rawValue[0]);
+        if (!isName
+            || !Enum.TryParse<T>(rawValue, ignoreCase: true, out var value)
+            || !Enum.IsDefined(value))
+        {
+            var allowedValues = string.Join(", ", Enum.GetNames<T>());
+            throw new SettingsValidationException(
+                $"Invalid value '{rawValue}' for key '{key}' in '{section.Path}'. Allowed values: {allowedValues}");
+        }
+
+        return value;
+    }
 }

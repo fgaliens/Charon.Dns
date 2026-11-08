@@ -20,6 +20,11 @@ public readonly record struct DnsServerAddress(IPEndPoint EndPoint) : IParsable<
     public static bool TryParse(
         [NotNullWhen(true)] string? s, IFormatProvider? provider, out DnsServerAddress result)
     {
+        return TryParse(s, DefaultPort, out result);
+    }
+
+    public static bool TryParse([NotNullWhen(true)] string? s, int defaultPort, out DnsServerAddress result)
+    {
         result = default;
 
         if (s is null)
@@ -31,7 +36,7 @@ public readonly record struct DnsServerAddress(IPEndPoint EndPoint) : IParsable<
         // address (defaulting the port to 0), which would mask the intended default port.
         if (IPAddress.TryParse(s, out var address))
         {
-            result = new DnsServerAddress(new IPEndPoint(address, DefaultPort));
+            result = new DnsServerAddress(new IPEndPoint(address, defaultPort));
             return true;
         }
 

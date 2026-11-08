@@ -16,5 +16,7 @@ public sealed class V0ToV1Migration : IConfigMigration
         MoveRoutingToRoutingFile.Apply(workspace, notes);
         RenameSettingsFields.Apply(workspace);
         RemoveObsoleteFields.Apply(workspace, notes);
+        // Modes are added last: they are placed next to renamed fields, and removed listeners don't need them
+        AddTransportModes.Apply(workspace, notes);
     }
 }

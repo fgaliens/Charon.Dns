@@ -44,13 +44,16 @@ public class ConfigMigrationTest : IDisposable
 
         var listening = ListeningSettings.Initialize(config);
         listening.MaxParallelRequestCount.Should().Be(8);
-        listening.Items.Should().ContainSingle()
-            .Which.Address.Should().Be(IPAddress.Parse("10.0.0.53"));
+        var listener = listening.Items.Should().ContainSingle().Subject;
+        listener.Address.Should().Be(IPAddress.Parse("10.0.0.53"));
+        listener.Mode.Should().Be(TransportMode.UdpAndTcp);
 
         var dnsChain = DnsChainSettings.Initialize(config);
-        dnsChain.DefaultServers.Should().HaveCount(2);
+        dnsChain.DefaultServers.Select(x => x.Address.EndPoint.ToString()).Should().Equal("77.88.8.8:53", "77.88.8.1:53");
+        dnsChain.DefaultServers.Should().OnlyContain(x => x.Mode == TransportMode.UdpAndTcp);
         dnsChain.RoutedServers.Should().HaveCount(2)
-            .And.OnlyContain(x => x.InterfaceToRouteThrough == "wg0");
+            .And.OnlyContain(x => x.InterfaceToRouteThrough == "wg0")
+            .And.OnlyContain(x => x.Upstream.Mode == TransportMode.UdpAndTcp);
 
         var cache = CacheSettings.Initialize(config);
         cache.TimeToLive.Should().Be(TimeSpan.FromMinutes(5));

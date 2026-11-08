@@ -38,7 +38,7 @@ namespace Charon.Dns
             {
                 await commandRunner.Execute(new AddIpRouteCommand<IpV4Network>
                 {
-                    Ip = new IpV4Network(routedDnsServer.Address.EndPoint.Address.GetAddressBytes(), 32),
+                    Ip = new IpV4Network(routedDnsServer.Upstream.Address.EndPoint.Address.GetAddressBytes(), 32),
                     Interface = routedDnsServer.InterfaceToRouteThrough,
                 });
             }

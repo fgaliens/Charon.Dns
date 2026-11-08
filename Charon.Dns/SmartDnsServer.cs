@@ -52,32 +52,58 @@ public class SmartDnsServer(
         var listeningTasks = new List<Task>();
         foreach (var listeningSettingsItem in listeningSettings.Items)
         {
-            var task = Task.Run(async () =>
+            var endpoint = new IPEndPoint(listeningSettingsItem.Address, listeningSettingsItem.Port);
+            var enableIpV6 = listeningSettingsItem.EnableIpV6;
+            switch (listeningSettingsItem.Mode)
             {
-                logger.Information("Listening on {Ip}:{Port}.",
-                    listeningSettingsItem.Address, listeningSettingsItem.Port);
-                try
-                {
-                    await server.Listen(
-                        new IPEndPoint(listeningSettingsItem.Address, listeningSettingsItem.Port),
-                        listeningSettingsItem.EnableIpV6,
-                        cancellationToken);
-                }
-                catch (Exception e)
-                {
-                    logger.Error(e, "Error occured while listening on {Ip}:{Port}", 
-                        listeningSettingsItem.Address, listeningSettingsItem.Port);
-                }
-                
-                logger.Warning("Stop listening on {Ip}:{Port}.",
-                    listeningSettingsItem.Address, listeningSettingsItem.Port);
-            }, cancellationToken);
-            listeningTasks.Add(task);
+                case TransportMode.UdpAndTcp:
+                    // RFC 9210: TCP is served next to UDP on the same address and port
+                    listeningTasks.Add(Listen("UDP", endpoint,
+                        () => server.Listen(endpoint, enableIpV6, cancellationToken)));
+                    listeningTasks.Add(Listen("TCP", endpoint,
+                        () => server.ListenTcp(endpoint, enableIpV6, cancellationToken)));
+                    break;
+                case TransportMode.DoT:
+                    var dotCertificate = listeningSettingsItem.Certificate!;
+                    listeningTasks.Add(Listen("DoT", endpoint,
+                        () => server.ListenTls(endpoint, enableIpV6, dotCertificate, cancellationToken)));
+                    break;
+                case TransportMode.DoH:
+                    var dohCertificate = listeningSettingsItem.Certificate!;
+                    var path = listeningSettingsItem.Path;
+                    listeningTasks.Add(Listen("DoH", endpoint,
+                        () => server.ListenHttps(endpoint, enableIpV6, dohCertificate, path, cancellationToken)));
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(listeningSettings), listeningSettingsItem.Mode, "Unknown transport mode");
+            }
         }
 
         await Task.WhenAll(listeningTasks);
     }
-    
+
+    private Task Listen(string transport, IPEndPoint endpoint, Func<Task> listen)
+    {
+        return Task.Run(async () =>
+        {
+            logger.Information("Listening on {EndPoint} ({Transport}).", endpoint, transport);
+            try
+            {
+                await listen();
+            }
+            catch (OperationCanceledException) when (_cancellationTokenSource.IsCancellationRequested)
+            {
+                // Stopped
+            }
+            catch (Exception e)
+            {
+                logger.Error(e, "Error occured while listening on {EndPoint} ({Transport})", endpoint, transport);
+            }
+
+            logger.Warning("Stop listening on {EndPoint} ({Transport}).", endpoint, transport);
+        }, CancellationToken.None);
+    }
+
     public void Stop()
     {
         _cancellationTokenSource.Cancel();

@@ -121,26 +121,43 @@ When built in `Debug` configuration, the server loads `settings.debug.json`, `ro
     "ListenOn": [ // Addresses and ports the server listens on
       {
         "Address": "10.0.0.53",
-        "Port": 53,
-        "EnableIPv6": false // Use an IPv6 socket
+        "Port": 53, // Optional, defaults to 53 for UdpAndTcp, 853 for DoT, 443 for DoH
+        "EnableIPv6": false, // Use an IPv6 socket
+        "Mode": "UdpAndTcp" // Optional: UdpAndTcp (default; UDP and TCP on the same port), DoT or DoH
+      },
+      {
+        "Address": "10.0.0.53",
+        "Mode": "DoT", // DNS over TLS (RFC 7858)
+        "Certificate": { "Path": "cert.pem", "KeyPath": "key.pem" } // Required for DoT and DoH
+      },
+      {
+        "Address": "10.0.0.53",
+        "Mode": "DoH", // DNS over HTTPS (RFC 8484), HTTP/1.1 and HTTP/2
+        "Certificate": { "Path": "cert.pfx", "Password": "secret" }, // PKCS#12 (.pfx, .p12) or PEM
+        "Path": "/dns-query" // Optional, the path of the DoH endpoint
       }
     ]
   },
   "Upstream": {
     "ResolvingStrategy": "RoundRobin", // Resolving strategy (options: Random, Parallel, RoundRobin)
     "SocketBufferSize": "512Kb", // UDP socket buffer size for outgoing resolver connections
-    "DefaultServers": [ // DNS servers for standard resolution; port defaults to 53, add ":port" to override
-      "77.88.8.8:53",
-      "77.88.8.1"
-    ],
-    "RoutedServers": [ // DNS servers for routed domains (see routing.json), reached through the interface
+    "DefaultServers": [ // DNS servers for standard resolution
       {
-        "Address": "1.1.1.1:53", // Same ":port" syntax is supported here
-        "Interface": "wg0"
+        "Address": "77.88.8.8:53", // Port defaults to 53 for UdpAndTcp, 853 for DoT, 443 for DoH; add ":port" to override
+        "Mode": "UdpAndTcp" // Optional: UdpAndTcp (default), DoT or DoH (DoT and DoH clients are not implemented yet)
       },
       {
         "Address": "8.8.8.8",
-        "Interface": "wg0"
+        "Mode": "DoH",
+        "Host": "dns.google", // Optional, name to validate the certificate against (defaults to the address)
+        "Path": "/dns-query" // Optional, DoH only
+      }
+    ],
+    "RoutedServers": [ // DNS servers for routed domains (see routing.json), reached through the interface
+      {
+        "Address": "1.1.1.1:53", // Same fields as in "DefaultServers"
+        "Interface": "wg0",
+        "Mode": "UdpAndTcp"
       }
     ]
   },
@@ -241,7 +258,8 @@ Converting from 1.x (version 0):
 - the `Server:DnsRecords:A` records are moved to `zones.json`; each name becomes a zone of its own (with the cache TTL), unless it belongs to an existing zone. **The server is authoritative for these zones now**: other record types and subdomains of these names are not forwarded upstream anymore;
 - the `Routing` section is moved to `routing.json` (it must not be present in both files);
 - fields are renamed to the names above (`LogLevel` → `Logging:Console`, `DnsChain` → `Upstream`, `SecuredServers` → `RoutedServers`, `Items` → `Rules` etc.);
-- `ListenOn` items marked `"DebugOnly": true` are removed (1.x didn't listen on them in release builds), `ResolvingConcurrencyLimit` is removed (it had no effect).
+- `ListenOn` items marked `"DebugOnly": true` are removed (1.x didn't listen on them in release builds), `ResolvingConcurrencyLimit` is removed (it had no effect);
+- `"Mode": "UdpAndTcp"` is added to `ListenOn` and `RoutedServers` items, and `DefaultServers` given as strings (`"77.88.8.8"`) become objects (`{ "Address": "77.88.8.8", "Mode": "UdpAndTcp" }`). **Listeners accept DNS over TCP on the same port now**, in addition to UDP.
 
 ## Requirements
 

@@ -10,7 +10,8 @@
       {
         "Address": "10.0.0.53",
         "Port": 53,
-        "EnableIPv6": false
+        "EnableIPv6": false,
+        "Mode": "UdpAndTcp"
       }
     ]
   },
@@ -18,17 +19,25 @@
     "ResolvingStrategy": "RoundRobin",
     "SocketBufferSize": "512Kb",
     "DefaultServers": [
-      "77.88.8.8:53",
-      "77.88.8.1"
+      {
+        "Address": "77.88.8.8:53",
+        "Mode": "UdpAndTcp"
+      },
+      {
+        "Address": "77.88.8.1",
+        "Mode": "UdpAndTcp"
+      }
     ],
     "RoutedServers": [
       {
         "Address": "1.1.1.1:53",
-        "Interface": "wg0"
+        "Interface": "wg0",
+        "Mode": "UdpAndTcp"
       },
       {
         "Address": "8.8.8.8",
-        "Interface": "wg0"
+        "Interface": "wg0",
+        "Mode": "UdpAndTcp"
       }
     ]
   },

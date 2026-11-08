@@ -68,14 +68,14 @@ public class V0ToV1MigrationTest
             "SocketsPerEndpoint": 8,
             "SocketBufferSize": "2Mb",
             "ListenOn": [
-              { "Address": "10.0.0.53", "Port": 53, "EnableIPv6": true }
+              { "Address": "10.0.0.53", "Port": 53, "EnableIPv6": true, "Mode": "UdpAndTcp" }
             ]
           },
           "Upstream": {
             "ResolvingStrategy": "RoundRobin",
             "SocketBufferSize": "512Kb",
-            "DefaultServers": [ "77.88.8.8" ],
-            "RoutedServers": [ { "Address": "1.1.1.1", "Interface": "wg0" } ]
+            "DefaultServers": [ { "Address": "77.88.8.8", "Mode": "UdpAndTcp" } ],
+            "RoutedServers": [ { "Address": "1.1.1.1", "Interface": "wg0", "Mode": "UdpAndTcp" } ]
           },
           "Cache": { "Enabled": true, "Ttl": "00:05:00" },
           "UserAccessControl": {
@@ -154,6 +154,7 @@ public class V0ToV1MigrationTest
         directory.Read("zones.json.v0.bak").Should().Be(ZonesTemplate);
         result.BackupFiles.Should().HaveCount(2);
         result.Notes.Should().Contain(x => x.Contains("0.0.0.0:53"));
+        result.Notes.Should().Contain(x => x.Contains("TCP"));
     }
 
     [Fact]
@@ -312,8 +313,81 @@ public class V0ToV1MigrationTest
         directory.Migrate();
 
         ShouldBeJson(directory, "settings.json", """
-            { "cache": { "Ttl": "00:01:00" }, "server": { "listenOn": [ { "EnableIPv6": true } ] } }
+            { "cache": { "Ttl": "00:01:00" }, "server": { "listenOn": [ { "EnableIPv6": true, "Mode": "UdpAndTcp" } ] } }
             """);
+    }
+
+    [Fact]
+    public void Migrate_ConvertsDefaultServersToObjects()
+    {
+        using var directory = new TemporaryConfigDirectory();
+        directory.Write("settings.json", """
+            {
+              "Upstream": {
+                "DefaultServers": [
+                  "77.88.8.8:5353",
+                  { "Address": "1.1.1.1" },
+                  { "Address": "8.8.8.8", "mode": "DoH", "Host": "dns.google" }
+                ]
+              }
+            }
+            """);
+
+        directory.Migrate();
+
+        ShouldBeJson(directory, "settings.json", """
+            {
+              "Upstream": {
+                "DefaultServers": [
+                  { "Address": "77.88.8.8:5353", "Mode": "UdpAndTcp" },
+                  { "Address": "1.1.1.1", "Mode": "UdpAndTcp" },
+                  { "Address": "8.8.8.8", "mode": "DoH", "Host": "dns.google" }
+                ]
+              }
+            }
+            """);
+    }
+
+    [Fact]
+    public void Migrate_KeepsExistingModes()
+    {
+        using var directory = new TemporaryConfigDirectory();
+        const string settings = """
+            {
+              "Server": { "ListenOn": [ { "Address": "10.0.0.53", "Port": 853, "Mode": "DoT" } ] },
+              "Upstream": { "RoutedServers": [ { "Address": "1.1.1.1", "Interface": "wg0", "Mode": "DoT" } ] }
+            }
+            """;
+        directory.Write("settings.json", settings);
+
+        var result = directory.Migrate();
+
+        directory.Read("settings.json").Should().Be(settings);
+        result.Notes.Should().NotContain(x => x.Contains("TCP"));
+    }
+
+    [Fact]
+    public void Migrate_AddsModeToListenersWithoutIPv6Flag()
+    {
+        using var directory = new TemporaryConfigDirectory();
+        directory.Write("settings.json", """{ "Server": { "ListenOn": [ { "Address": "10.0.0.53", "Port": 53 } ] } }""");
+
+        directory.Migrate();
+
+        ShouldBeJson(directory, "settings.json", """
+            { "Server": { "ListenOn": [ { "Address": "10.0.0.53", "Port": 53, "Mode": "UdpAndTcp" } ] } }
+            """);
+    }
+
+    [Fact]
+    public void Migrate_FailsForInvalidDefaultServer()
+    {
+        using var directory = new TemporaryConfigDirectory();
+        directory.Write("settings.json", """{ "Upstream": { "DefaultServers": [ 53 ] } }""");
+
+        var act = () => directory.Migrate();
+
+        act.Should().Throw<ConfigException>().WithMessage("*DefaultServers*");
     }
 
     private static void ShouldBeJson(TemporaryConfigDirectory directory, string fileName, string expectedJson)

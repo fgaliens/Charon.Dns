@@ -5,12 +5,14 @@ using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
 using Charon.Dns.Lib.AsyncEvents;
 using Charon.Dns.Lib.Client.RequestResolver;
 using Charon.Dns.Lib.Protocol;
 using Charon.Dns.Lib.Protocol.ResourceRecords;
+using Charon.Dns.Lib.Server.Transports;
 using Charon.Dns.Lib.Tracing;
 using Charon.Dns.Utils.Units;
 using Serilog;
@@ -36,8 +38,8 @@ public class DnsServer(
     // RFC 1035, 4.2.1: without EDNS a UDP message is limited to 512 bytes
     private const int MinUdpPayloadSize = 512;
     // Recommended by DNS Flag Day 2020 to avoid IP fragmentation
-    private const RecordClass AdvertisedUdpPayloadSize = (RecordClass)1232;
-    private static readonly Domain RootName = new(string.Empty);
+    internal const RecordClass AdvertisedUdpPayloadSize = (RecordClass)1232;
+    internal static readonly Domain RootName = new(string.Empty);
 
     private readonly AsyncObservable<OnRequestEventArgs> _requestEventObservable = new();
     private readonly AsyncObservable<OnResponseEventArgs> _responseEventObservable = new();
@@ -65,7 +67,43 @@ public class DnsServer(
         await Task.WhenAll(tasks);
     }
 
-    private async Task OnError(Exception e, RequestTrace? trace)
+    /// <summary>
+    /// DNS over TCP (RFC 7766). It is mandatory for DNS servers (RFC 9210), so it is served next to UDP.
+    /// </summary>
+    public Task ListenTcp(IPEndPoint endpoint, bool enableIpV6, CancellationToken cancellationToken = default)
+    {
+        var listener = new StreamDnsListener(this, certificate: null, logger);
+        return listener.Listen(endpoint, enableIpV6, cancellationToken);
+    }
+
+    /// <summary>
+    /// DNS over TLS (RFC 7858).
+    /// </summary>
+    public Task ListenTls(
+        IPEndPoint endpoint,
+        bool enableIpV6,
+        X509Certificate2 certificate,
+        CancellationToken cancellationToken = default)
+    {
+        var listener = new StreamDnsListener(this, certificate, logger);
+        return listener.Listen(endpoint, enableIpV6, cancellationToken);
+    }
+
+    /// <summary>
+    /// DNS over HTTPS (RFC 8484), served on <paramref name="path"/>.
+    /// </summary>
+    public Task ListenHttps(
+        IPEndPoint endpoint,
+        bool enableIpV6,
+        X509Certificate2 certificate,
+        string path,
+        CancellationToken cancellationToken = default)
+    {
+        var listener = new HttpsDnsListener(this, certificate, path, logger);
+        return listener.Listen(endpoint, enableIpV6, cancellationToken);
+    }
+
+    internal async Task OnError(Exception e, RequestTrace? trace)
     {
         await _exceptionEventObservable.SendEvent(new OnExceptionEventArgs
         {
@@ -74,31 +112,30 @@ public class DnsServer(
         });
     }
 
-    private async Task HandleRequest(Socket socket, IPEndPoint endpoint, CancellationToken cancellationToken)
+    /// <summary>
+    /// Resolves a request received by any transport, so all of them share events and error handling.
+    /// </summary>
+    /// <returns>Null if the message must not be answered.</returns>
+    internal async Task<DnsExchange?> ProcessMessage(
+        byte[] message,
+        IPEndPoint remote,
+        CancellationToken cancellationToken)
     {
         var requestId = requestCounter.Increment();
         var requestLogger = logger.ForContext("RequestId", requestId);
 
         using var requestIdLogContext = LogContext.PushProperty("RequestId", requestId);
 
-        var buffer = ArrayPool.Rent(MaxUdpRequestSize * 2);
-        IPEndPoint? remote = null;
-        RequestTrace? trace = null;
+        var trace = new RequestTrace
+        {
+            Id = requestId,
+            RemoteEndPoint = remote,
+            Logger = requestLogger,
+        };
         Request? request = null;
-        byte[]? message = null;
 
         try
         {
-            var requestInfo = await socket.ReceiveFromAsync(buffer, endpoint, cancellationToken);
-            message = buffer[..requestInfo.ReceivedBytes];
-            remote = (IPEndPoint)requestInfo.RemoteEndPoint;
-            trace = new RequestTrace
-            {
-                Id = requestId,
-                RemoteEndPoint = remote,
-                Logger = requestLogger,
-            };
-
             requestLogger.Debug("Dns server: handling request from {Remote}", remote);
 
             request = Request.FromArray(message);
@@ -119,32 +156,53 @@ public class DnsServer(
                 Response = response,
             });
 
-            requestLogger.Debug("Dns server: sending response to {Remote}", remote);
-
-            await SendResponse(socket, response, request, remote, cancellationToken);
-
-            requestLogger.Debug("Dns server: response sent to {Remote}", remote);
+            return new DnsExchange(request, response, trace);
         }
-        catch (Exception e) when (remote is not null)
+        catch (Exception e)
         {
             requestLogger.Error(e, "Dns server error");
 
             await OnError(e, trace);
 
+            var errorResponse = CreateErrorResponse(request, message);
+            return errorResponse is null ? null : new DnsExchange(request, errorResponse, trace);
+        }
+    }
+
+    private async Task HandleRequest(Socket socket, IPEndPoint endpoint, CancellationToken cancellationToken)
+    {
+        var buffer = ArrayPool.Rent(MaxUdpRequestSize * 2);
+
+        try
+        {
+            var requestInfo = await socket.ReceiveFromAsync(buffer, endpoint, cancellationToken);
+            var message = buffer[..requestInfo.ReceivedBytes];
+            var remote = (IPEndPoint)requestInfo.RemoteEndPoint;
+
+            var exchange = await ProcessMessage(message, remote, cancellationToken);
+            if (exchange is null)
+            {
+                return;
+            }
+
+            var (request, response, trace) = exchange;
+            var requestLogger = trace.Logger;
+
             try
             {
-                var errorResponse = CreateErrorResponse(request, message);
-                if (errorResponse is not null)
-                {
-                    await SendResponse(socket, errorResponse, request, remote, cancellationToken);
-                }
-            }
-            catch (Exception sendErrorException)
-            {
-                var aggregatedException = new AggregateException(e, sendErrorException);
-                requestLogger.Fatal(aggregatedException, "Dns server fatal error. Unable to send response");
+                requestLogger.Debug("Dns server: sending response to {Remote}", remote);
 
-                await OnError(sendErrorException, trace);
+                await SendResponse(socket, response, request, remote, cancellationToken);
+
+                requestLogger.Debug("Dns server: response sent to {Remote}", remote);
+            }
+            catch (Exception e)
+            {
+                requestLogger.Error(e, "Dns server error. Unable to send response");
+
+                await OnError(e, trace);
+
+                await TrySendErrorResponse(socket, request, message, remote, trace, e, cancellationToken);
             }
         }
         finally
@@ -153,7 +211,36 @@ public class DnsServer(
         }
     }
 
-    private Response? CreateErrorResponse(Request? request, byte[]? message)
+    /// <summary>
+    /// A response that can't be serialized is replaced by an error, so the client doesn't wait for a timeout.
+    /// </summary>
+    private async Task TrySendErrorResponse(
+        Socket socket,
+        Request? request,
+        byte[] message,
+        IPEndPoint remote,
+        RequestTrace trace,
+        Exception exception,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var errorResponse = CreateErrorResponse(request, message);
+            if (errorResponse is not null)
+            {
+                await SendResponse(socket, errorResponse, request, remote, cancellationToken);
+            }
+        }
+        catch (Exception sendErrorException)
+        {
+            var aggregatedException = new AggregateException(exception, sendErrorException);
+            trace.Logger.Fatal(aggregatedException, "Dns server fatal error. Unable to send response");
+
+            await OnError(sendErrorException, trace);
+        }
+    }
+
+    internal Response? CreateErrorResponse(Request? request, byte[]? message)
     {
         if (request is not null)
         {
@@ -330,3 +417,5 @@ public class DnsServer(
         return _listeningEventObservable.Subscribe(observer);
     }
 }
+
+internal sealed record DnsExchange(Request? Request, IResponse Response, RequestTrace Trace);

@@ -276,7 +276,8 @@ write_templates() {
       {
         "Address": "10.0.0.53",
         "Port": 53,
-        "EnableIPv6": false
+        "EnableIPv6": false,
+        "Mode": "UdpAndTcp"
       }
     ]
   },
@@ -284,13 +285,20 @@ write_templates() {
     "ResolvingStrategy": "RoundRobin",
     "SocketBufferSize": "512Kb",
     "DefaultServers": [
-      "77.88.8.8",
-      "77.88.8.1"
+      {
+        "Address": "77.88.8.8",
+        "Mode": "UdpAndTcp"
+      },
+      {
+        "Address": "77.88.8.1",
+        "Mode": "UdpAndTcp"
+      }
     ],
     "RoutedServers": [
       {
         "Address": "1.1.1.1",
-        "Interface": "wg0"
+        "Interface": "wg0",
+        "Mode": "UdpAndTcp"
       }
     ]
   },

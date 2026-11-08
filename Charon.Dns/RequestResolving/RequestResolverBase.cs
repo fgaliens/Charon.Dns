@@ -1,9 +1,9 @@
 using System.Diagnostics;
-using System.Net;
 using Charon.Dns.Lib.Client.RequestResolver;
 using Charon.Dns.Lib.Protocol;
 using Charon.Dns.Lib.Tracing;
 using Charon.Dns.RequestResolving.ResolvingStrategies;
+using Charon.Dns.Settings;
 using Charon.Dns.Utils.Units;
 using Serilog;
 
@@ -12,17 +12,17 @@ namespace Charon.Dns.RequestResolving;
 public class RequestResolverBase : IRequestResolver
 {
     private readonly IResolvingStrategy _resolvingStrategy;
-    private readonly UdpRequestResolver[] _innerResolvers;
+    private readonly IRequestResolver[] _innerResolvers;
 
     public RequestResolverBase(
         IResolvingStrategy resolvingStrategy,
-        IEnumerable<IPEndPoint> chainDnsServers,
+        IEnumerable<UpstreamServerSettingsItem> chainDnsServers,
         ByteUnit socketBufferSize,
         ILogger logger)
     {
         _resolvingStrategy = resolvingStrategy;
         _innerResolvers = chainDnsServers
-            .Select(x => new UdpRequestResolver(x, socketBufferSize, logger))
+            .Select(x => UpstreamResolverFactory.Create(x, socketBufferSize, logger))
             .ToArray();
     }
 
