@@ -1,6 +1,7 @@
 using System;
 using System.Buffers;
 using Charon.Dns.Lib.Protocol;
+using Charon.Dns.Lib.Protocol.Utils;
 
 namespace Charon.Dns.Lib.Server.Transports;
 
@@ -21,7 +22,7 @@ internal static class ResponseSerializer
     {
         if (pad)
         {
-            response = EdnsPadding.Pad(response);
+            response = EdnsPadding.PadResponse(response);
         }
 
         size = response.Size;

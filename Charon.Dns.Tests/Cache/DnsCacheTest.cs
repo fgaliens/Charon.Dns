@@ -128,6 +128,23 @@ public class DnsCacheTest
     }
 
     [Fact]
+    public void AddResponse_WhenResponseIsTruncated_DoesNotCacheIt()
+    {
+        // Arrange
+        var request = CreateRequest();
+        // A truncated response may carry a part of the answer, the client retries over TCP for the rest
+        var response = CreateResponse(request);
+        response.Truncated = true;
+
+        // Act
+        _dnsCache.AddResponse(request, response);
+
+        // Assert
+        var found = _dnsCache.TryGetResponse(request, out _);
+        found.Should().BeFalse();
+    }
+
+    [Fact]
     public void TryGetResponse_KeepsRecursionFlags()
     {
         // Arrange

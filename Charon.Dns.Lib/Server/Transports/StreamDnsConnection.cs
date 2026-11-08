@@ -5,6 +5,7 @@ using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using Charon.Dns.Lib.Protocol;
+using Charon.Dns.Lib.Protocol.Utils;
 using Serilog;
 
 namespace Charon.Dns.Lib.Server.Transports;

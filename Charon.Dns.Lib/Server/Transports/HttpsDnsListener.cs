@@ -9,6 +9,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Charon.Dns.Lib.Protocol;
 using Charon.Dns.Lib.Protocol.ResourceRecords;
+using Charon.Dns.Lib.Protocol.Utils;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;

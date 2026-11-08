@@ -54,6 +54,14 @@ public class Request : IRequest
     {
         _questions = [..request.Questions];
         _additional = [..request.AdditionalRecords];
+
+        // A parsed request keeps all header flags (CD, AD), the interface doesn't expose them
+        if (request is Request source)
+        {
+            _header = source._header;
+            return;
+        }
+
         _header = new Header
         {
             Response = false,

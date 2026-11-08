@@ -1,10 +1,10 @@
 using System;
 using System.Buffers.Binary;
 using System.Collections.Generic;
-using Charon.Dns.Lib.Protocol;
 using Charon.Dns.Lib.Protocol.ResourceRecords;
+using Charon.Dns.Lib.Server;
 
-namespace Charon.Dns.Lib.Server.Transports;
+namespace Charon.Dns.Lib.Protocol.Utils;
 
 /// <summary>
 /// EDNS(0) Padding option (RFC 7830) hides the size of encrypted messages.
@@ -13,7 +13,8 @@ internal static class EdnsPadding
 {
     private const ushort PaddingOptionCode = 12;
     private const int OptionHeaderSize = 4;
-    // RFC 8467, 4.1: recommended block size for responses
+    // RFC 8467, 4.1: recommended block sizes
+    private const int RequestBlockSize = 128;
     private const int ResponseBlockSize = 468;
     private const int MaxMessageSize = ushort.MaxValue;
 
@@ -39,7 +40,7 @@ internal static class EdnsPadding
     /// RFC 7830, 4: a response to a padded query must be padded.
     /// Returns the response as is, if padding would exceed the maximum message size.
     /// </summary>
-    public static IResponse Pad(IResponse response)
+    public static IResponse PadResponse(IResponse response)
     {
         var padded = new Response(response);
         var additionalRecords = padded.AdditionalRecords;
@@ -52,25 +53,53 @@ internal static class EdnsPadding
             optIndex = additionalRecords.Count - 1;
         }
 
+        var isPadded = TryPad(additionalRecords, optIndex, ResponseBlockSize, () => padded.Size);
+        return isPadded ? padded : response;
+    }
+
+    /// <summary>
+    /// RFC 8467, 4.1: queries sent over an encrypted transport are padded to a multiple of 128 bytes.
+    /// A query without EDNS is returned as is: an OPT record added to it would end up in the response
+    /// to a client that doesn't support EDNS (RFC 6891, 7).
+    /// </summary>
+    public static IRequest PadRequest(IRequest request)
+    {
+        var optIndex = FindOpt(request.AdditionalRecords);
+        if (optIndex < 0)
+        {
+            return request;
+        }
+
+        var padded = new Request(request);
+        var isPadded = TryPad(padded.AdditionalRecords, optIndex, RequestBlockSize, () => padded.Size);
+        return isPadded ? padded : request;
+    }
+
+    /// <summary>
+    /// Replaces the padding option of the OPT record at <paramref name="optIndex"/>,
+    /// so the message size becomes a multiple of <paramref name="blockSize"/>.
+    /// </summary>
+    private static bool TryPad(IList<IResourceRecord> additionalRecords, int optIndex, int blockSize, Func<int> getSize)
+    {
         var opt = additionalRecords[optIndex];
         var options = RemoveOption(opt.Data, PaddingOptionCode);
         if (options is null)
         {
             // Malformed options are passed as is
-            return response;
+            return false;
         }
 
-        // Size of the response with an empty padding option
+        // Size of the message with an empty padding option
         additionalRecords[optIndex] = CreateOpt(opt, options, paddingLength: 0);
-        var unpaddedSize = padded.Size;
-        var paddingLength = (ResponseBlockSize - unpaddedSize % ResponseBlockSize) % ResponseBlockSize;
+        var unpaddedSize = getSize();
+        var paddingLength = (blockSize - unpaddedSize % blockSize) % blockSize;
         if (unpaddedSize + paddingLength > MaxMessageSize)
         {
-            return response;
+            return false;
         }
 
         additionalRecords[optIndex] = CreateOpt(opt, options, paddingLength);
-        return padded;
+        return true;
     }
 
     private static int FindOpt(IList<IResourceRecord> records)

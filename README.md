@@ -144,7 +144,7 @@ When built in `Debug` configuration, the server loads `settings.debug.json`, `ro
     "DefaultServers": [ // DNS servers for standard resolution
       {
         "Address": "77.88.8.8:53", // Port defaults to 53 for UdpAndTcp, 853 for DoT, 443 for DoH; add ":port" to override
-        "Mode": "UdpAndTcp" // Optional: UdpAndTcp (default), DoT or DoH (DoT and DoH clients are not implemented yet)
+        "Mode": "UdpAndTcp" // Optional: UdpAndTcp (default), DoT or DoH
       },
       {
         "Address": "8.8.8.8",

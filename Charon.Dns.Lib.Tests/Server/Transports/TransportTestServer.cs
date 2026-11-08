@@ -46,6 +46,16 @@ internal sealed class TransportTestServer : IAsyncDisposable
         return Start((server, endPoint, token) => server.ListenTcp(endPoint, enableIpV6: false, token));
     }
 
+    public static Task<TransportTestServer> StartUdpAndTcp()
+    {
+        return Start((server, endPoint, token) =>
+        {
+            var udpListening = server.Listen(endPoint, enableIpV6: false, token);
+            var tcpListening = server.ListenTcp(endPoint, enableIpV6: false, token);
+            return Task.WhenAll(udpListening, tcpListening);
+        });
+    }
+
     public static Task<TransportTestServer> StartTls(X509Certificate2 certificate)
     {
         return Start((server, endPoint, token) => server.ListenTls(endPoint, enableIpV6: false, certificate, token));

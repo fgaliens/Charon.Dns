@@ -3,6 +3,8 @@ using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using Charon.Dns.Lib.Protocol;
+using Charon.Dns.Lib.Protocol.ResourceRecords;
+using Charon.Dns.Lib.Server;
 using Charon.Dns.Lib.Tracing;
 using Charon.Dns.Utils.Units;
 using Serilog;
@@ -13,20 +15,8 @@ namespace Charon.Dns.Lib.Client.RequestResolver;
 /// Plain DNS: UDP, with TCP for responses that don't fit into a datagram.
 /// </summary>
 /// <remarks>
-/// TODO: only UDP is used for now. Requirements for the TCP fallback:
-/// <list type="bullet">
-/// <item>RFC 1035, 4.2.1; RFC 2181, 9; RFC 7766, 5: a response with the TC flag set MUST be retried over TCP,
-/// the truncated response must not be returned or cached.</item>
-/// <item>RFC 6891, 6.2.5; DNS Flag Day 2020: the advertised EDNS UDP payload size SHOULD be 1232 bytes,
-/// so large responses are truncated instead of being fragmented.</item>
-/// <item>RFC 7766, 6.2.1: a client SHOULD reuse a TCP connection for several queries
-/// and SHOULD pipeline them without waiting for previous responses.</item>
-/// <item>RFC 7766, 6.2.1.1: responses may come out of order, they MUST be matched by ID and question.</item>
-/// <item>RFC 7766, 6.2.2: an idle connection SHOULD be closed by the client; a connection closed
-/// by the server must be reopened, and queries without responses retried on it.</item>
-/// <item>RFC 7766, 8: the length prefix and the message SHOULD be sent in a single write.</item>
-/// <item>The TCP query is limited by the same timeout as the UDP one.</item>
-/// </list>
+/// RFC 1035, 4.2.1; RFC 2181, 9; RFC 7766, 5: a truncated response is retried over TCP,
+/// the truncated one is never returned.
 /// </remarks>
 public sealed class UdpAndTcpRequestResolver : IRequestResolver, IDisposable
 {
@@ -36,16 +26,56 @@ public sealed class UdpAndTcpRequestResolver : IRequestResolver, IDisposable
     public UdpAndTcpRequestResolver(IPEndPoint dnsEndpoint, ByteUnit? socketBufferSize, ILogger logger)
     {
         _udpResolver = new UdpRequestResolver(dnsEndpoint, socketBufferSize, logger);
-        _tcpResolver = new TcpRequestResolver(dnsEndpoint);
+        _tcpResolver = new TcpRequestResolver(dnsEndpoint, logger);
     }
 
-    public Task<IResponse> Resolve(IRequest request, RequestTrace trace, CancellationToken cancellationToken = default)
+    public async Task<IResponse> Resolve(IRequest request, RequestTrace trace, CancellationToken cancellationToken = default)
     {
-        return _udpResolver.Resolve(request, trace, cancellationToken);
+        var udpRequest = LimitUdpPayloadSize(request);
+        var response = await _udpResolver.Resolve(udpRequest, trace, cancellationToken);
+        if (!response.Truncated)
+        {
+            return response;
+        }
+
+        trace.Logger.Debug("Request resolving. Response is truncated, retrying over TCP");
+        return await _tcpResolver.Resolve(request, trace, cancellationToken);
     }
 
     public void Dispose()
     {
         _udpResolver.Dispose();
+        _tcpResolver.Dispose();
+    }
+
+    /// <summary>
+    /// RFC 6891, 6.2.5; DNS Flag Day 2020: a payload size above 1232 bytes leads to fragmented datagrams,
+    /// which are often dropped. A larger response is truncated by the server and retried over TCP instead.
+    /// </summary>
+    private static IRequest LimitUdpPayloadSize(IRequest request)
+    {
+        var additionalRecords = request.AdditionalRecords;
+        for (var i = 0; i < additionalRecords.Count; i++)
+        {
+            var record = additionalRecords[i];
+            if (record.Type != RecordType.OPT)
+            {
+                continue;
+            }
+
+            // The class of the OPT record holds the UDP payload size
+            if (record.Class <= DnsServer.AdvertisedUdpPayloadSize)
+            {
+                return request;
+            }
+
+            var limitedRequest = new Request(request);
+            var limitedOpt = new ResourceRecord(record.Name, record.Data, RecordType.OPT,
+                DnsServer.AdvertisedUdpPayloadSize, record.TimeToLive);
+            limitedRequest.AdditionalRecords[i] = limitedOpt;
+            return limitedRequest;
+        }
+
+        return request;
     }
 }

@@ -13,6 +13,7 @@ using Charon.Dns.Lib.Protocol.ResourceRecords;
 using Charon.Dns.Lib.Server.Transports;
 using Charon.Dns.Lib.Tracing;
 using JetBrains.Annotations;
+using Serilog.Core;
 using Xunit;
 
 namespace Charon.Dns.Lib.Tests.Server.Transports;
@@ -28,7 +29,7 @@ public class StreamDnsListenerTest
     public async Task Tcp_ResponseIsNotTruncated()
     {
         await using var server = await TransportTestServer.StartTcp();
-        var resolver = new TcpRequestResolver(server.EndPoint);
+        using var resolver = new TcpRequestResolver(server.EndPoint, Logger.None);
         var request = TransportTestServer.CreateRequest(TransportTestServer.Name);
 
         var response = await resolver.Resolve(request, RequestTrace.Empty);
@@ -42,7 +43,7 @@ public class StreamDnsListenerTest
     public async Task Tcp_ResolverError_IsAnsweredWithServerFailure()
     {
         await using var server = await TransportTestServer.StartTcp();
-        var resolver = new TcpRequestResolver(server.EndPoint);
+        using var resolver = new TcpRequestResolver(server.EndPoint, Logger.None);
         var request = TransportTestServer.CreateRequest(TransportTestServer.FailingName);
 
         var response = await resolver.Resolve(request, RequestTrace.Empty);
