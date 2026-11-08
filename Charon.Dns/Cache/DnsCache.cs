@@ -24,8 +24,8 @@ public class DnsCache(
         {
             return;
         }
-
-        if (response.AnswerRecords.Count == 0)
+        
+        if (response.Truncated || response.AnswerRecords.Count == 0)
         {
             return;
         }
