@@ -1,17 +1,16 @@
-﻿namespace Charon.Dns.Lib.Protocol
+﻿namespace Charon.Dns.Lib.Protocol;
+
+public enum ResponseCode
 {
-    public enum ResponseCode
-    {
-        NoError = 0,
-        FormatError,
-        ServerFailure,
-        NameError,
-        NotImplemented,
-        Refused,
-        YXDomain,
-        YXRRSet,
-        NXRRSet,
-        NotAuth,
-        NotZone,
-    }
+    NoError = 0,
+    FormatError,
+    ServerFailure,
+    NameError,
+    NotImplemented,
+    Refused,
+    YXDomain,
+    YXRRSet,
+    NXRRSet,
+    NotAuth,
+    NotZone,
 }

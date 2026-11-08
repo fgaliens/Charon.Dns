@@ -1,5 +1,4 @@
-﻿#nullable enable
-using System;
+﻿using System;
 using System.Buffers;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -18,11 +17,10 @@ using Serilog;
 
 namespace Charon.Dns.Lib.Client.RequestResolver;
 
-// TODO: Refactoring
 public class UdpRequestResolver : IRequestResolver, IDisposable
 {
     private const int DefaultDnsMsgSize = 512;
-    private const int MaxRequestIdAttempts = 16;
+    private const int MaxRequestIdAttempts = 32;
 
     private readonly TimeSpan _timeout = TimeSpan.FromSeconds(2);
     private readonly IPEndPoint _dnsEndpoint;
@@ -154,7 +152,6 @@ public class UdpRequestResolver : IRequestResolver, IDisposable
             }
         }
         
-        // TODO: retry
         throw new InvalidOperationException($"Unable to allocate request id, {_pendingRequests.Count} requests are pending");
     }
 

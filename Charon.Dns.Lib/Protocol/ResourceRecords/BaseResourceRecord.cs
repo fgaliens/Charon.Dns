@@ -1,66 +1,37 @@
 ﻿using System;
 using Charon.Dns.Lib.Protocol.Utils;
 
-namespace Charon.Dns.Lib.Protocol.ResourceRecords
+namespace Charon.Dns.Lib.Protocol.ResourceRecords;
+
+public abstract class BaseResourceRecord(IResourceRecord record) : IResourceRecord
 {
-    public abstract class BaseResourceRecord : IResourceRecord
+    public Domain Name => record.Name;
+
+    public RecordType Type => record.Type;
+
+    public RecordClass Class => record.Class;
+
+    public TimeSpan TimeToLive => record.TimeToLive;
+
+    public int DataLength => record.DataLength;
+
+    public byte[] Data => record.Data;
+
+    public int Size => record.Size;
+
+    public byte[] ToArray()
     {
-        private IResourceRecord record;
+        return record.ToArray();
+    }
 
-        public BaseResourceRecord(IResourceRecord record)
-        {
-            this.record = record;
-        }
+    public void WriteTo(Span<byte> destination)
+    {
+        record.WriteTo(destination);
+    }
 
-        public Domain Name
-        {
-            get { return record.Name; }
-        }
-
-        public RecordType Type
-        {
-            get { return record.Type; }
-        }
-
-        public RecordClass Class
-        {
-            get { return record.Class; }
-        }
-
-        public TimeSpan TimeToLive
-        {
-            get { return record.TimeToLive; }
-        }
-
-        public int DataLength
-        {
-            get { return record.DataLength; }
-        }
-
-        public byte[] Data
-        {
-            get { return record.Data; }
-        }
-
-        public int Size
-        {
-            get { return record.Size; }
-        }
-
-        public byte[] ToArray()
-        {
-            return record.ToArray();
-        }
-
-        public void WriteTo(Span<byte> destination)
-        {
-            record.WriteTo(destination);
-        }
-
-        internal ObjectStringifier Stringify()
-        {
-            return ObjectStringifier.New(this)
-                .Add(nameof(Name), nameof(Type), nameof(Class), nameof(TimeToLive), nameof(DataLength));
-        }
+    internal ObjectStringifier Stringify()
+    {
+        return ObjectStringifier.New(this)
+            .Add(nameof(Name), nameof(Type), nameof(Class), nameof(TimeToLive), nameof(DataLength));
     }
 }

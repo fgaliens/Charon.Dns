@@ -1,4 +1,3 @@
-#nullable enable
 using System.Threading.Tasks;
 
 namespace Charon.Dns.Lib.AsyncEvents;

@@ -5,99 +5,102 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 
-namespace Charon.Dns.Lib.Protocol.ResourceRecords
+namespace Charon.Dns.Lib.Protocol.ResourceRecords;
+
+public partial class TextResourceRecord : BaseResourceRecord
 {
-    public class TextResourceRecord : BaseResourceRecord
+    public TextResourceRecord(IResourceRecord record)
+        : base(record)
     {
-        /// Regular expression that matches the attribute name/value.
-        /// The first unescaped equal sign is the name/value delimiter.
-        private static readonly Regex PATTERN_TXT_RECORD = new Regex(@"^([ -~]*?)(?<!`)=([ -~]*)$");
+        TextData = CharacterString.GetAllFromArray(Data, 0);
+    }
 
-        /// Regular expression that matches unescaped leading/trailing whitespace.
-        private static readonly Regex PATTERN_TRIM_NAME = new Regex(@"^\s+|((?<!`)\s)+$");
+    public TextResourceRecord(Domain domain, IList<CharacterString> characterStrings, TimeSpan ttl = default)
+        : base(Create(domain, characterStrings, ttl))
+    {
+        TextData = new ReadOnlyCollection<CharacterString>(characterStrings);
+    }
 
-        /// Regular expression that matches unescaped characters.
-        private static readonly Regex PATTERN_ESCAPE = new Regex(@"([`=])");
+    public TextResourceRecord(Domain domain, string attributeName, string attributeValue, TimeSpan ttl = default)
+        : this(domain, FormatAttributeNameValue(attributeName, attributeValue), ttl)
+    {
+    }
 
-        /// Regular expression that matches escaped characters.
-        private static readonly Regex PATTERN_UNESCAPE = new Regex(@"`([`=\s])");
+    public IList<CharacterString> TextData { get; }
 
-        private static string Trim(string value) => PATTERN_TRIM_NAME.Replace(value, string.Empty);
-        private static string Escape(string value) => PATTERN_ESCAPE.Replace(value, "`$1");
-        private static string Unescape(string value) => PATTERN_UNESCAPE.Replace(value, "$1");
-
-        private static IResourceRecord Create(Domain domain, IList<CharacterString> characterStrings, TimeSpan ttl)
+    public KeyValuePair<string?, string> Attribute
+    {
+        get
         {
-            var data = new byte[characterStrings.Sum(c => c.Size)];
-            var offset = 0;
+            var text = ToStringTextData();
+            var match = TextRecordPattern().Match(text);
 
-            foreach (var characterString in characterStrings)
+            if (!match.Success)
             {
-                characterString.WriteTo(data.AsSpan(offset, characterString.Size));
-                offset += characterString.Size;
+                return new KeyValuePair<string?, string>(null, Unescape(text));
             }
 
-            return new ResourceRecord(domain, data, RecordType.TXT, RecordClass.IN, ttl);
+            var attributeName = match.Groups[1].Length > 0
+                ? Unescape(Trim(match.Groups[1].Value))
+                : null;
+            var attributeValue = Unescape(match.Groups[2].Value);
+            return new KeyValuePair<string?, string>(attributeName, attributeValue);
         }
+    }
 
-        private static IList<CharacterString> FormatAttributeNameValue(string attributeName, string attributeValue)
+    public string ToStringTextData()
+    {
+        return ToStringTextData(Encoding.ASCII);
+    }
+
+    public string ToStringTextData(Encoding encoding)
+    {
+        return string.Concat(TextData.Select(c => c.ToString(encoding)));
+    }
+
+    public override string ToString()
+    {
+        var textData = ToStringTextData();
+        return Stringify().Add(nameof(TextData), (object)textData).ToString();
+    }
+
+    /// Regular expression that matches the attribute name/value.
+    /// The first unescaped equal sign is the name/value delimiter.
+    [GeneratedRegex(@"^([ -~]*?)(?<!`)=([ -~]*)$")]
+    private static partial Regex TextRecordPattern();
+
+    /// Regular expression that matches unescaped leading/trailing whitespace.
+    [GeneratedRegex(@"^\s+|((?<!`)\s)+$")]
+    private static partial Regex TrimNamePattern();
+
+    /// Regular expression that matches unescaped characters.
+    [GeneratedRegex("([`=])")]
+    private static partial Regex EscapePattern();
+
+    /// Regular expression that matches escaped characters.
+    [GeneratedRegex(@"`([`=\s])")]
+    private static partial Regex UnescapePattern();
+
+    private static string Trim(string value) => TrimNamePattern().Replace(value, string.Empty);
+    private static string Escape(string value) => EscapePattern().Replace(value, "`$1");
+    private static string Unescape(string value) => UnescapePattern().Replace(value, "$1");
+
+    private static ResourceRecord Create(Domain domain, IList<CharacterString> characterStrings, TimeSpan ttl)
+    {
+        var data = new byte[characterStrings.Sum(c => c.Size)];
+        var offset = 0;
+
+        foreach (var characterString in characterStrings)
         {
-            return CharacterString.FromString($"{Escape(attributeName)}={attributeValue}");
+            characterString.WriteTo(data.AsSpan(offset, characterString.Size));
+            offset += characterString.Size;
         }
 
-        public TextResourceRecord(IResourceRecord record) :
-            base(record)
-        {
-            TextData = CharacterString.GetAllFromArray(Data, 0);
-        }
+        return new ResourceRecord(domain, data, RecordType.TXT, RecordClass.IN, ttl);
+    }
 
-        public TextResourceRecord(Domain domain, IList<CharacterString> characterStrings,
-                TimeSpan ttl = default(TimeSpan)) : base(Create(domain, characterStrings, ttl))
-        {
-            TextData = new ReadOnlyCollection<CharacterString>(characterStrings);
-        }
-
-        public TextResourceRecord(Domain domain, string attributeName, string attributeValue,
-                TimeSpan ttl = default(TimeSpan)) :
-                this(domain, FormatAttributeNameValue(attributeName, attributeValue), ttl)
-        { }
-
-        public IList<CharacterString> TextData { get; }
-
-        public KeyValuePair<string, string> Attribute
-        {
-            get
-            {
-                string text = ToStringTextData();
-                Match match = PATTERN_TXT_RECORD.Match(text);
-
-                if (match.Success)
-                {
-                    string attributeName = (match.Groups[1].Length > 0) ?
-                        Unescape(Trim(match.Groups[1].ToString())) : null;
-                    string attributeValue = Unescape(match.Groups[2].ToString());
-                    return new KeyValuePair<string, string>(attributeName, attributeValue);
-                }
-                else
-                {
-                    return new KeyValuePair<string, string>(null, Unescape(text));
-                }
-            }
-        }
-
-        public string ToStringTextData()
-        {
-            return ToStringTextData(Encoding.ASCII);
-        }
-
-        public string ToStringTextData(Encoding encoding)
-        {
-            return String.Join(string.Empty, TextData.Select(c => c.ToString(encoding)));
-        }
-
-        public override string ToString()
-        {
-            return Stringify().Add("TextData", (object)ToStringTextData()).ToString();
-        }
+    private static IList<CharacterString> FormatAttributeNameValue(string attributeName, string attributeValue)
+    {
+        return CharacterString.FromString($"{Escape(attributeName)}={attributeValue}");
     }
 }

@@ -11,6 +11,7 @@
     <PackageProjectUrl>https://github.com/kapetan/dns</PackageProjectUrl>
     <TargetFramework>net10.0</TargetFramework>
     <LangVersion>14</LangVersion>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
 
   <ItemGroup>
@@ -23,7 +24,6 @@
 
   <ItemGroup>
     <PackageReference Include="Serilog" Version="4.3.0" />
-    <PackageReference Include="System.Reflection.TypeExtensions" Version="4.3.0" />
   </ItemGroup>
 
   <ItemGroup>

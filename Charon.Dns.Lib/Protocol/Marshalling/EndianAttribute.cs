@@ -1,15 +1,9 @@
 ﻿using System;
 
-namespace Charon.Dns.Lib.Protocol.Marshalling
-{
-    [AttributeUsage(AttributeTargets.Field | AttributeTargets.Struct)]
-    public class EndianAttribute : Attribute
-    {
-        public EndianAttribute(Endianness endianness)
-        {
-            this.Endianness = endianness;
-        }
+namespace Charon.Dns.Lib.Protocol.Marshalling;
 
-        public Endianness Endianness { get; }
-    }
+[AttributeUsage(AttributeTargets.Field | AttributeTargets.Struct)]
+public class EndianAttribute(Endianness endianness) : Attribute
+{
+    public Endianness Endianness { get; } = endianness;
 }

@@ -1,12 +1,11 @@
-﻿namespace Charon.Dns.Lib.Protocol
+﻿namespace Charon.Dns.Lib.Protocol;
+
+public enum OperationCode
 {
-    public enum OperationCode
-    {
-        Query = 0,
-        IQuery,
-        Status,
-        // Reserved = 3
-        Notify = 4,
-        Update,
-    }
+    Query = 0,
+    IQuery,
+    Status,
+    // Reserved = 3
+    Notify = 4,
+    Update,
 }

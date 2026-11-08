@@ -1,16 +1,15 @@
 ﻿using System;
 
-namespace Charon.Dns.Lib.Protocol
+namespace Charon.Dns.Lib.Protocol;
+
+public interface IMessageEntry
 {
-    public interface IMessageEntry
-    {
-        Domain Name { get; }
-        RecordType Type { get; }
-        RecordClass Class { get; }
+    Domain Name { get; }
+    RecordType Type { get; }
+    RecordClass Class { get; }
 
-        int Size { get; }
-        byte[] ToArray();
+    int Size { get; }
+    byte[] ToArray();
 
-        void WriteTo(Span<byte> destination) => ToArray().AsSpan().CopyTo(destination);
-    }
+    void WriteTo(Span<byte> destination) => ToArray().AsSpan().CopyTo(destination);
 }

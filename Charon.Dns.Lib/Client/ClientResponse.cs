@@ -3,118 +3,110 @@ using System.Collections.ObjectModel;
 using Charon.Dns.Lib.Protocol;
 using Charon.Dns.Lib.Protocol.ResourceRecords;
 
-namespace Charon.Dns.Lib.Client
+namespace Charon.Dns.Lib.Client;
+
+public class ClientResponse : IResponse
 {
-    public class ClientResponse : IResponse
+    private readonly IResponse _response;
+    private readonly byte[] _message;
+
+    public static ClientResponse FromArray(IRequest request, byte[] message)
     {
-        private readonly IResponse _response;
-        private readonly byte[] _message;
+        var response = Response.FromArray(message);
+        return new ClientResponse(request, response, message);
+    }
 
-        public static ClientResponse FromArray(IRequest request, byte[] message)
-        {
-            var response = Response.FromArray(message);
-            return new ClientResponse(request, response, message);
-        }
+    internal ClientResponse(IRequest request, IResponse response, byte[] message)
+    {
+        Request = request;
 
-        internal ClientResponse(IRequest request, IResponse response, byte[] message)
-        {
-            Request = request;
+        _message = message;
+        _response = response;
+    }
 
-            _message = message;
-            _response = response;
-        }
+    internal ClientResponse(IRequest request, IResponse response)
+        : this(request, response, response.ToArray())
+    {
+    }
 
-        internal ClientResponse(IRequest request, IResponse response)
-        {
-            Request = request;
+    public IRequest Request { get; }
 
-            _message = response.ToArray();
-            _response = response;
-        }
+    public int Id
+    {
+        get => _response.Id;
+        set { }
+    }
 
-        public IRequest Request { get; }
+    public IList<IResourceRecord> AnswerRecords => _response.AnswerRecords;
 
-        public int Id
-        {
-            get => _response.Id;
-            set { }
-        }
+    public IList<IResourceRecord> AuthorityRecords => new ReadOnlyCollection<IResourceRecord>(_response.AuthorityRecords);
 
-        public IList<IResourceRecord> AnswerRecords => 
-            _response.AnswerRecords;
+    public IList<IResourceRecord> AdditionalRecords => new ReadOnlyCollection<IResourceRecord>(_response.AdditionalRecords);
 
-        public IList<IResourceRecord> AuthorityRecords => 
-            new ReadOnlyCollection<IResourceRecord>(_response.AuthorityRecords);
+    public bool RecursionDesired
+    {
+        get => _response.RecursionDesired;
+        set { }
+    }
 
-        public IList<IResourceRecord> AdditionalRecords => 
-            new ReadOnlyCollection<IResourceRecord>(_response.AdditionalRecords);
+    public bool RecursionAvailable
+    {
+        get => _response.RecursionAvailable;
+        set { }
+    }
 
-        public bool RecursionDesired
-        {
-            get => _response.RecursionDesired;
-            set { }
-        }
+    public bool AuthenticData
+    {
+        get => _response.AuthenticData;
+        set { }
+    }
 
-        public bool RecursionAvailable
-        {
-            get => _response.RecursionAvailable;
-            set { }
-        }
+    public bool CheckingDisabled
+    {
+        get => _response.CheckingDisabled;
+        set { }
+    }
 
-        public bool AuthenticData
-        {
-            get => _response.AuthenticData;
-            set { }
-        }
+    public bool AuthorativeServer
+    {
+        get => _response.AuthorativeServer;
+        set { }
+    }
 
-        public bool CheckingDisabled
-        {
-            get => _response.CheckingDisabled;
-            set { }
-        }
+    public bool Truncated
+    {
+        get => _response.Truncated;
+        set { }
+    }
 
-        public bool AuthorativeServer
-        {
-            get => _response.AuthorativeServer;
-            set { }
-        }
+    public OperationCode OperationCode
+    {
+        get => _response.OperationCode;
+        set { }
+    }
 
-        public bool Truncated
-        {
-            get => _response.Truncated;
-            set { }
-        }
+    public ResponseCode ResponseCode
+    {
+        get => _response.ResponseCode;
+        set { }
+    }
 
-        public OperationCode OperationCode
-        {
-            get => _response.OperationCode;
-            set { }
-        }
+    public IList<Question> Questions => new ReadOnlyCollection<Question>(_response.Questions);
 
-        public ResponseCode ResponseCode
-        {
-            get => _response.ResponseCode;
-            set { }
-        }
+    IReadOnlyList<Question> IReadOnlyResponse.Questions => (IReadOnlyList<Question>)_response.Questions;
+    IReadOnlyList<IResourceRecord> IReadOnlyResponse.AnswerRecords => (IReadOnlyList<IResourceRecord>)_response.AnswerRecords;
+    IReadOnlyList<IResourceRecord> IReadOnlyResponse.AuthorityRecords => (IReadOnlyList<IResourceRecord>)_response.AuthorityRecords;
+    IReadOnlyList<IResourceRecord> IReadOnlyResponse.AdditionalRecords => (IReadOnlyList<IResourceRecord>)_response.AdditionalRecords;
 
-        public IList<Question> Questions => 
-            new ReadOnlyCollection<Question>(_response.Questions);
+    public int Size => _message.Length;
 
-        IReadOnlyList<Question> IReadOnlyResponse.Questions => (IReadOnlyList<Question>)_response.Questions;
-        IReadOnlyList<IResourceRecord> IReadOnlyResponse.AnswerRecords => (IReadOnlyList<IResourceRecord>)_response.AnswerRecords;
-        IReadOnlyList<IResourceRecord> IReadOnlyResponse.AuthorityRecords => (IReadOnlyList<IResourceRecord>)_response.AuthorityRecords;
-        IReadOnlyList<IResourceRecord> IReadOnlyResponse.AdditionalRecords => (IReadOnlyList<IResourceRecord>)_response.AdditionalRecords;
+    public byte[] ToArray()
+    {
+        return _message;
+    }
 
-        public int Size => _message.Length;
-
-        public byte[] ToArray()
-        {
-            return _message;
-        }
-
-        public override string ToString()
-        {
-            return _response.ToString();
-        }
+    public override string ToString()
+    {
+        return _response.ToString() ?? string.Empty;
     }
 }

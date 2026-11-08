@@ -1,83 +1,50 @@
-﻿#nullable enable
-using System;
+﻿using System;
 using System.Buffers;
 using System.Buffers.Binary;
-using System.IO;
+using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Net;
 using Charon.Dns.Lib.Protocol;
 using Charon.Dns.Lib.Tracing;
 
-namespace Charon.Dns.Lib.Client.RequestResolver
+namespace Charon.Dns.Lib.Client.RequestResolver;
+
+public class TcpRequestResolver(IPEndPoint dns) : IRequestResolver
 {
-    public class TcpRequestResolver : IRequestResolver
+    private const int LengthPrefixSize = 2;
+
+    public async Task<IResponse> Resolve(IRequest request, RequestTrace trace, CancellationToken cancellationToken = default)
     {
-        private readonly IPEndPoint _dns;
+        using var tcp = new TcpClient(dns.AddressFamily);
+        await tcp.ConnectAsync(dns.Address, dns.Port, cancellationToken).ConfigureAwait(false);
 
-        public TcpRequestResolver(IPEndPoint dns)
+        var stream = tcp.GetStream();
+        var requestSize = request.Size;
+        var requestBuffer = ArrayPool<byte>.Shared.Rent(LengthPrefixSize + requestSize);
+
+        try
         {
-            _dns = dns;
+            // RFC 1035, 4.2.2: a TCP message is prefixed by its length
+            BinaryPrimitives.WriteUInt16BigEndian(requestBuffer, (ushort)requestSize);
+            request.WriteTo(requestBuffer.AsSpan(LengthPrefixSize, requestSize));
+
+            var requestMemory = requestBuffer.AsMemory(0, LengthPrefixSize + requestSize);
+            await stream.WriteAsync(requestMemory, cancellationToken).ConfigureAwait(false);
+        }
+        finally
+        {
+            ArrayPool<byte>.Shared.Return(requestBuffer);
         }
 
-        public async Task<IResponse> Resolve(IRequest request, RequestTrace trace, CancellationToken cancellationToken = default(CancellationToken))
-        {
-            using (TcpClient tcp = new TcpClient(_dns.AddressFamily))
-            {
-                await tcp.ConnectAsync(_dns.Address, _dns.Port).ConfigureAwait(false);
+        var lengthPrefix = new byte[LengthPrefixSize];
+        await stream.ReadExactlyAsync(lengthPrefix, cancellationToken).ConfigureAwait(false);
 
-                Stream stream = tcp.GetStream();
-                var requestSize = request.Size;
-                var requestBuffer = ArrayPool<byte>.Shared.Rent(requestSize);
+        var responseSize = BinaryPrimitives.ReadUInt16BigEndian(lengthPrefix);
+        var buffer = new byte[responseSize];
+        await stream.ReadExactlyAsync(buffer, cancellationToken).ConfigureAwait(false);
 
-                try
-                {
-                    request.WriteTo(requestBuffer.AsSpan(0, requestSize));
-
-                    var lengthPrefix = new byte[2];
-                    BinaryPrimitives.WriteUInt16BigEndian(lengthPrefix, (ushort)requestSize);
-
-                    await stream.WriteAsync(lengthPrefix, cancellationToken).ConfigureAwait(false);
-                    await stream.WriteAsync(requestBuffer.AsMemory(0, requestSize), cancellationToken).ConfigureAwait(false);
-                }
-                finally
-                {
-                    ArrayPool<byte>.Shared.Return(requestBuffer);
-                }
-
-                byte[] buffer = new byte[2];
-                await Read(stream, buffer, cancellationToken).ConfigureAwait(false);
-
-                if (BitConverter.IsLittleEndian)
-                {
-                    Array.Reverse(buffer);
-                }
-
-                buffer = new byte[BitConverter.ToUInt16(buffer, 0)];
-                await Read(stream, buffer, cancellationToken).ConfigureAwait(false);
-
-                IResponse response = Response.FromArray(buffer);
-                return new ClientResponse(request, response, buffer);
-            }
-        }
-
-        private static async Task Read(Stream stream, byte[] buffer, CancellationToken cancellationToken)
-        {
-            int length = buffer.Length;
-            int offset = 0;
-            int size = 0;
-
-            while (length > 0 && (size = await stream.ReadAsync(buffer, offset, length, cancellationToken).ConfigureAwait(false)) > 0)
-            {
-                offset += size;
-                length -= size;
-            }
-
-            if (length > 0)
-            {
-                throw new IOException("Unexpected end of stream");
-            }
-        }
+        var response = Response.FromArray(buffer);
+        return new ClientResponse(request, response, buffer);
     }
 }

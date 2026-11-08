@@ -1,8 +1,7 @@
-﻿namespace Charon.Dns.Lib.Protocol.Marshalling
+﻿namespace Charon.Dns.Lib.Protocol.Marshalling;
+
+public enum Endianness
 {
-    public enum Endianness
-    {
-        Big,
-        Little,
-    }
+    Big,
+    Little,
 }

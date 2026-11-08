@@ -17,9 +17,6 @@ namespace Charon.Dns.Lib.Tests.Protocol
     public class UpstreamMessageRoundTripTest
     {
         private const string FixtureDirectory = "Upstream";
-        // DNSSEC types are not a part of RecordType, such records are kept as raw data
-        private const RecordType RrsigType = (RecordType)46;
-        private const RecordType Nsec3Type = (RecordType)50;
 
         public static IEnumerable<object[]> FixtureNames { get; } = new[]
         {
@@ -222,7 +219,8 @@ namespace Charon.Dns.Lib.Tests.Protocol
                 .Select(record => record.ToStringTextData());
             var parsedTexts = parsed.AnswerRecords
                 .Cast<TextResourceRecord>()
-                .Select(record => record.ToStringTextData());
+                .Select(record => record.ToStringTextData())
+                .ToArray();
             Assert.Equal(17, parsed.AnswerRecords.Count);
             Assert.Equal(originalTexts, parsedTexts);
             Assert.Contains("v=spf1 include:_spf.google.com ~all", parsedTexts);
@@ -254,7 +252,7 @@ namespace Charon.Dns.Lib.Tests.Protocol
             var parsed = ReadSerializedResponse("nxdomain-nsec3-dnssec");
 
             var types = parsed.AuthorityRecords.Select(record => record.Type).Distinct().ToArray();
-            Assert.Equal(new[] { RecordType.SOA, RrsigType, Nsec3Type }, types);
+            Assert.Equal([RecordType.SOA, RecordType.RRSIG, RecordType.NSEC3], types);
             Assert.Equal(original.AuthorityRecords, parsed.AuthorityRecords, ResourceRecordComparer.Instance);
         }
 

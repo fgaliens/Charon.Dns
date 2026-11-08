@@ -1,129 +1,112 @@
-﻿using System;
+﻿using System.Collections;
 using System.Collections.Generic;
-using System.Collections;
 using System.Linq;
 using System.Reflection;
 using System.Text;
 
-namespace Charon.Dns.Lib.Protocol.Utils
+namespace Charon.Dns.Lib.Protocol.Utils;
+
+public class ObjectStringifier(object obj)
 {
-    public class ObjectStringifier
+    private readonly Dictionary<string, string> _pairs = new();
+
+    public static ObjectStringifier New(object obj)
     {
-        public static ObjectStringifier New(object obj)
+        return new ObjectStringifier(obj);
+    }
+
+    public static string Stringify(object? obj)
+    {
+        return StringifyObject(obj);
+    }
+
+    private static string StringifyObject(object? obj)
+    {
+        return obj switch
         {
-            return new ObjectStringifier(obj);
+            null => "null",
+            string text => text,
+            IDictionary dictionary => StringifyDictionary(dictionary),
+            IEnumerable enumerable => StringifyList(enumerable),
+            _ => obj.ToString() ?? "null",
+        };
+    }
+
+    private static string StringifyList(IEnumerable enumerable)
+    {
+        var items = enumerable.Cast<object?>().Select(StringifyObject);
+        return $"[{string.Join(", ", items)}]";
+    }
+
+    private static string StringifyDictionary(IDictionary dictionary)
+    {
+        var result = new StringBuilder();
+
+        result.Append('{');
+
+        foreach (DictionaryEntry pair in dictionary)
+        {
+            result
+                .Append(pair.Key)
+                .Append('=')
+                .Append(StringifyObject(pair.Value))
+                .Append(", ");
         }
 
-        public static string Stringify(object obj)
+        if (result.Length > 1)
         {
-            return StringifyObject(obj);
+            result.Remove(result.Length - 2, 2);
         }
 
-        private static string StringifyObject(object obj)
+        return result.Append('}').ToString();
+    }
+
+    public ObjectStringifier Remove(params string[] names)
+    {
+        foreach (var name in names)
         {
-            if (obj is string)
-            {
-                return (string)obj;
-            }
-            else if (obj is IDictionary)
-            {
-                return StringifyDictionary((IDictionary)obj);
-            }
-            else if (obj is IEnumerable)
-            {
-                return StringifyList((IEnumerable)obj);
-            }
-            else
-            {
-                return obj == null ? "null" : obj.ToString();
-            }
+            _pairs.Remove(name);
         }
 
-        private static string StringifyList(IEnumerable enumerable)
+        return this;
+    }
+
+    public ObjectStringifier Add(params string[] names)
+    {
+        var type = obj.GetType();
+
+        foreach (var name in names)
         {
-            return "[" + string.Join(", ", enumerable.Cast<object>().Select(o => StringifyObject(o)).ToArray()) + "]";
+            var property = type.GetProperty(name, BindingFlags.Public | BindingFlags.Instance)!;
+            var value = property.GetValue(obj);
+
+            _pairs.Add(name, StringifyObject(value));
         }
 
-        private static string StringifyDictionary(IDictionary dict)
+        return this;
+    }
+
+    public ObjectStringifier Add(string name, object? value)
+    {
+        _pairs.Add(name, StringifyObject(value));
+        return this;
+    }
+
+    public ObjectStringifier AddAll()
+    {
+        var properties = obj.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance);
+
+        foreach (var property in properties)
         {
-            StringBuilder result = new StringBuilder();
-
-            result.Append("{");
-
-            foreach (DictionaryEntry pair in dict)
-            {
-                result
-                    .Append(pair.Key)
-                    .Append("=")
-                    .Append(StringifyObject(pair.Value))
-                    .Append(", ");
-            }
-
-            if (result.Length > 1)
-            {
-                result.Remove(result.Length - 2, 2);
-            }
-
-            return result.Append("}").ToString();
+            var value = property.GetValue(obj);
+            _pairs.Add(property.Name, StringifyObject(value));
         }
 
-        private object obj;
-        private Dictionary<string, string> pairs;
+        return this;
+    }
 
-        public ObjectStringifier(object obj)
-        {
-            this.obj = obj;
-            this.pairs = new Dictionary<string, string>();
-        }
-
-        public ObjectStringifier Remove(params string[] names)
-        {
-            foreach (string name in names)
-            {
-                pairs.Remove(name);
-            }
-
-            return this;
-        }
-
-        public ObjectStringifier Add(params string[] names)
-        {
-            Type type = obj.GetType();
-
-            foreach (string name in names)
-            {
-                PropertyInfo property = type.GetProperty(name, BindingFlags.Public | BindingFlags.Instance);
-                object value = property.GetValue(obj, new object[] { });
-
-                pairs.Add(name, StringifyObject(value));
-            }
-
-            return this;
-        }
-
-        public ObjectStringifier Add(string name, object value)
-        {
-            pairs.Add(name, StringifyObject(value));
-            return this;
-        }
-
-        public ObjectStringifier AddAll()
-        {
-            PropertyInfo[] properties = obj.GetType().GetProperties(
-                BindingFlags.Public | BindingFlags.Instance);
-
-            foreach (PropertyInfo property in properties)
-            {
-                object value = property.GetValue(obj, new object[] { });
-                pairs.Add(property.Name, StringifyObject(value));
-            }
-
-            return this;
-        }
-
-        public override string ToString()
-        {
-            return StringifyDictionary(pairs);
-        }
+    public override string ToString()
+    {
+        return StringifyDictionary(_pairs);
     }
 }

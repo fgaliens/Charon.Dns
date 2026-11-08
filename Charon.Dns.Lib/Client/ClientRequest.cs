@@ -9,113 +9,89 @@ using Charon.Dns.Lib.Protocol;
 using Charon.Dns.Lib.Protocol.ResourceRecords;
 using Charon.Dns.Lib.Tracing;
 
-namespace Charon.Dns.Lib.Client
+namespace Charon.Dns.Lib.Client;
+
+public class ClientRequest(IRequestResolver resolver, IRequest? request = null) : IRequest
 {
-    public class ClientRequest : IRequest
+    private readonly IRequest _request = request is null ? new Request() : new Request(request);
+
+    public int Id
     {
-        private readonly IRequestResolver _resolver;
-        private readonly IRequest _request;
+        get => _request.Id;
+        set => _request.Id = value;
+    }
 
-        public ClientRequest(IRequestResolver resolver, IRequest request = null)
+    public IList<IResourceRecord> AdditionalRecords => _request.AdditionalRecords;
+
+    public OperationCode OperationCode
+    {
+        get => _request.OperationCode;
+        set => _request.OperationCode = value;
+    }
+
+    public bool RecursionDesired
+    {
+        get => _request.RecursionDesired;
+        set => _request.RecursionDesired = value;
+    }
+
+    public IList<Question> Questions => _request.Questions;
+
+    IReadOnlyList<Question> IReadOnlyRequest.Questions => (IReadOnlyList<Question>)_request.Questions;
+    IReadOnlyList<IResourceRecord> IReadOnlyRequest.AdditionalRecords => (IReadOnlyList<IResourceRecord>)_request.AdditionalRecords;
+
+    public int Size => _request.Size;
+
+    public byte[] ToArray()
+    {
+        return _request.ToArray();
+    }
+
+    public bool Equals(IRequest? other)
+    {
+        return _request.Equals(other);
+    }
+
+    public override int GetHashCode()
+    {
+        return _request.GetHashCode();
+    }
+
+    public override string ToString()
+    {
+        return _request.ToString() ?? string.Empty;
+    }
+
+    /// <summary>
+    /// Resolves this request into a response using the provided DNS information. The given
+    /// request strategy is used to retrieve the response.
+    /// </summary>
+    /// <exception cref="ResponseException">Throw if a malformed response is received from the server</exception>
+    /// <exception cref="IOException">Thrown if a IO error occurs</exception>
+    /// <exception cref="SocketException">Thrown if the reading or writing to the socket fails</exception>
+    /// <exception cref="OperationCanceledException">Thrown if reading or writing to the socket timeouts</exception>
+    /// <returns>The response received from server</returns>
+    public async Task<IResponse> Resolve(CancellationToken cancellationToken = default)
+    {
+        try
         {
-            _resolver = resolver;
-            _request = request == null ? new Request() : new Request(request);
-        }
+            var response = await resolver.Resolve(this, RequestTrace.Empty, cancellationToken).ConfigureAwait(false);
 
-        public int Id
-        {
-            get { return _request.Id; }
-            set { _request.Id = value; }
-        }
-
-        public IList<IResourceRecord> AdditionalRecords
-        {
-            get { return _request.AdditionalRecords; }
-        }
-
-        public OperationCode OperationCode
-        {
-            get { return _request.OperationCode; }
-            set { _request.OperationCode = value; }
-        }
-
-        public bool RecursionDesired
-        {
-            get { return _request.RecursionDesired; }
-            set { _request.RecursionDesired = value; }
-        }
-
-        public IList<Question> Questions
-        {
-            get { return _request.Questions; }
-        }
-
-        IReadOnlyList<Question> IReadOnlyRequest.Questions => (IReadOnlyList<Question>)_request.Questions;
-        IReadOnlyList<IResourceRecord> IReadOnlyRequest.AdditionalRecords => (IReadOnlyList<IResourceRecord>)_request.AdditionalRecords;
-
-        public int Size
-        {
-            get { return _request.Size; }
-        }
-
-        public byte[] ToArray()
-        {
-            return _request.ToArray();
-        }
-
-        public bool Equals(IRequest other)
-        {
-            return _request.Equals(other);
-        }
-
-        public override int GetHashCode()
-        {
-            return _request.GetHashCode();
-        }
-
-        public override string ToString()
-        {
-            return _request.ToString();
-        }
-
-        /// <summary>
-        /// Resolves this request into a response using the provided DNS information. The given
-        /// request strategy is used to retrieve the response.
-        /// </summary>
-        /// <exception cref="ResponseException">Throw if a malformed response is received from the server</exception>
-        /// <exception cref="IOException">Thrown if a IO error occurs</exception>
-        /// <exception cref="SocketException">Thrown if the reading or writing to the socket fails</exception>
-        /// <exception cref="OperationCanceledException">Thrown if reading or writing to the socket timeouts</exception>
-        /// <returns>The response received from server</returns>
-        public async Task<IResponse> Resolve(CancellationToken cancellationToken = default(CancellationToken))
-        {
-            try
+            if (response.Id != Id)
             {
-                IResponse response = await _resolver.Resolve(
-                        this, 
-                        RequestTrace.Empty,
-                        cancellationToken)
-                    .ConfigureAwait(false);
+                throw new ResponseException(response, "Mismatching request/response IDs");
+            }
 
-                if (response.Id != this.Id)
-                {
-                    throw new ResponseException(response, "Mismatching request/response IDs");
-                }
-                if (response.ResponseCode != ResponseCode.NoError)
-                {
-                    throw new ResponseException(response);
-                }
+            if (response.ResponseCode != ResponseCode.NoError)
+            {
+                throw new ResponseException(response);
+            }
 
-                return response;
-            }
-            catch (ArgumentException e)
-            {
-                throw new ResponseException("Invalid response", e);
-            }
-            catch (IndexOutOfRangeException e)
-            {
-                throw new ResponseException("Invalid response", e);
-            }
+            return response;
+        }
+        catch (Exception e) when (e is ArgumentException or IndexOutOfRangeException)
+        {
+            throw new ResponseException("Invalid response", e);
         }
     }
 }

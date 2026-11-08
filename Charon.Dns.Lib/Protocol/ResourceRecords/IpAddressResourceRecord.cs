@@ -1,34 +1,33 @@
 ﻿using System;
 using System.Net;
 
-namespace Charon.Dns.Lib.Protocol.ResourceRecords
+namespace Charon.Dns.Lib.Protocol.ResourceRecords;
+
+public class IpAddressResourceRecord : BaseResourceRecord
 {
-    public class IpAddressResourceRecord : BaseResourceRecord
+    public IpAddressResourceRecord(IResourceRecord record) : base(record)
     {
-        private static IResourceRecord Create(Domain domain, IPAddress ip, TimeSpan ttl)
-        {
-            byte[] data = ip.GetAddressBytes();
-            RecordType type = data.Length == 4 ? RecordType.A : RecordType.AAAA;
+        IpAddress = new IPAddress(Data);
+    }
 
-            return new ResourceRecord(domain, data, type, RecordClass.IN, ttl);
-        }
+    public IpAddressResourceRecord(Domain domain, IPAddress ip, TimeSpan ttl = default)
+        : base(Create(domain, ip, ttl))
+    {
+        IpAddress = ip;
+    }
 
-        public IpAddressResourceRecord(IResourceRecord record) : base(record)
-        {
-            IpAddress = new IPAddress(Data);
-        }
+    public IPAddress IpAddress { get; }
 
-        public IpAddressResourceRecord(Domain domain, IPAddress ip, TimeSpan ttl = default(TimeSpan)) :
-            base(Create(domain, ip, ttl))
-        {
-            IpAddress = ip;
-        }
+    public override string ToString()
+    {
+        return Stringify().Add(nameof(IpAddress)).ToString();
+    }
 
-        public IPAddress IpAddress { get; }
+    private static ResourceRecord Create(Domain domain, IPAddress ip, TimeSpan ttl)
+    {
+        var data = ip.GetAddressBytes();
+        var type = data.Length == 4 ? RecordType.A : RecordType.AAAA;
 
-        public override string ToString()
-        {
-            return Stringify().Add(nameof(IpAddress)).ToString();
-        }
+        return new ResourceRecord(domain, data, type, RecordClass.IN, ttl);
     }
 }

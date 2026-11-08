@@ -1,295 +1,293 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using System.Text;
 using System.Net;
+using System.Text;
 using Charon.Dns.Lib.Protocol.Utils;
 
-namespace Charon.Dns.Lib.Protocol
+namespace Charon.Dns.Lib.Protocol;
+
+public class Domain : IEquatable<Domain>, IComparable<Domain>
 {
-    public class Domain : IEquatable<Domain>, IComparable<Domain>
+    private const byte AsciiUppercaseFirst = 65;
+    private const byte AsciiUppercaseLast = 90;
+    private const byte AsciiLowercaseFirst = 97;
+    private const byte AsciiLowercaseLast = 122;
+    private const byte AsciiUppercaseMask = 223;
+    private const string HexDigits = "0123456789abcdef";
+
+    // RFC 1035, 2.3.4
+    public const int MaxLabelLength = 63;
+    public const int MaxNameSize = 255;
+
+    private readonly byte[][] _labels;
+
+    public static Domain FromString(string domain)
     {
-        private const byte AsciiUppercaseFirst = 65;
-        private const byte AsciiUppercaseLast = 90;
-        private const byte AsciiLowercaseFirst = 97;
-        private const byte AsciiLowercaseLast = 122;
-        private const byte AsciiUppercaseMask = 223;
+        return new Domain(domain);
+    }
 
-        // RFC 1035, 2.3.4
-        public const int MaxLabelLength = 63;
-        public const int MaxNameSize = 255;
+    public static Domain FromArray(byte[] message, int offset)
+    {
+        return FromArray(message, offset, out _);
+    }
 
-        private readonly byte[][] _labels;
+    public static Domain FromArray(byte[] message, int offset, out int endOffset)
+    {
+        var labels = new List<byte[]>();
+        var endOffsetAssigned = false;
+        endOffset = 0;
+        byte lengthOrPointer;
+        var visitedOffsetPointers = new HashSet<int>();
 
-        public static Domain FromString(string domain)
+        while ((lengthOrPointer = message[offset++]) > 0)
         {
-            return new Domain(domain);
-        }
-
-        public static Domain FromArray(byte[] message, int offset)
-        {
-            return FromArray(message, offset, out offset);
-        }
-
-        public static Domain FromArray(byte[] message, int offset, out int endOffset)
-        {
-            IList<byte[]> labels = new List<byte[]>();
-            bool endOffsetAssigned = false;
-            endOffset = 0;
-            byte lengthOrPointer;
-            HashSet<int> visitedOffsetPointers = new HashSet<int>();
-
-            while ((lengthOrPointer = message[offset++]) > 0)
+            // Two highest bits are set (pointer)
+            if (lengthOrPointer.GetBitValueAt(6, 2) == 3)
             {
-                // Two highest bits are set (pointer)
-                if (lengthOrPointer.GetBitValueAt(6, 2) == 3)
+                if (!endOffsetAssigned)
                 {
-                    if (!endOffsetAssigned)
-                    {
-                        endOffsetAssigned = true;
-                        endOffset = offset + 1;
-                    }
-
-                    ushort pointer = lengthOrPointer.GetBitValueAt(0, 6);
-                    offset = (pointer << 8) | message[offset];
-
-                    if (!visitedOffsetPointers.Add(offset))
-                    {
-                        throw new ArgumentException("Compression pointer loop detected");
-                    }
-
-                    continue;
+                    endOffsetAssigned = true;
+                    endOffset = offset + 1;
                 }
 
-                if (lengthOrPointer.GetBitValueAt(6, 2) != 0)
+                var pointer = lengthOrPointer.GetBitValueAt(0, 6);
+                offset = (pointer << 8) | message[offset];
+
+                if (!visitedOffsetPointers.Add(offset))
                 {
-                    throw new ArgumentException("Unexpected bit pattern in label length");
+                    throw new ArgumentException("Compression pointer loop detected");
                 }
 
-                byte length = lengthOrPointer;
-                byte[] label = new byte[length];
-                Array.Copy(message, offset, label, 0, length);
-
-                labels.Add(label);
-
-                offset += length;
+                continue;
             }
 
-            if (!endOffsetAssigned)
+            if (lengthOrPointer.GetBitValueAt(6, 2) != 0)
             {
-                endOffset = offset;
+                throw new ArgumentException("Unexpected bit pattern in label length");
             }
 
-            return new Domain(labels.ToArray());
+            var label = new byte[lengthOrPointer];
+            Array.Copy(message, offset, label, 0, lengthOrPointer);
+            labels.Add(label);
+
+            offset += lengthOrPointer;
         }
 
-        public static Domain PointerName(IPAddress ip)
+        if (!endOffsetAssigned)
         {
-            return new Domain(FormatReverseIp(ip));
+            endOffset = offset;
         }
 
-        private static string FormatReverseIp(IPAddress ip)
-        {
-            Span<byte> address = stackalloc byte[16];
-            ip.TryWriteBytes(address, out var written);
-            address = address[..written];
+        return new Domain(labels.ToArray());
+    }
 
-            if (written == 4)
+    public static Domain PointerName(IPAddress ip)
+    {
+        var reverseIp = FormatReverseIp(ip);
+        return new Domain(reverseIp);
+    }
+
+    private static string FormatReverseIp(IPAddress ip)
+    {
+        Span<byte> address = stackalloc byte[16];
+        ip.TryWriteBytes(address, out var written);
+
+        if (written == 4)
+        {
+            return $"{address[3]}.{address[2]}.{address[1]}.{address[0]}.in-addr.arpa";
+        }
+
+        // Every byte is written as two nibbles, the lowest one first
+        var result = new StringBuilder();
+        for (var i = written - 1; i >= 0; i--)
+        {
+            var b = address[i];
+            result
+                .Append(HexDigits[b.GetBitValueAt(0, 4)])
+                .Append('.')
+                .Append(HexDigits[b.GetBitValueAt(4, 4)])
+                .Append('.');
+        }
+
+        return result.Append("ip6.arpa").ToString();
+    }
+
+    private static bool IsAsciiAlphabet(byte b)
+    {
+        return b is >= AsciiUppercaseFirst and <= AsciiUppercaseLast
+            or >= AsciiLowercaseFirst and <= AsciiLowercaseLast;
+    }
+
+    private static int CompareTo(byte a, byte b)
+    {
+        if (IsAsciiAlphabet(a) && IsAsciiAlphabet(b))
+        {
+            a &= AsciiUppercaseMask;
+            b &= AsciiUppercaseMask;
+        }
+
+        return a - b;
+    }
+
+    private static int CompareTo(byte[] a, byte[] b)
+    {
+        var length = Math.Min(a.Length, b.Length);
+
+        for (var i = 0; i < length; i++)
+        {
+            var result = CompareTo(a[i], b[i]);
+            if (result != 0)
             {
-                return string.Join(".", address.ToArray().Reverse().Select(b => b.ToString())) + ".in-addr.arpa";
+                return result;
             }
+        }
 
-            Span<byte> nibbles = stackalloc byte[32];
-            nibbles = nibbles[..(written * 2)];
+        return a.Length - b.Length;
+    }
 
-            for (int i = 0, j = 0; i < written; i++, j = 2 * i)
+    public Domain(byte[][] labels)
+    {
+        Validate(labels);
+        _labels = labels;
+    }
+
+    public Domain(string[] labels, Encoding encoding)
+        : this(labels.Select(encoding.GetBytes).ToArray())
+    {
+    }
+
+    /// <summary>
+    /// "" and "." are the root, a trailing dot of an absolute name is ignored.
+    /// </summary>
+    public Domain(string domain) : this(SplitLabels(domain)) { }
+
+    public Domain(string[] labels) : this(labels, Encoding.ASCII) { }
+
+    private static string[] SplitLabels(string domain)
+    {
+        if (domain is "" or ".")
+        {
+            return [];
+        }
+
+        var relativeName = domain.EndsWith('.') ? domain[..^1] : domain;
+        return relativeName.Split('.');
+    }
+
+    private static void Validate(byte[][] labels)
+    {
+        // Every label is prefixed by its length, the name ends with the zero length root label
+        var size = 1;
+
+        foreach (var label in labels)
+        {
+            size += label.Length switch
             {
-                var b = address[i];
-
-                nibbles[j] = b.GetBitValueAt(4, 4);
-                nibbles[j + 1] = b.GetBitValueAt(0, 4);
-            }
-
-            return string.Join(".", nibbles.ToArray().Reverse().Select(b => b.ToString("x"))) + ".ip6.arpa";
+                0 => throw new ArgumentException("Domain name contains an empty label"),
+                > MaxLabelLength => throw new ArgumentException($"Domain name label is longer than {MaxLabelLength} bytes"),
+                _ => label.Length + 1
+            };
         }
 
-        private static bool IsAsciiAlphabet(byte b)
+        if (size > MaxNameSize)
         {
-            return b is >= AsciiUppercaseFirst and <= AsciiUppercaseLast 
-                or >= AsciiLowercaseFirst and <= AsciiLowercaseLast;
+            throw new ArgumentException($"Domain name is longer than {MaxNameSize} bytes");
+        }
+    }
+
+    public bool TryGetParent([NotNullWhen(true)] out Domain? parent)
+    {
+        if (_labels.Length <= 1)
+        {
+            parent = null;
+            return false;
         }
 
-        private static int CompareTo(byte a, byte b)
+        parent = new Domain(_labels[1..]);
+        return true;
+    }
+
+    public int Size => _labels.Sum(label => label.Length) + _labels.Length + 1;
+
+    public byte[] ToArray()
+    {
+        var result = new byte[Size];
+        WriteTo(result);
+        return result;
+    }
+
+    public void WriteTo(Span<byte> destination)
+    {
+        var offset = 0;
+
+        foreach (var label in _labels)
         {
-            if (IsAsciiAlphabet(a) && IsAsciiAlphabet(b))
+            destination[offset++] = (byte)label.Length;
+            label.AsSpan().CopyTo(destination[offset..]);
+            offset += label.Length;
+        }
+
+        destination[offset] = 0;
+    }
+
+    public string ToString(Encoding encoding)
+    {
+        return string.Join('.', _labels.Select(encoding.GetString));
+    }
+
+    public override string ToString()
+    {
+        return ToString(Encoding.ASCII);
+    }
+
+    public int CompareTo(Domain? other)
+    {
+        if (other is null)
+        {
+            return 1;
+        }
+
+        var length = Math.Min(_labels.Length, other._labels.Length);
+
+        for (var i = 0; i < length; i++)
+        {
+            var result = CompareTo(_labels[i], other._labels[i]);
+            if (result != 0)
             {
-                a &= AsciiUppercaseMask;
-                b &= AsciiUppercaseMask;
-            }
-
-            return a - b;
-        }
-
-        private static int CompareTo(byte[] a, byte[] b)
-        {
-            int length = Math.Min(a.Length, b.Length);
-
-            for (int i = 0; i < length; i++)
-            {
-                int v = CompareTo(a[i], b[i]);
-                if (v != 0) return v;
-            }
-
-            return a.Length - b.Length;
-        }
-
-        public Domain(byte[][] labels)
-        {
-            Validate(labels);
-            _labels = labels;
-        }
-
-        public Domain(string[] labels, Encoding encoding)
-            : this(labels.Select(label => encoding.GetBytes(label)).ToArray())
-        {
-        }
-
-        /// <summary>
-        /// "" and "." are the root, a trailing dot of an absolute name is ignored.
-        /// </summary>
-        public Domain(string domain) : this(SplitLabels(domain)) { }
-
-        public Domain(string[] labels) : this(labels, Encoding.ASCII) { }
-
-        private static string[] SplitLabels(string domain)
-        {
-            if (domain is "" or ".")
-            {
-                return [];
-            }
-
-            var relativeName = domain.EndsWith('.') ? domain[..^1] : domain;
-            return relativeName.Split('.');
-        }
-
-        private static void Validate(byte[][] labels)
-        {
-            // Every label is prefixed by its length, the name ends with the zero length root label
-            var size = 1;
-
-            foreach (var label in labels)
-            {
-                size += label.Length switch
-                {
-                    0 => throw new ArgumentException("Domain name contains an empty label"),
-                    > MaxLabelLength => throw new ArgumentException($"Domain name label is longer than {MaxLabelLength} bytes"),
-                    _ => label.Length + 1
-                };
-            }
-
-            if (size > MaxNameSize)
-            {
-                throw new ArgumentException($"Domain name is longer than {MaxNameSize} bytes");
+                return result;
             }
         }
 
-        public bool TryGetParent(out Domain parent)
-        {
-            if (_labels.Length <= 1)
-            {
-                parent = null;
-                return false;
-            }
+        return _labels.Length - other._labels.Length;
+    }
 
-            parent = new Domain(_labels[1..]);
-            return true;
-        }
+    public override bool Equals(object? obj)
+    {
+        return obj is Domain domain && Equals(domain);
+    }
 
-        public int Size
-        {
-            get { return _labels.Sum(l => l.Length) + _labels.Length + 1; }
-        }
+    public bool Equals(Domain? other)
+    {
+        return other is not null && CompareTo(other) == 0;
+    }
 
-        public byte[] ToArray()
+    public override int GetHashCode()
+    {
+        unchecked
         {
-            var result = new byte[Size];
-            WriteTo(result);
-            return result;
-        }
-
-        public void WriteTo(Span<byte> destination)
-        {
-            var offset = 0;
+            var hash = 17;
 
             foreach (var label in _labels)
             {
-                destination[offset++] = (byte)label.Length;
-                label.AsSpan().CopyTo(destination[offset..]);
-                offset += label.Length;
-            }
-
-            destination[offset] = 0;
-        }
-
-        public string ToString(Encoding encoding)
-        {
-            return string.Join(".", _labels.Select(label => encoding.GetString(label)));
-        }
-
-        public override string ToString()
-        {
-            return ToString(Encoding.ASCII);
-        }
-
-        public int CompareTo(Domain other)
-        {
-            int length = Math.Min(_labels.Length, other._labels.Length);
-
-            for (int i = 0; i < length; i++)
-            {
-                int v = CompareTo(_labels[i], other._labels[i]);
-                if (v != 0) return v;
-            }
-
-            return _labels.Length - other._labels.Length;
-        }
-
-        public override bool Equals(object obj)
-        {
-            if (obj is Domain domain)
-            {
-                return Equals(domain);
-            }
-
-            return false;
-        }
-        
-        public bool Equals(Domain other)
-        {
-            if (other is null)
-            {
-                return false;
-            }
-
-            return CompareTo(other) == 0;
-        }
-
-        public override int GetHashCode()
-        {
-            unchecked
-            {
-                int hash = 17;
-
-                foreach (byte[] label in _labels)
+                foreach (var b in label)
                 {
-                    foreach (byte b in label)
-                    {
-                        hash = hash * 31 + (IsAsciiAlphabet(b) ? b & AsciiUppercaseMask : b);
-                    }
+                    hash = hash * 31 + (IsAsciiAlphabet(b) ? b & AsciiUppercaseMask : b);
                 }
-
-                return hash;
             }
+
+            return hash;
         }
     }
 }

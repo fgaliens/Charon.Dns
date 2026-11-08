@@ -5,16 +5,16 @@ namespace Charon.Dns.Lib.Protocol.EqualityComparers;
 
 public class QuestionComparer : IEqualityComparer<Question>
 {
-    public static QuestionComparer Instance { get; } = new QuestionComparer();
-    
-    public bool Equals(Question x, Question y)
+    public static QuestionComparer Instance { get; } = new();
+
+    public bool Equals(Question? x, Question? y)
     {
         if (ReferenceEquals(x, y))
         {
             return true;
         }
 
-        if (ReferenceEquals(x, null) || ReferenceEquals(y, null))
+        if (x is null || y is null)
         {
             return false;
         }
@@ -26,6 +26,6 @@ public class QuestionComparer : IEqualityComparer<Question>
 
     public int GetHashCode(Question obj)
     {
-        return HashCode.Combine(obj.Type, obj.Class, obj.Name.GetHashCode());
+        return HashCode.Combine(obj.Type, obj.Class, obj.Name);
     }
 }

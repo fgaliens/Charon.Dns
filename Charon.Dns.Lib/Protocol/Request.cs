@@ -5,230 +5,210 @@ using Charon.Dns.Lib.Protocol.EqualityComparers;
 using Charon.Dns.Lib.Protocol.ResourceRecords;
 using Charon.Dns.Lib.Protocol.Utils;
 
-namespace Charon.Dns.Lib.Protocol
+namespace Charon.Dns.Lib.Protocol;
+
+public class Request : IRequest
 {
-    public class Request : IRequest
+    private readonly IList<Question> _questions;
+    private readonly IList<IResourceRecord> _additional;
+    private Header _header;
+
+    public static Request FromArray(byte[] message)
     {
-        private readonly IList<Question> _questions;
-        private Header _header;
-        private readonly IList<IResourceRecord> _additional;
+        var header = Header.FromArray(message);
+        var offset = header.Size;
 
-        public static Request FromArray(byte[] message)
+        if (header.Response || header.QuestionCount == 0 ||
+            header.AnswerRecordCount + header.AuthorityRecordCount > 0 ||
+            header.ResponseCode != ResponseCode.NoError)
         {
-            Header header = Header.FromArray(message);
-            int offset = header.Size;
-
-            if (header.Response || header.QuestionCount == 0 ||
-                    header.AnswerRecordCount + header.AuthorityRecordCount > 0 ||
-                    header.ResponseCode != ResponseCode.NoError)
-            {
-
-                throw new ArgumentException("Invalid request message");
-            }
-
-            return new Request(header,
-                Question.GetAllFromArray(message, offset, header.QuestionCount, out offset),
-                ResourceRecordFactory.GetAllFromArray(message, offset, header.AdditionalRecordCount, out offset));
+            throw new ArgumentException("Invalid request message");
         }
 
-        public Request(Header header, IList<Question> questions, IList<IResourceRecord> additional)
+        var questions = Question.GetAllFromArray(message, offset, header.QuestionCount, out offset);
+        var additional = ResourceRecordFactory.GetAllFromArray(message, offset, header.AdditionalRecordCount);
+
+        return new Request(header, questions, additional);
+    }
+
+    public Request(Header header, IList<Question> questions, IList<IResourceRecord> additional)
+    {
+        _header = header;
+        _questions = questions;
+        _additional = additional;
+    }
+
+    public Request()
+    {
+        _questions = [];
+        _additional = [];
+        _header = new Header
         {
-            this._header = header;
-            this._questions = questions;
-            this._additional = additional;
+            OperationCode = OperationCode.Query,
+            Response = false,
+            Id = NextRandomId(),
+        };
+    }
+
+    public Request(IRequest request)
+    {
+        _questions = [..request.Questions];
+        _additional = [..request.AdditionalRecords];
+        _header = new Header
+        {
+            Response = false,
+            Id = request.Id,
+            OperationCode = request.OperationCode,
+            RecursionDesired = request.RecursionDesired,
+        };
+    }
+
+    public IList<Question> Questions => _questions;
+
+    public IList<IResourceRecord> AdditionalRecords => _additional;
+
+    IReadOnlyList<Question> IReadOnlyRequest.Questions => (IReadOnlyList<Question>)_questions;
+    IReadOnlyList<IResourceRecord> IReadOnlyRequest.AdditionalRecords => (IReadOnlyList<IResourceRecord>)_additional;
+
+    public int Size => _header.Size + _questions.Sum(q => q.Size) + _additional.Sum(a => a.Size);
+
+    public int Id
+    {
+        get => _header.Id;
+        set => _header.Id = value;
+    }
+
+    public OperationCode OperationCode
+    {
+        get => _header.OperationCode;
+        set => _header.OperationCode = value;
+    }
+
+    public bool RecursionDesired
+    {
+        get => _header.RecursionDesired;
+        set => _header.RecursionDesired = value;
+    }
+
+    public byte[] ToArray()
+    {
+        UpdateHeader();
+        var result = new byte[Size];
+        WriteToCore(result);
+        return result;
+    }
+
+    public void WriteTo(Span<byte> destination)
+    {
+        UpdateHeader();
+        WriteToCore(destination);
+    }
+
+    private void WriteToCore(Span<byte> destination)
+    {
+        _header.WriteTo(destination[.._header.Size]);
+        var offset = _header.Size;
+
+        offset = WriteEntries(_questions, destination, offset);
+        WriteEntries(_additional, destination, offset);
+    }
+
+    private static int WriteEntries<T>(IList<T> entries, Span<byte> destination, int offset) where T : IMessageEntry
+    {
+        foreach (var entry in entries)
+        {
+            entry.WriteTo(destination.Slice(offset, entry.Size));
+            offset += entry.Size;
         }
 
-        public Request()
-        {
-            this._questions = new List<Question>();
-            this._header = new Header();
-            this._additional = new List<IResourceRecord>();
+        return offset;
+    }
 
-            this._header.OperationCode = OperationCode.Query;
-            this._header.Response = false;
-            this._header.Id = NextRandomId();
+    public override string ToString()
+    {
+        UpdateHeader();
+
+        return ObjectStringifier.New(this)
+            .Add(nameof(Header), _header)
+            .Add(nameof(Questions), nameof(AdditionalRecords))
+            .ToString();
+    }
+
+    public override bool Equals(object? obj)
+    {
+        return ReferenceEquals(this, obj) || obj is Request request && Equals(request);
+    }
+
+    public override int GetHashCode()
+    {
+        var hashCode = new HashCode();
+        var headerHash = HeaderComparer.InstanceWithoutIdComparision.GetHashCode(_header);
+        hashCode.Add(headerHash);
+
+        foreach (var question in _questions)
+        {
+            var questionsHash = QuestionComparer.Instance.GetHashCode(question);
+            hashCode.Add(questionsHash);
         }
 
-        public Request(IRequest request)
+        foreach (var resourceRecord in _additional)
         {
-            this._header = new Header();
-            this._questions = new List<Question>(request.Questions);
-            this._additional = new List<IResourceRecord>(request.AdditionalRecords);
-
-            this._header.Response = false;
-
-            Id = request.Id;
-            OperationCode = request.OperationCode;
-            RecursionDesired = request.RecursionDesired;
+            var resourceRecordHash = ResourceRecordComparer.Instance.GetHashCode(resourceRecord);
+            hashCode.Add(resourceRecordHash);
         }
 
-        public IList<Question> Questions
+        return hashCode.ToHashCode();
+    }
+
+    public bool Equals(IRequest? other)
+    {
+        if (other is not Request otherRequest)
         {
-            get { return _questions; }
-        }
-
-        public IList<IResourceRecord> AdditionalRecords
-        {
-            get { return _additional; }
-        }
-
-        IReadOnlyList<Question> IReadOnlyRequest.Questions => (IReadOnlyList<Question>)_questions;
-        IReadOnlyList<IResourceRecord> IReadOnlyRequest.AdditionalRecords => (IReadOnlyList<IResourceRecord>)_additional;
-
-        public int Size
-        {
-            get
-            {
-                return _header.Size +
-                    _questions.Sum(q => q.Size) +
-                    _additional.Sum(a => a.Size);
-            }
-        }
-
-        public int Id
-        {
-            get { return _header.Id; }
-            set { _header.Id = value; }
-        }
-
-        public OperationCode OperationCode
-        {
-            get { return _header.OperationCode; }
-            set { _header.OperationCode = value; }
-        }
-
-        public bool RecursionDesired
-        {
-            get { return _header.RecursionDesired; }
-            set { _header.RecursionDesired = value; }
-        }
-
-        public byte[] ToArray()
-        {
-            UpdateHeader();
-            var result = new byte[Size];
-            WriteToCore(result);
-            return result;
-        }
-
-        public void WriteTo(Span<byte> destination)
-        {
-            UpdateHeader();
-            WriteToCore(destination);
-        }
-
-        private void WriteToCore(Span<byte> destination)
-        {
-            _header.WriteTo(destination[.._header.Size]);
-            var offset = _header.Size;
-
-            offset = WriteEntries(_questions, destination, offset);
-            WriteEntries(_additional, destination, offset);
-        }
-
-        private static int WriteEntries<T>(IList<T> entries, Span<byte> destination, int offset) where T : IMessageEntry
-        {
-            foreach (var entry in entries)
-            {
-                entry.WriteTo(destination.Slice(offset, entry.Size));
-                offset += entry.Size;
-            }
-
-            return offset;
-        }
-
-        public override string ToString()
-        {
-            UpdateHeader();
-
-            return ObjectStringifier.New(this)
-                .Add(nameof(Header), _header)
-                .Add(nameof(Questions), nameof(AdditionalRecords))
-                .ToString();
-        }
-        
-        public override bool Equals(object obj)
-        {
-            if (obj is null) 
-                return false;
-            if (ReferenceEquals(this, obj)) 
-                return true;
-            if (obj is Request request) 
-                return Equals(request);
             return false;
         }
-        
-        public override int GetHashCode()
+
+        if (_questions.Count != otherRequest._questions.Count)
         {
-            var hashCode = new HashCode();
-            var headerHash = HeaderComparer.InstanceWithoutIdComparision.GetHashCode(_header);
-            hashCode.Add(headerHash);
-            foreach (var question in _questions)
-            {
-                var questionsHash = QuestionComparer.Instance.GetHashCode(question);
-                hashCode.Add(questionsHash);
-            }
-
-            foreach (var resourceRecord in _additional)
-            {
-                var resourceRecordHash = ResourceRecordComparer.Instance.GetHashCode(resourceRecord);
-                hashCode.Add(resourceRecordHash);
-            }
-
-            return hashCode.ToHashCode();
+            return false;
         }
-        
-        public bool Equals(IRequest other)
+
+        if (_additional.Count != otherRequest._additional.Count)
         {
-            if (other is not Request otherRequest)
+            return false;
+        }
+
+        if (!HeaderComparer.InstanceWithoutIdComparision.Equals(_header, otherRequest._header))
+        {
+            return false;
+        }
+
+        for (var i = 0; i < _questions.Count; i++)
+        {
+            if (!QuestionComparer.Instance.Equals(_questions[i], otherRequest._questions[i]))
             {
                 return false;
             }
-
-            if (_questions.Count != otherRequest.Questions.Count)
-            {
-                return false;
-            }
-
-            if (_additional.Count != otherRequest._additional.Count)
-            {
-                return false;
-            }
-
-            if (!HeaderComparer.InstanceWithoutIdComparision.Equals(_header, otherRequest._header))
-            {
-                return false;
-            }
-            
-            for (var i = 0; i < _questions.Count; i++)
-            {
-                if (!QuestionComparer.Instance.Equals(_questions[i], otherRequest._questions[i]))
-                {
-                    return false;
-                }
-            }
-
-            for (var i = 0; i < _additional.Count; i++)
-            {
-                if (!ResourceRecordComparer.Instance.Equals(_additional[i], otherRequest._additional[i]))
-                {
-                    return false;
-                }
-            }
-
-            return true;
         }
 
-        private void UpdateHeader()
+        for (var i = 0; i < _additional.Count; i++)
         {
-            _header.QuestionCount = _questions.Count;
-            _header.AdditionalRecordCount = _additional.Count;
+            if (!ResourceRecordComparer.Instance.Equals(_additional[i], otherRequest._additional[i]))
+            {
+                return false;
+            }
         }
 
-        private ushort NextRandomId()
-        {
-            var rndId = (ushort)(Random.Shared.Next() % ushort.MaxValue);
-            return rndId;
-        }
+        return true;
+    }
+
+    private void UpdateHeader()
+    {
+        _header.QuestionCount = _questions.Count;
+        _header.AdditionalRecordCount = _additional.Count;
+    }
+
+    private static ushort NextRandomId()
+    {
+        return (ushort)(Random.Shared.Next() % ushort.MaxValue);
     }
 }

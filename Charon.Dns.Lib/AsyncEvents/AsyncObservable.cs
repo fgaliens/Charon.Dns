@@ -7,7 +7,7 @@ namespace Charon.Dns.Lib.AsyncEvents;
 
 public class AsyncObservable<T> : IAsyncObservable<T>, IAsyncEventEmitter<T>
 {
-    private ImmutableDictionary<IAsyncObserver<T>, bool> _observers = ImmutableDictionary.Create<IAsyncObserver<T>, bool>();
+    private ImmutableDictionary<IAsyncObserver<T>, bool> _observers = ImmutableDictionary<IAsyncObserver<T>, bool>.Empty;
     
     public IAsyncDisposable Subscribe(IAsyncObserver<T> observer)
     {

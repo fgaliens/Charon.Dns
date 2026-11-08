@@ -1,8 +1,7 @@
-﻿namespace Charon.Dns.Lib.Protocol
+﻿namespace Charon.Dns.Lib.Protocol;
+
+public enum RecordClass
 {
-    public enum RecordClass
-    {
-        IN = 1,
-        ANY = 255,
-    }
+    IN = 1,
+    ANY = 255,
 }
