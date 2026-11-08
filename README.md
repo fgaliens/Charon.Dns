@@ -1,71 +1,62 @@
 # Charon.Dns
 
-**Charon.Dns** is a DNS server with the ability to dynamically manage traffic routes on your Linux server.
+**Charon.Dns** is a DNS server for Linux that routes traffic by domain name. Tell it which domains should go through a specific interface (e.g. a VPN), and it adds the routes automatically whenever those domains are resolved.
 
-Charon.Dns.Lib library is based on the [kapetan/dns](https://github.com/kapetan/dns) library.
+## Why
 
-## The Problem
+Say your server has two ways out to the internet: the default gateway and a VPN. You want most traffic to go directly, but `example.com` should go through the VPN.
 
-Imagine you have two gateways on host:
-- A default gateway
-- A VPN gateway
+The usual answer is `ip route add ...`, but that only works with IP addresses. Sites have many addresses, they change over time, and keeping routes for dozens of sites up to date by hand is impractical.
 
-You want most traffic to go through your default gateway, but all traffic to `example.com` should be routed through the VPN. Normally, you'd use `ip route add ...` to accomplish this. But what if `example.com` has multiple IP addresses that can change over time or you need to route many sites? Manually managing these routes becomes impractical.
+Charon.Dns solves this at the DNS level. When a client resolves `example.com`, the server:
 
-## The Solution
+1. sees that the domain matches a routing rule;
+2. resolves it and adds routes for the returned addresses through the configured interface;
+3. returns the answer to the client.
 
-Charon.Dns solves this by automatically adding routes whenever it receives DNS queries. When a client requests any type of DNS record (A, AAAA, MX, etc.), Charon.Dns:
+Address changes are picked up automatically, and routes that are no longer used are removed after a while.
 
-1. Detects the domain being queried
-2. Dynamically adds a route for that domain's IP address(es) through your specified gateway (e.g., VPN)
-3. Returns the DNS response to the client
+## Features
 
-## Core Features
+- **Domain-based routing** — route traffic for chosen domains (and their subdomains) through a specific interface.
+- **DNS forwarding** — resolves any record type via upstream servers over plain DNS (UDP/TCP), DNS over TLS or DNS over HTTPS, with caching.
+- **Encrypted DNS for clients** — accepts queries over UDP/TCP, DNS over TLS (DoT) and DNS over HTTPS (DoH).
+- **Domain blocking** — block ads, trackers or any other hosts.
+- **Local zones** — serve your own records (`nas.my.home`, etc.) without going upstream.
+- **VPN kill switch** — uses `ufw` to cut network access for clients that stop using the server's DNS, and restores it when they come back.
 
-### 🚦 Traffic Routing Management
-Automatically adds Linux routes for domains as they are queried, enabling selective routing through specific gateways.
+## Requirements
 
-### 🔍 DNS Resolution
-Resolves any query type (A, AAAA, CNAME, MX, SOA, SRV, TXT, etc.) by forwarding it to upstream DNS servers. Can also serve local zones authoritatively (A, AAAA, CNAME, MX, NS, PTR, SRV, TXT) without a round trip upstream (see `zones.json` in Configuration).
-
-### 🚫 Domain Blocking
-Blocks unwanted domains by adding them to a blacklist — perfect for blocking analytics trackers, advertising domains, or any other undesirable destinations.
-
-### 🔐 Activity-Based Access Control
-Tracks which client IPs are actively resolving DNS through the server and uses `ufw` to automatically revoke network access for clients that go inactive longer than a configured threshold, restoring it once they're active again — a kill switch for VPN-only clients.
-
-## How It Works
-
-With Charon.Dns running, you can configure routing rules that say: "When anyone looks up `example.com`, route traffic to its IPs through the VPN." The server handles dynamic IP changes automatically — no need to manually update routes when IP addresses change.
-
-Additionally, you can:
-- Block analytics and tracking domains so they never resolve
-- Use Charon.Dns as a standard DNS resolver for lookups of any record type
-- Automatically cut off network access for clients that stop using the VPN, and restore it once they're active again
+- Linux, `x86_64` or `arm64` (e.g. Raspberry Pi with a 64-bit OS)
+- root privileges (needed to manage routes)
+- systemd (for the installer)
+- `ufw` — only for the kill switch
 
 ## Installation
 
-Install (or update) the latest release as a systemd service:
+Install the latest release as a systemd service:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/fgaliens/DNS/master/install.sh | sudo bash -s -- --dir /etc/charon-dns
 ```
 
-The installer:
-- detects the system architecture (`x86_64` and `aarch64`/`arm64`, e.g. Raspberry Pi with a 64-bit OS) and downloads the matching build from the latest GitHub release;
-- installs the `Charon.Dns` binary and the `install.sh` script into the installation directory;
-- on first install generates templates for `settings.json`, `routing.json`, `hosts_blacklist.txt` and `other_hosts.txt` and creates and enables a `charon-dns` systemd service (not started — edit `settings.json` and `routing.json` first, then run `sudo systemctl start charon-dns`);
-- on update converts existing configuration files to the format of the new version (see [Configuration Versions](#configuration-versions)) and never modifies existing systemd units.
+The installer downloads the build for your architecture, generates configuration templates and creates the `charon-dns` service. The service is **not started** on first install — configure it first (see [Configuration](#configuration)), then:
 
-To update an existing installation, run the script that lies next to the application:
+```bash
+sudo systemctl start charon-dns
+```
+
+### Updating
+
+Run the installer that lies next to the application:
 
 ```bash
 sudo /etc/charon-dns/install.sh
 ```
 
-The installation directory and the service name are detected automatically: from the script location, the `.service-name` file in the installation directory or existing systemd units running `Charon.Dns`. If the service is running, it is stopped for the update and started again afterwards.
+The installation directory and the service name are detected automatically. A running service is stopped for the update and started again. Existing configuration files are kept and converted to the format of the new version if needed (see [Upgrading from 1.x](#upgrading-from-1x)).
 
-Installer options:
+### Installer options
 
 | Option | Description |
 |---|---|
@@ -74,129 +65,102 @@ Installer options:
 | `-f`, `--force` | Reinstall even if the latest version is already installed |
 | `-h`, `--help` | Show help |
 
-Useful commands:
+### Managing the service
 
 ```bash
 sudo systemctl start|stop|restart charon-dns
-journalctl -u charon-dns -f   # logs are also written to <install dir>/logs
-```
-
-## Usage
-
-Run the server (requires root privileges on Linux for route management) from the directory containing `settings.json`:
-
-```bash
-sudo ./Charon.Dns
-```
-
-Command-line options:
-- `-v`, `--version` — print the application version and exit.
-
-Commands:
-- `settings migrate [--dir <path>]` — convert configuration files in the directory (default: current directory) to the format of this version, see [Configuration Versions](#configuration-versions).
-
-Any configuration key (from `settings.json`, `routing.json` or `zones.json`) can also be overridden via command-line arguments, e.g.:
-
-```bash
-sudo ./Charon.Dns --Logging:Console=Warning --Logging:File=Warning
+journalctl -u charon-dns -f   # logs are also written to /etc/charon-dns/logs
 ```
 
 ## Configuration
 
-Charon.Dns is configured by editing the `settings.json` (server, upstream DNS, cache, access control), `routing.json` (traffic routing and blocking) and `zones.json` (local zones) files, located in the working directory. **Note:** The server must be restarted after any configuration changes.
+All configuration lives in the installation directory:
 
-When built in `Debug` configuration, the server loads `settings.debug.json`, `routing.debug.json`, `zones.debug.json` and `config.version.debug.json` instead — useful for local development without touching your production config. All debug files are git-ignored.
+| File | Purpose |
+|---|---|
+| `settings.json` | Listening addresses, upstream DNS servers, cache, kill switch |
+| `routing.json` | Routing rules and blocked hosts |
+| `zones.json` | Local DNS zones |
+| `blocked_hosts.txt`, `other_domains.txt` | Host lists referenced from `routing.json` |
 
-### settings.json Structure
+> Restart the service after changing any of these files: `sudo systemctl restart charon-dns`.
 
-```json
+Files support `//` comments. Time values use the `hh:mm:ss` format (`1.00:00:00` is one day).
+
+### settings.json
+
+```jsonc
 {
   "Logging": {
-    "Console": "Information", // Log level for standard output
-    "File": "Debug" // Log level for file output
+    "Console": "Information", // Log level for the console / journal
+    "File": "Information"     // Log level for files in logs/
   },
   "Server": {
-    "SocketsPerEndpoint": 8, // Number of UDP sockets per "ListenOn" address sharing the load (SO_REUSEPORT)
-    "SocketBufferSize": "2Mb", // UDP socket buffer size for incoming requests
-    "ListenOn": [ // Addresses and ports the server listens on
+    "ListenOn": [ // Where clients send their queries
       {
         "Address": "10.0.0.53",
-        "Port": 53, // Optional, defaults to 53 for UdpAndTcp, 853 for DoT, 443 for DoH
-        "EnableIPv6": false, // Use an IPv6 socket
-        "Mode": "UdpAndTcp" // Optional: UdpAndTcp (default; UDP and TCP on the same port), DoT or DoH
-      },
-      {
-        "Address": "10.0.0.53",
-        "Mode": "DoT", // DNS over TLS (RFC 7858)
-        "Certificate": { "Path": "cert.pem", "KeyPath": "key.pem" } // Required for DoT and DoH
-      },
-      {
-        "Address": "10.0.0.53",
-        "Mode": "DoH", // DNS over HTTPS (RFC 8484), HTTP/1.1 and HTTP/2
-        "Certificate": { "Path": "cert.pfx", "Password": "secret" }, // PKCS#12 (.pfx, .p12) or PEM
-        "Path": "/dns-query" // Optional, the path of the DoH endpoint
+        "Port": 53,          // Optional: 53 for UdpAndTcp, 853 for DoT, 443 for DoH
+        "EnableIPv6": false, // Set to true for an IPv6 address
+        "Mode": "UdpAndTcp"  // UdpAndTcp (default), DoT or DoH
       }
     ]
   },
   "Upstream": {
-    "ResolvingStrategy": "RoundRobin", // Resolving strategy (options: Random, Parallel, RoundRobin)
-    "SocketBufferSize": "512Kb", // UDP socket buffer size for outgoing resolver connections
-    "DefaultServers": [ // DNS servers for standard resolution
-      {
-        "Address": "77.88.8.8:53", // Port defaults to 53 for UdpAndTcp, 853 for DoT, 443 for DoH; add ":port" to override
-        "Mode": "UdpAndTcp" // Optional: UdpAndTcp (default), DoT or DoH
-      },
-      {
-        "Address": "8.8.8.8",
-        "Mode": "DoH",
-        "Host": "dns.google", // Optional, name to validate the certificate against (defaults to the address)
-        "Path": "/dns-query" // Optional, DoH only
-      }
+    "ResolvingStrategy": "RoundRobin", // How to pick a server: Random, Parallel or RoundRobin
+    "DefaultServers": [ // Servers for ordinary domains
+      { "Address": "77.88.8.8", "Mode": "UdpAndTcp" },
+      { "Address": "8.8.8.8", "Mode": "DoH", "Host": "dns.google" }
     ],
-    "RoutedServers": [ // DNS servers for routed domains (see routing.json), reached through the interface
-      {
-        "Address": "1.1.1.1:53", // Same fields as in "DefaultServers"
-        "Interface": "wg0",
-        "Mode": "UdpAndTcp"
-      }
+    "RoutedServers": [ // Servers for routed domains, reached through the given interface
+      { "Address": "1.1.1.1", "Interface": "wg0", "Mode": "UdpAndTcp" }
     ]
   },
   "Cache": {
-    "Enabled": true, // Whether to cache resolved responses
-    "Ttl": "00:05:00" // DNS cache TTL
+    "Enabled": true,
+    "Ttl": "00:05:00"
   },
-  "UserAccessControl": { // Activity-based access control via ufw (see Core Features)
+  "UserAccessControl": { // Kill switch, see the how-to below
     "Enabled": false,
-    "InactivityThreshold": "00:30:00", // How long a client can be inactive before its access is revoked
-    "ControlledSubnets": [ // Subnets whose clients are subject to this control
-      "10.8.0.0/24"
-    ]
+    "InactivityThreshold": "00:30:00",
+    "ControlledSubnets": []
   }
 }
 ```
 
-### routing.json Structure
+Upstream server fields:
 
-```json
+| Field | Description |
+|---|---|
+| `Address` | IP address, optionally with a port (`1.1.1.1:5353`) |
+| `Mode` | `UdpAndTcp` (default), `DoT` or `DoH` |
+| `Host` | DoT/DoH only: name to validate the server certificate against (defaults to the address) |
+| `Path` | DoH only: endpoint path (default `/dns-query`) |
+| `Interface` | `RoutedServers` only: interface to reach the server through |
+
+Resolving routed domains through `RoutedServers` means the DNS queries themselves also go through the VPN, and the answers are the ones the VPN side sees.
+
+### routing.json
+
+```jsonc
 {
   "Routing": {
-    "RouteIdleTimeout": "02:00:00", // A route is removed after it has not been used for this time
-    "BlockedHosts": [ // Host names to block (exact match)
-      "tracker.com",
-      "file:hosts_blacklist.txt" // Can reference an external file with blocked hosts
+    "RouteIdleTimeout": "02:00:00", // Remove a route after it hasn't been used for this time
+    "BlockedHosts": [ // Exact host names to block
+      "tracker.example.com",
+      "file:blocked_hosts.txt"
     ],
     "Rules": [
       {
-        "Interface": "wg0", // Interface to route traffic through
-        "IPv4PrefixLength": 32, // Prefix length of added IPv4 routes
-        "IPv6PrefixLength": 96, // Prefix length of added IPv6 routes
-        "Match": { // Domain matching rules
-          "Substrings": [
-            "some-site" // Matches any domain containing "some-site"
-          ],
-          "Domains": [ // Matches domain and all subdomains
+        "Interface": "wg0",      // Interface to route matching traffic through
+        "IPv4PrefixLength": 32,  // Size of added IPv4 routes
+        "IPv6PrefixLength": 96,  // Size of added IPv6 routes
+        "Match": {
+          "Domains": [           // The domain and all its subdomains
             "example.com",
-            "file:other-hosts.txt"
+            "file:other_domains.txt"
+          ],
+          "Substrings": [        // Any domain containing the string
+            "some-site"
           ]
         }
       }
@@ -205,63 +169,173 @@ When built in `Debug` configuration, the server loads `settings.debug.json`, `ro
 }
 ```
 
+`file:<path>` includes host names from a text file: one name per line, empty lines and lines starting with `#` are ignored.
 
-### zones.json Structure
+### zones.json
 
-Local zones live in `zones.json` next to `settings.json` and are loaded the same way (`zones.debug.json` in `Debug`). `install.sh` creates it if missing. The server is authoritative for every name inside a zone: missing names get `NXDOMAIN`, missing record types get an empty answer (both with the zone `SOA` in the authority section), and such queries are never forwarded upstream. `CNAME` records pointing inside local zones are followed.
-
-```json
+```jsonc
 {
-  "DefaultTtl": "00:05:00", // TTL for records without their own "Ttl"
+  "DefaultTtl": "00:05:00",
   "Zones": [
     {
-      "Origin": "my.home", // Zone name
-      "Ttl": "00:05:00", // Optional, overrides DefaultTtl for this zone
-      "Soa": { // Optional, these are the defaults
-        "PrimaryNameServer": "ns",
-        "ResponsibleMailbox": "hostmaster",
-        "Serial": 1,
-        "Refresh": "01:00:00",
-        "Retry": "00:10:00",
-        "Expire": "1.00:00:00",
-        "MinimumTtl": "00:05:00" // Defaults to the zone TTL
-      },
+      "Origin": "my.home",
       "Records": [
-        { "Name": "@", "Type": "A", "Value": "10.10.1.25" },
-        { "Name": "@", "Type": "A", "Value": "192.168.1.1", "ResolveOnlyIfRequestCameFrom": "10.10.1.1" }, // Returned only to this client
-        { "Name": "@", "Type": "AAAA", "Value": "fd00::25" },
+        { "Name": "@",   "Type": "A",     "Value": "10.10.1.25" },
+        { "Name": "@",   "Type": "AAAA",  "Value": "fd00::25" },
         { "Name": "nas", "Type": "CNAME", "Value": "@" },
-        { "Name": "@", "Type": "MX", "Value": "10 mail" }, // "<preference> <exchange>"
-        { "Name": "@", "Type": "TXT", "Value": "v=spf1 -all" },
-        { "Name": "_http._tcp", "Type": "SRV", "Value": "0 5 80 nas", "Ttl": "01:00:00" } // "<priority> <weight> <port> <target>"
+        { "Name": "@",   "Type": "MX",    "Value": "10 mail" },
+        { "Name": "@",   "Type": "TXT",   "Value": "v=spf1 -all" },
+        { "Name": "_http._tcp", "Type": "SRV", "Value": "0 5 80 nas", "Ttl": "01:00:00" }
       ]
     }
   ]
 }
 ```
 
-Names in `Name` and in domain parts of `Value`: `@` is the zone origin, a name ending with a dot (`example.com.`) is absolute, any other name is relative to the origin (`nas` → `nas.my.home`).
+- Supported record types: `A`, `AAAA`, `CNAME`, `MX`, `NS`, `PTR`, `SRV`, `TXT`.
+- Names: `@` is the zone itself, `nas` means `nas.my.home`, a name ending with a dot (`example.com.`) is absolute.
+- The server is authoritative for the whole zone: names that are not listed return `NXDOMAIN` and are never forwarded upstream.
+- A zone can optionally set its own `Ttl` and `Soa` parameters; a record can set its own `Ttl`.
 
-### Configuration Versions
-
-The format version of the configuration files is stored in `config.version.json` next to them. The file is managed by Charon.Dns — do not edit it. A missing file (or one without a version) means version 0, the format of releases before 2.0.0.
-
-On startup the server converts the configuration files to the format of its version, and `install.sh` does the same on update. To do it manually, run:
+### Command line
 
 ```bash
-sudo ./Charon.Dns settings migrate --dir /etc/charon-dns
+Charon.Dns --version                        # print the version
+Charon.Dns settings migrate [--dir <path>]  # convert configuration files to the current format
 ```
 
-Before a file is changed, its previous content is saved next to it as `<file>.v<old version>.bak` (comments are not preserved in converted files, they are kept in the backups). If the files can't be converted, nothing is changed, and the server doesn't start until the problem is fixed.
+Any setting can be overridden from the command line, e.g. `--Logging:Console=Warning`.
 
-Converting from 1.x (version 0):
-- the `Server:DnsRecords:A` records are moved to `zones.json`; each name becomes a zone of its own (with the cache TTL), unless it belongs to an existing zone. **The server is authoritative for these zones now**: other record types and subdomains of these names are not forwarded upstream anymore;
-- the `Routing` section is moved to `routing.json` (it must not be present in both files);
-- fields are renamed to the names above (`LogLevel` → `Logging:Console`, `DnsChain` → `Upstream`, `SecuredServers` → `RoutedServers`, `Items` → `Rules` etc.);
-- `ListenOn` items marked `"DebugOnly": true` are removed (1.x didn't listen on them in release builds), `ResolvingConcurrencyLimit` is removed (it had no effect);
-- `"Mode": "UdpAndTcp"` is added to `ListenOn` and `RoutedServers` items, and `DefaultServers` given as strings (`"77.88.8.8"`) become objects (`{ "Address": "77.88.8.8", "Mode": "UdpAndTcp" }`). **Listeners accept DNS over TCP on the same port now**, in addition to UDP.
+## How-to
 
-## Requirements
+### Point clients to the server
 
-- Linux-based operating system
-- Root privileges (for route manipulation)
+Set the server address from `Server:ListenOn` (e.g. `10.0.0.53`) as the DNS server on your clients — in the DHCP settings of your router, in the VPN client configuration (`DNS = 10.0.0.53` for WireGuard) or in the network settings of a single device.
+
+Check that it answers:
+
+```bash
+dig @10.0.0.53 example.com
+```
+
+### Route a site through the VPN
+
+1. Add the domain to a rule in `routing.json` (or to `other_domains.txt`):
+
+   ```jsonc
+   "Rules": [
+     {
+       "Interface": "wg0",
+       "IPv4PrefixLength": 32,
+       "IPv6PrefixLength": 96,
+       "Match": { "Domains": ["example.com"] }
+     }
+   ]
+   ```
+
+2. Optionally add a server to `Upstream:RoutedServers` with the same `Interface`, so these domains are also resolved through the VPN.
+3. Restart the service and resolve the domain from a client.
+4. Check that the route was added:
+
+   ```bash
+   ip route | grep wg0
+   ```
+
+All subdomains (`www.example.com`, `cdn.example.com`) are routed too. If a site loads resources from other domains, add them as well.
+
+For several VPNs, add a rule per interface.
+
+### Block ads and trackers
+
+Add host names to `blocked_hosts.txt`, one per line, and restart the service. Only exact names are blocked — list subdomains separately. The file can be filled from public blocklists as long as they contain plain host names (strip `0.0.0.0` prefixes from hosts-file style lists).
+
+### Add local names for your devices
+
+Create a zone in `zones.json`:
+
+```jsonc
+{
+  "Zones": [
+    {
+      "Origin": "my.home",
+      "Records": [
+        { "Name": "router", "Type": "A", "Value": "192.168.1.1" },
+        { "Name": "nas",    "Type": "A", "Value": "192.168.1.10" }
+      ]
+    }
+  ]
+}
+```
+
+After a restart `nas.my.home` resolves to `192.168.1.10`.
+
+To return a different address depending on the client, add `"ResolveOnlyIfRequestCameFrom": "<client IP>"` to a record — it will only be returned to that client.
+
+### Use encrypted DNS
+
+**Upstream.** Switch servers in `Upstream` to DoT or DoH so your ISP can't see or alter your DNS queries:
+
+```jsonc
+"DefaultServers": [
+  { "Address": "1.1.1.1", "Mode": "DoT", "Host": "one.one.one.one" },
+  { "Address": "8.8.8.8", "Mode": "DoH", "Host": "dns.google" }
+]
+```
+
+**For clients.** Add DoT and/or DoH listeners to `Server:ListenOn`. They need a certificate — PEM (`Path` + `KeyPath`) or PKCS#12 (`Path` + optional `Password`):
+
+```jsonc
+"ListenOn": [
+  { "Address": "10.0.0.53", "Mode": "UdpAndTcp" },
+  {
+    "Address": "10.0.0.53",
+    "Mode": "DoT",
+    "Certificate": { "Path": "cert.pem", "KeyPath": "key.pem" }
+  },
+  {
+    "Address": "10.0.0.53",
+    "Mode": "DoH",
+    "Certificate": { "Path": "cert.pfx", "Password": "secret" },
+    "Path": "/dns-query"
+  }
+]
+```
+
+Clients connect to `tls://<server>:853` for DoT and `https://<server>/dns-query` for DoH. The certificate must be trusted by the clients and issued for the name they connect to.
+
+### Enable the VPN kill switch
+
+If clients connect to your server through a VPN, the kill switch makes sure they can't use the network without also using Charon.Dns. A client that hasn't sent a DNS query for longer than `InactivityThreshold` loses network access via `ufw`, and gets it back with its next query.
+
+1. Make sure `ufw` is installed and active: `sudo ufw status`.
+2. Enable the feature in `settings.json`, listing the VPN client subnet:
+
+   ```jsonc
+   "UserAccessControl": {
+     "Enabled": true,
+     "InactivityThreshold": "00:30:00",
+     "ControlledSubnets": ["10.8.0.0/24"]
+   }
+   ```
+
+3. Restart the service.
+
+## Upgrading from 1.x
+
+Version 2.0 changed the configuration format. The installer converts existing files automatically on update; to do it manually, run:
+
+```bash
+sudo /etc/charon-dns/Charon.Dns settings migrate --dir /etc/charon-dns
+```
+
+The previous versions of changed files are saved next to them as `<file>.v0.bak`. If the conversion fails, nothing is changed and the server won't start until the problem is fixed.
+
+Behavior changes to be aware of:
+
+- **Static records from `Server:DnsRecords` are moved to `zones.json`, and the server is now authoritative for them**: other record types and subdomains of these names are no longer forwarded upstream.
+- **The `Routing` section is moved to `routing.json`.**
+- **Listeners accept DNS over TCP on the same port**, in addition to UDP.
+
+## Credits
+
+The DNS protocol library is based on [kapetan/dns](https://github.com/kapetan/dns).
