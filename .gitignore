@@ -169,3 +169,7 @@ pip-log.txt
 /.vs
 
 other_hosts.txt
+# Rider
+.idea/
+*.DotSettings
+*.DotSettings.user
