@@ -18,7 +18,7 @@ public class UserAccessControlSettings : ISettings<UserAccessControlSettings>
         var enabled = accessControlSection.GetSectionValue("Enabled", false);
         var inactivityThreshold = accessControlSection.GetSectionValue("InactivityThreshold", TimeSpan.FromHours(1));
         var controlledIps = accessControlSection
-            .GetSection("ControlledIps")
+            .GetSection("ControlledSubnets")
             .GetChildren()
             .Select(x => x.GetSectionValue<IPNetwork>())
             .DefaultIfEmpty(new IPNetwork(IPAddress.Any, 0))

@@ -8,45 +8,41 @@ namespace Charon.Dns.Settings;
 public record DnsChainSettings : ISettings<DnsChainSettings>
 {
     public required ResolvingStrategy ResolvingStrategy { get; init; }
-    public required int ResolvingConcurrencyLimit { get; init; }
     public required ByteUnit SocketBufferSize { get; init; }
     public required IReadOnlyCollection<DnsServerAddress> DefaultServers { get; init; }
-    public required IReadOnlyCollection<SecuredServerSettingsItem> SecuredServers { get; init; }
+    public required IReadOnlyCollection<RoutedServerSettingsItem> RoutedServers { get; init; }
 
     public static DnsChainSettings Initialize(IConfiguration config)
     {
-        var dnsChainConfig = config.GetSection("Server:DnsChain");
-        var resolvingStrategy = dnsChainConfig.GetSectionEnumValue("ResolvingStrategy", ResolvingStrategy.RoundRobin);
-        var resolvingConcurrencyLimit = dnsChainConfig.GetSectionValue("ResolvingConcurrencyLimit", 2);
-        resolvingConcurrencyLimit = Math.Max(0, resolvingConcurrencyLimit);
-        var socketBufferSize = dnsChainConfig.GetSectionValue("SocketBufferSize", new ByteUnit(512 * 1024));
-        var defaultServers = dnsChainConfig
+        var upstreamConfig = config.GetSection("Upstream");
+        var resolvingStrategy = upstreamConfig.GetSectionEnumValue("ResolvingStrategy", ResolvingStrategy.RoundRobin);
+        var socketBufferSize = upstreamConfig.GetSectionValue("SocketBufferSize", new ByteUnit(512 * 1024));
+        var defaultServers = upstreamConfig
             .GetSection("DefaultServers")
             .GetChildren()
             .Select(x => x.GetSectionValue<DnsServerAddress>())
             .ToArray();
-        var securedServers = dnsChainConfig
-            .GetSection("SecuredServers")
+        var routedServers = upstreamConfig
+            .GetSection("RoutedServers")
             .GetChildren()
-            .Select(x =>new SecuredServerSettingsItem
+            .Select(x => new RoutedServerSettingsItem
             {
-                Address = x.GetSectionValue<DnsServerAddress>("Ip"),
-                InterfaceToRouteThrough = x.GetSectionValue("RouteThroughInterface"),
+                Address = x.GetSectionValue<DnsServerAddress>("Address"),
+                InterfaceToRouteThrough = x.GetSectionValue("Interface"),
             })
             .ToArray();
 
         return new DnsChainSettings
         {
             ResolvingStrategy = resolvingStrategy,
-            ResolvingConcurrencyLimit = resolvingConcurrencyLimit,
             SocketBufferSize = socketBufferSize,
             DefaultServers = defaultServers,
-            SecuredServers = securedServers,
+            RoutedServers = routedServers,
         };
     }
 }
 
-public record SecuredServerSettingsItem
+public record RoutedServerSettingsItem
 {
     public required DnsServerAddress Address { get; init; }
     public required string InterfaceToRouteThrough { get; init; }

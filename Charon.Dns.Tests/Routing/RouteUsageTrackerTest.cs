@@ -20,7 +20,7 @@ namespace Charon.Dns.Tests.Routing;
 [TestSubject(typeof(RouteUsageTracker<>))]
 public class RouteUsageTrackerTest
 {
-    private static readonly TimeSpan DefaultRoutingPeriod = TimeSpan.FromHours(1);
+    private static readonly TimeSpan DefaultRouteIdleTimeout = TimeSpan.FromHours(1);
     private readonly Fixture _fixture = new();
 
     public RouteUsageTrackerTest()
@@ -161,7 +161,7 @@ public class RouteUsageTrackerTest
         var ip3 = _fixture.Create<T>();
         
         var baseTime = DateTimeOffset.UtcNow;
-        var outdated = baseTime - DefaultRoutingPeriod * 1.25;
+        var outdated = baseTime - DefaultRouteIdleTimeout * 1.25;
         var valid = baseTime;
 
         services.SetupMockOf<IDateTimeProvider>(mock => mock
@@ -202,7 +202,7 @@ public class RouteUsageTrackerTest
             .AddMockOf<ILogger>()
             .AddSettings(new RoutingSettings
             {
-                RoutingPeriod = DefaultRoutingPeriod,
+                RouteIdleTimeout = DefaultRouteIdleTimeout,
                 Items = [],
                 BlockedHostNames = [],
             })

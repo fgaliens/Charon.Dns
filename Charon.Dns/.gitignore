@@ -4,3 +4,5 @@ start-docker.sh
 settings.debug.json
 zones.debug.json
 routing.debug.json
+config.version.debug.json
+*.bak

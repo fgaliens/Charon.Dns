@@ -12,6 +12,7 @@
 
     <ItemGroup>
       <ProjectReference Include="..\Charon.Dns.Lib\Charon.Dns.Lib.csproj" />
+      <ProjectReference Include="..\Charon.Dns.Configuration\Charon.Dns.Configuration.csproj" />
     </ItemGroup>
 
     <ItemGroup>
@@ -54,6 +55,9 @@
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       </None>
       <None Update="zones.docker.json">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </None>
+      <None Update="config.version.json">
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       </None>
     </ItemGroup>

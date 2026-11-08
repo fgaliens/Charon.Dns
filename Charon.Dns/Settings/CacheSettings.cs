@@ -12,7 +12,7 @@ public class CacheSettings : ISettings<CacheSettings>
     {
         var cacheSection = config.GetSection("Cache");
         var enabled = cacheSection.GetSectionValue("Enabled", true);
-        var timeToLive = cacheSection.GetSectionValue("TimeToLive", TimeSpan.Zero);
+        var timeToLive = cacheSection.GetSectionValue("Ttl", TimeSpan.Zero);
 
         return new()
         {

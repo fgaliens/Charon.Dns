@@ -1,7 +1,7 @@
 {
   "Routing": {
-    "Period": "02:00:00",
-    "BlockedHostNames": [
+    "RouteIdleTimeout": "02:00:00",
+    "BlockedHosts": [
       "max.ru",
       "api.oneme.ru",
       "ip.mail.ru",
@@ -14,17 +14,17 @@
 
       "file:hosts_blacklist.txt"
     ],
-    "Items": [
+    "Rules": [
       {
-        "InterfaceToRouteThrough": "wg0",
-        "IpV4RoutingSubnet": 32,
-        "IpV6RoutingSubnet": 96,
-        "HostNameMatches": {
-          "BySubstring": [
+        "Interface": "wg0",
+        "IPv4PrefixLength": 32,
+        "IPv6PrefixLength": 96,
+        "Match": {
+          "Substrings": [
             "youtube",
             "insta"
           ],
-          "ByDomainName": [
+          "Domains": [
             "whoer.net",
             "ggpht.cn",
             "ggpht.com",

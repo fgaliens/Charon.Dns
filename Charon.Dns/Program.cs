@@ -3,6 +3,9 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using Charon.Dns.AccessControl;
 using Charon.Dns.Cache;
+using Charon.Dns.Configuration;
+using Charon.Dns.Configuration.Cli;
+using Charon.Dns.Configuration.Migrations;
 using Charon.Dns.Extensions;
 using Charon.Dns.Interceptors;
 using Charon.Dns.Jobs;
@@ -31,6 +34,13 @@ static class Program
         .GetCustomAttribute<AssemblyInformationalVersionAttribute>()!
         .InformationalVersion;
 
+    private static readonly ConfigFileNames ConfigFileNames =
+#if DEBUG
+        ConfigFileNames.Debug;
+#else
+        ConfigFileNames.Production;
+#endif
+
     public static async Task<int> Main(string[] args)
     {
         var rootCommand = new RootCommand("Charon.Dns - a DNS server with dynamic traffic routing")
@@ -39,22 +49,38 @@ static class Program
         };
 
         rootCommand.Options.OfType<VersionOption>().Single().Aliases.Add("-v");
+
+        var settingsCommand = SettingsCommand.Create(ConfigFileNames);
+        rootCommand.Subcommands.Add(settingsCommand);
         rootCommand.SetAction((_, _) => RunServerAsync(args));
         return await rootCommand.Parse(args).InvokeAsync();
     }
 
-    private static async Task RunServerAsync(string[] args)
+    private static async Task<int> RunServerAsync(string[] args)
     {
+        var configDirectory = Directory.GetCurrentDirectory();
+
+        MigrationResult migrationResult;
+        try
+        {
+            migrationResult = ConfigMigrator.Default.MigrateFiles(configDirectory, ConfigFileNames);
+        }
+        catch (Exception e)
+        {
+            await Console.Error.WriteLineAsync($"Unable to migrate configuration files: {e.Message}");
+            return 1;
+        }
+
         var config = new ConfigurationBuilder()
-            .SetBasePath(Directory.GetCurrentDirectory())
+            .SetBasePath(configDirectory)
+            .AddJsonFile(ConfigFileNames.Settings)
 #if DEBUG
-            .AddJsonFile("settings.debug.json")
-            .AddJsonFile("zones.debug.json")
-            .AddJsonFile("routing.debug.json")
+            .AddJsonFile(ConfigFileNames.Zones)
+            .AddJsonFile(ConfigFileNames.Routing)
 #else
-            .AddJsonFile("settings.json")
-            .AddJsonFile("zones.json")
-            .AddJsonFile("routing.json", optional: true)
+            // Installations upgraded from 1.x may have neither of them
+            .AddJsonFile(ConfigFileNames.Zones, optional: true)
+            .AddJsonFile(ConfigFileNames.Routing, optional: true)
 #endif
             .AddCommandLine(args)
             .Build();
@@ -85,6 +111,7 @@ static class Program
             .CreateLogger();
 
         logger.Information("Starting up DNS server. Version {AppVersion}", AppVersion);
+        LogMigrationResult(logger, migrationResult);
 
         try
         {
@@ -105,7 +132,6 @@ static class Program
                     .AddJob<EnforceUserAccessControlJob>())
                 .AddSingleton<IConfiguration>(config)
                 .AddSettings<ListeningSettings>()
-                .AddSettings<DnsRecordsSettings>()
                 .AddSettings<ZonesSettings>()
                 .AddSettings<DnsChainSettings>()
                 .AddSettings<RoutingSettings>()
@@ -127,9 +153,11 @@ static class Program
             logger.Fatal(e, "Unhandled exception. Dns server stopped");
         }
 
+        return 0;
+
         LogEventLevel GetConsoleLogLevel()
         {
-            if (Enum.TryParse<LogEventLevel>(config["LogLevel"], out var logLevel))
+            if (Enum.TryParse<LogEventLevel>(config["Logging:Console"], out var logLevel))
             {
                 return logLevel;
             }
@@ -139,12 +167,33 @@ static class Program
         
         LogEventLevel GetFileLogLevel()
         {
-            if (Enum.TryParse<LogEventLevel>(config["FileLogLevel"], out var logLevel))
+            if (Enum.TryParse<LogEventLevel>(config["Logging:File"], out var logLevel))
             {
                 return logLevel;
             }
 
             return LogEventLevel.Debug;
+        }
+    }
+
+    private static void LogMigrationResult(ILogger logger, MigrationResult migrationResult)
+    {
+        if (!migrationResult.IsMigrated)
+        {
+            return;
+        }
+
+        logger.Information("Configuration files migrated from version {FromVersion} to {ToVersion}",
+            migrationResult.FromVersion, migrationResult.ToVersion);
+
+        foreach (var note in migrationResult.Notes)
+        {
+            logger.Information("Configuration migration: {Note}", note);
+        }
+
+        foreach (var backupFile in migrationResult.BackupFiles)
+        {
+            logger.Information("Configuration backup saved to {BackupFile}", backupFile);
         }
     }
 }

@@ -4,7 +4,8 @@
 #
 # Downloads the latest Charon.Dns release from GitHub for the current architecture,
 # installs it as a systemd service and generates configuration templates on first install.
-# Existing configuration files are never modified.
+# Existing configuration files are converted to the format of the installed version
+# ("Charon.Dns settings migrate"), the previous content is kept in "*.bak" files.
 #
 # Usage:
 #   curl -fsSL https://raw.githubusercontent.com/fgaliens/DNS/master/install.sh | sudo bash -s -- --dir /etc/charon-dns
@@ -264,69 +265,74 @@ write_templates() {
 
     write_if_missing "$INSTALL_DIR/settings.json" <<'EOF'
 {
-  "LogLevel": "Information",
-  "FileLogLevel": "Information",
+  "Logging": {
+    "Console": "Information",
+    "File": "Information"
+  },
   "Server": {
-    "MaxParallelRequestCount": 4,
+    "SocketsPerEndpoint": 4,
     "SocketBufferSize": "2Mb",
     "ListenOn": [
       {
         "Address": "10.0.0.53",
         "Port": 53,
-        "EnableIpV6": false
+        "EnableIPv6": false
       }
+    ]
+  },
+  "Upstream": {
+    "ResolvingStrategy": "RoundRobin",
+    "SocketBufferSize": "512Kb",
+    "DefaultServers": [
+      "77.88.8.8",
+      "77.88.8.1"
     ],
-    "DnsChain": {
-      "ResolvingStrategy": "RoundRobin",
-      "ResolvingConcurrencyLimit": 2,
-      "SocketBufferSize": "512Kb",
-      "DefaultServers": [
-        "77.88.8.8",
-        "77.88.8.1"
-      ],
-      "SecuredServers": [
-        {
-          "Ip": "1.1.1.1",
-          "RouteThroughInterface": "wg0"
-        }
-      ]
-    }
+    "RoutedServers": [
+      {
+        "Address": "1.1.1.1",
+        "Interface": "wg0"
+      }
+    ]
   },
   "Cache": {
     "Enabled": true,
-    "TimeToLive": "00:05:00"
+    "Ttl": "00:05:00"
   },
   "UserAccessControl": {
     "Enabled": false,
     "InactivityThreshold": "00:30:00",
-    "ControlledIps": []
+    "ControlledSubnets": []
   }
 }
 EOF
 
-    # Created only on first install: installations upgraded from older versions
-    # keep "Routing" in settings.json, and both files would be merged together
+    # Fresh templates are already in the current format
+    replace_file "$TMP_DIR/extracted/config.version.json" "$INSTALL_DIR/config.version.json" 644
+
+    # Created only on first install: on upgrade "settings migrate" moves "Routing"
+    # from settings.json of older versions to routing.json
     write_if_missing "$INSTALL_DIR/routing.json" <<'EOF'
 {
   // Domain-based traffic routing and host name blocking.
   // Restart the service after editing this file.
   //
-  // "BySubstring" matches any host name containing the string,
-  // "ByDomainName" matches the domain and all of its subdomains.
+  // A route to a resolved address is removed after it has not been used for "RouteIdleTimeout".
+  // "Substrings" matches any host name containing the string,
+  // "Domains" matches the domain and all of its subdomains.
   // "file:<path>" in a host name list includes host names from the file.
   "Routing": {
-    "Period": "02:00:00",
-    "BlockedHostNames": [
+    "RouteIdleTimeout": "02:00:00",
+    "BlockedHosts": [
       "file:hosts_blacklist.txt"
     ],
-    "Items": [
+    "Rules": [
       {
-        "InterfaceToRouteThrough": "wg0",
-        "IpV4RoutingSubnet": 32,
-        "IpV6RoutingSubnet": 96,
-        "HostNameMatches": {
-          "BySubstring": [],
-          "ByDomainName": [
+        "Interface": "wg0",
+        "IPv4PrefixLength": 32,
+        "IPv6PrefixLength": 96,
+        "Match": {
+          "Substrings": [],
+          "Domains": [
             "example.com",
             "file:other_hosts.txt"
           ]
@@ -340,7 +346,7 @@ EOF
     write_if_missing "$INSTALL_DIR/hosts_blacklist.txt" <<'EOF'
 # Blocked host names.
 #
-# Referenced from routing.json: "Routing" -> "BlockedHostNames" -> "file:hosts_blacklist.txt".
+# Referenced from routing.json: "Routing" -> "BlockedHosts" -> "file:hosts_blacklist.txt".
 # Put one host name per line. Only exact host names are blocked (case-insensitive),
 # subdomains must be listed separately.
 # Empty lines and lines starting with '#' are ignored.
@@ -354,7 +360,7 @@ EOF
     write_if_missing "$INSTALL_DIR/other_hosts.txt" <<'EOF'
 # Host names to route through the interface of the routing item that references this file.
 #
-# Referenced from routing.json: "Routing" -> "Items" -> "HostNameMatches" -> "ByDomainName" -> "file:other_hosts.txt".
+# Referenced from routing.json: "Routing" -> "Rules" -> "Match" -> "Domains" -> "file:other_hosts.txt".
 # Put one domain name per line. The domain and all of its subdomains are matched
 # (e.g. "example.com" also matches "www.example.com").
 # Empty lines and lines starting with '#' are ignored.
@@ -364,6 +370,13 @@ EOF
 # example.com
 # example.org
 EOF
+}
+
+# Converts existing configuration files to the format of the installed version.
+migrate_settings() {
+    log "Migrating configuration files"
+    (cd "$INSTALL_DIR" && "./$APP_BINARY" settings migrate) \
+        || die "Failed to migrate configuration files in $INSTALL_DIR, fix them and run: (cd $INSTALL_DIR && ./$APP_BINARY settings migrate)"
 }
 
 write_service_unit() {
@@ -457,6 +470,7 @@ main() {
     fi
 
     write_templates
+    migrate_settings
     echo "$SERVICE_NAME" >"$INSTALL_DIR/$SERVICE_MARKER"
 
     if [[ $had_service -eq 0 ]]; then

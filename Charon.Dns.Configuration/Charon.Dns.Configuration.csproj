@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <Description>Versioning, migration and editing of Charon.Dns configuration files.</Description>
+        <TargetFramework>net10.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <LangVersion>14</LangVersion>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <PackageReference Include="System.CommandLine" Version="2.0.12" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <InternalsVisibleTo Include="Charon.Dns.Configuration.Tests" />
+    </ItemGroup>
+
+</Project>

@@ -7,6 +7,7 @@ ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
 COPY ["Charon.Dns/Charon.Dns.csproj", "Charon.Dns/"]
 COPY ["Charon.Dns.Lib/Charon.Dns.Lib.csproj", "Charon.Dns.Lib/"]
+COPY ["Charon.Dns.Configuration/Charon.Dns.Configuration.csproj", "Charon.Dns.Configuration/"]
 RUN dotnet restore "Charon.Dns/Charon.Dns.csproj"
 COPY . .
 RUN rm Charon.Dns/settings.json

@@ -34,12 +34,12 @@ namespace Charon.Dns
                 index++;
             }
             
-            foreach (var securedDnsServer in chainSettings.SecuredServers)
+            foreach (var routedDnsServer in chainSettings.RoutedServers)
             {
                 await commandRunner.Execute(new AddIpRouteCommand<IpV4Network>
                 {
-                    Ip = new IpV4Network(securedDnsServer.Address.EndPoint.Address.GetAddressBytes(), 32),
-                    Interface = securedDnsServer.InterfaceToRouteThrough,
+                    Ip = new IpV4Network(routedDnsServer.Address.EndPoint.Address.GetAddressBytes(), 32),
+                    Interface = routedDnsServer.InterfaceToRouteThrough,
                 });
             }
             

@@ -1,7 +1,6 @@
 using System;
 using System.IO;
 using System.Linq;
-using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 using Charon.Dns.Exceptions;
@@ -14,7 +13,6 @@ using Charon.Dns.Zones;
 using FluentAssertions;
 using JetBrains.Annotations;
 using Microsoft.Extensions.Configuration;
-using Serilog.Core;
 using Xunit;
 
 namespace Charon.Dns.Tests.Zones;
@@ -22,8 +20,6 @@ namespace Charon.Dns.Tests.Zones;
 [TestSubject(typeof(ZoneResolverFactory))]
 public class ZoneResolverFactoryTest
 {
-    private static readonly DnsRecordsSettings NoLegacyRecords = new() { ARecords = [] };
-
     [Theory]
     [InlineData("@", "my.home")]
     [InlineData("nas", "nas.my.home")]
@@ -152,26 +148,6 @@ public class ZoneResolverFactoryTest
         act.Should().Throw<SettingsValidationException>();
     }
 
-    [Fact]
-    public async Task Create_AddsLegacyRecordsAsStandalone()
-    {
-        var legacyRecords = new DnsRecordsSettings
-        {
-            ARecords =
-            [
-                new() { Name = "my.hm", Address = "10.0.0.1", ResolveOnlyIfRequestCameFrom = null },
-            ],
-        };
-        var zonesSettings = Parse("{}");
-        var resolver = ZoneResolverFactory.Create(zonesSettings, legacyRecords, TimeSpan.FromMinutes(1), Logger.None);
-
-        var response = await Resolve(resolver, "my.hm", RecordType.A);
-
-        response.AuthorativeServer.Should().BeFalse();
-        var answer = (IpAddressResourceRecord)response.AnswerRecords.Single();
-        answer.IpAddress.Should().Be(IPAddress.Parse("10.0.0.1"));
-    }
-
     private static ZonesSettings Parse(string json)
     {
         var jsonBytes = Encoding.UTF8.GetBytes(json);
@@ -186,7 +162,7 @@ public class ZoneResolverFactoryTest
     private static ZoneResolver CreateResolver(string json)
     {
         var zonesSettings = Parse(json);
-        return ZoneResolverFactory.Create(zonesSettings, NoLegacyRecords, TimeSpan.Zero, Logger.None);
+        return ZoneResolverFactory.Create(zonesSettings);
     }
 
     private static Task<IResponse> Resolve(ZoneResolver resolver, string domain, RecordType recordType)

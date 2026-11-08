@@ -16,8 +16,6 @@ public class SmartDnsServer(
     IResponseInterceptor responseInterceptor,
     ListeningSettings listeningSettings,
     ZonesSettings zonesSettings,
-    DnsRecordsSettings dnsRecords,
-    CacheSettings cacheSettings,
     ILogger logger)
 {
     private static readonly RequestCounter RequestCounter = new();
@@ -29,11 +27,7 @@ public class SmartDnsServer(
         var cancellationToken = _cancellationTokenSource.Token;
         cancellationToken.ThrowIfCancellationRequested();
         
-        var zoneResolver = ZoneResolverFactory.Create(
-            zonesSettings,
-            dnsRecords,
-            cacheSettings.TimeToLive,
-            logger);
+        var zoneResolver = ZoneResolverFactory.Create(zonesSettings);
 
         var requestResolvers = new DnsServer.FallbackRequestResolver(
             zoneResolver,

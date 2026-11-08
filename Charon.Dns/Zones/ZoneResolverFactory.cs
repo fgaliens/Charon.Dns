@@ -6,17 +6,12 @@ using Charon.Dns.Lib.Protocol;
 using Charon.Dns.Lib.Protocol.ResourceRecords;
 using Charon.Dns.Lib.Server.Zones;
 using Charon.Dns.Settings;
-using Serilog;
 
 namespace Charon.Dns.Zones;
 
 public static class ZoneResolverFactory
 {
-    public static ZoneResolver Create(
-        ZonesSettings zonesSettings,
-        DnsRecordsSettings legacyDnsRecords,
-        TimeSpan legacyTtl,
-        ILogger logger)
+    public static ZoneResolver Create(ZonesSettings zonesSettings)
     {
         // Names outside of zones are resolved by upstream servers
         var builder = new ZoneResolverBuilder()
@@ -36,22 +31,6 @@ public static class ZoneResolverFactory
                     var expectedRemoteAddress = ParseRemoteAddress(record);
                     builder.AddRecord(origin, resourceRecord, expectedRemoteAddress);
                 }
-            }
-
-            if (legacyDnsRecords.ARecords.Count > 0)
-            {
-                logger.Warning("'Server:DnsRecords' is deprecated, move these records to 'Zones'");
-            }
-
-            foreach (var aRecord in legacyDnsRecords.ARecords)
-            {
-                var name = new Domain(aRecord.Name);
-                var address = IPAddress.Parse(aRecord.Address);
-                var resourceRecord = new IpAddressResourceRecord(name, address, legacyTtl);
-                var expectedRemoteAddress = IPAddress.TryParse(aRecord.ResolveOnlyIfRequestCameFrom, out var remoteAddress)
-                    ? remoteAddress
-                    : null;
-                builder.AddStandaloneRecord(resourceRecord, expectedRemoteAddress);
             }
 
             return builder.Build();

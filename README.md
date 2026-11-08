@@ -55,7 +55,7 @@ The installer:
 - detects the system architecture (`x86_64` and `aarch64`/`arm64`, e.g. Raspberry Pi with a 64-bit OS) and downloads the matching build from the latest GitHub release;
 - installs the `Charon.Dns` binary and the `install.sh` script into the installation directory;
 - on first install generates templates for `settings.json`, `routing.json`, `hosts_blacklist.txt` and `other_hosts.txt` and creates and enables a `charon-dns` systemd service (not started — edit `settings.json` and `routing.json` first, then run `sudo systemctl start charon-dns`);
-- never modifies existing configuration files or existing systemd units.
+- on update converts existing configuration files to the format of the new version (see [Configuration Versions](#configuration-versions)) and never modifies existing systemd units.
 
 To update an existing installation, run the script that lies next to the application:
 
@@ -92,62 +92,66 @@ sudo ./Charon.Dns
 Command-line options:
 - `-v`, `--version` — print the application version and exit.
 
+Commands:
+- `settings migrate [--dir <path>]` — convert configuration files in the directory (default: current directory) to the format of this version, see [Configuration Versions](#configuration-versions).
+
 Any configuration key (from `settings.json`, `routing.json` or `zones.json`) can also be overridden via command-line arguments, e.g.:
 
 ```bash
-sudo ./Charon.Dns --LogLevel=Warning --FileLogLevel=Warning
+sudo ./Charon.Dns --Logging:Console=Warning --Logging:File=Warning
 ```
 
 ## Configuration
 
 Charon.Dns is configured by editing the `settings.json` (server, upstream DNS, cache, access control), `routing.json` (traffic routing and blocking) and `zones.json` (local zones) files, located in the working directory. **Note:** The server must be restarted after any configuration changes.
 
-When built in `Debug` configuration, the server loads `settings.debug.json`, `routing.debug.json` and `zones.debug.json` instead — useful for local development without touching your production config. All debug files are git-ignored.
+When built in `Debug` configuration, the server loads `settings.debug.json`, `routing.debug.json`, `zones.debug.json` and `config.version.debug.json` instead — useful for local development without touching your production config. All debug files are git-ignored.
 
 ### settings.json Structure
 
 ```json
 {
-  "LogLevel": "Information", // Log level for standard output
-  "FileLogLevel": "Debug", // Log level for file output
+  "Logging": {
+    "Console": "Information", // Log level for standard output
+    "File": "Debug" // Log level for file output
+  },
   "Server": {
-    "MaxParallelRequestCount": 8, // Number of parallel UDP listeners sharing the load (SO_REUSEPORT)
+    "SocketsPerEndpoint": 8, // Number of UDP sockets per "ListenOn" address sharing the load (SO_REUSEPORT)
     "SocketBufferSize": "2Mb", // UDP socket buffer size for incoming requests
     "ListenOn": [ // Addresses and ports the server listens on
       {
         "Address": "10.0.0.53",
         "Port": 53,
-        "EnableIpV6": false // Also accept IPv6 traffic on this socket
+        "EnableIPv6": false // Use an IPv6 socket
       }
+    ]
+  },
+  "Upstream": {
+    "ResolvingStrategy": "RoundRobin", // Resolving strategy (options: Random, Parallel, RoundRobin)
+    "SocketBufferSize": "512Kb", // UDP socket buffer size for outgoing resolver connections
+    "DefaultServers": [ // DNS servers for standard resolution; port defaults to 53, add ":port" to override
+      "77.88.8.8:53",
+      "77.88.8.1"
     ],
-    "DnsChain": {
-      "ResolvingStrategy": "RoundRobin", // Resolving strategy (options: Random, Parallel, RoundRobin)
-      "ResolvingConcurrencyLimit": 2, // Maximum number of outgoing connections to external DNS servers
-      "SocketBufferSize": "512Kb", // UDP socket buffer size for outgoing resolver connections
-      "DefaultServers": [ // DNS servers for standard resolution; port defaults to 53, add ":port" to override
-        "77.88.8.8:53",
-        "77.88.8.1"
-      ],
-      "SecuredServers": [ // DNS servers and interfaces for domains requiring special routing
-        {
-          "Ip": "1.1.1.1:53", // Same ":port" syntax is supported here
-          "RouteThroughInterface": "wg0"
-        },
-        {
-          "Ip": "8.8.8.8",
-          "RouteThroughInterface": "wg0"
-        }
-      ]
-    }
+    "RoutedServers": [ // DNS servers for routed domains (see routing.json), reached through the interface
+      {
+        "Address": "1.1.1.1:53", // Same ":port" syntax is supported here
+        "Interface": "wg0"
+      },
+      {
+        "Address": "8.8.8.8",
+        "Interface": "wg0"
+      }
+    ]
   },
   "Cache": {
     "Enabled": true, // Whether to cache resolved responses
-    "TimeToLive": "00:05:00" // DNS cache TTL
+    "Ttl": "00:05:00" // DNS cache TTL
   },
   "UserAccessControl": { // Activity-based access control via ufw (see Core Features)
     "Enabled": false,
     "InactivityThreshold": "00:30:00", // How long a client can be inactive before its access is revoked
-    "ControlledIps": [ // Subnets whose clients are subject to this control
+    "ControlledSubnets": [ // Subnets whose clients are subject to this control
       "10.8.0.0/24"
     ]
   }
@@ -159,21 +163,21 @@ When built in `Debug` configuration, the server loads `settings.debug.json`, `ro
 ```json
 {
   "Routing": {
-    "Period": "02:00:00", // Duration for which routes are added
-    "BlockedHostNames": [ // List of domains to block
+    "RouteIdleTimeout": "02:00:00", // A route is removed after it has not been used for this time
+    "BlockedHosts": [ // Host names to block (exact match)
       "tracker.com",
       "file:hosts_blacklist.txt" // Can reference an external file with blocked hosts
     ],
-    "Items": [
+    "Rules": [
       {
-        "InterfaceToRouteThrough": "wg0", // Interface to route traffic through
-        "IpV4RoutingSubnet": 32, // Subnet size for added IPv4 routes
-        "IpV6RoutingSubnet": 96, // Subnet size for added IPv6 routes
-        "HostNameMatches": { // Domain matching rules
-          "BySubstring": [
+        "Interface": "wg0", // Interface to route traffic through
+        "IPv4PrefixLength": 32, // Prefix length of added IPv4 routes
+        "IPv6PrefixLength": 96, // Prefix length of added IPv6 routes
+        "Match": { // Domain matching rules
+          "Substrings": [
             "some-site" // Matches any domain containing "some-site"
           ],
-          "ByDomainName": [ // Matches domain and all subdomains
+          "Domains": [ // Matches domain and all subdomains
             "example.com",
             "file:other-hosts.txt"
           ]
@@ -184,7 +188,6 @@ When built in `Debug` configuration, the server loads `settings.debug.json`, `ro
 }
 ```
 
-Installations upgraded from versions before 2.0.0 may still have the `Routing` section in `settings.json` — it keeps working (`install.sh` doesn't create `routing.json` for them). To move it, cut the section into `routing.json`; it must not be present in both files, as their contents are merged.
 
 ### zones.json Structure
 
@@ -222,7 +225,23 @@ Local zones live in `zones.json` next to `settings.json` and are loaded the same
 
 Names in `Name` and in domain parts of `Value`: `@` is the zone origin, a name ending with a dot (`example.com.`) is absolute, any other name is relative to the origin (`nas` → `nas.my.home`).
 
-The legacy `Server:DnsRecords:A` section of `settings.json` is still read, but deprecated: its records are answered non-authoritatively and a warning is logged on startup.
+### Configuration Versions
+
+The format version of the configuration files is stored in `config.version.json` next to them. The file is managed by Charon.Dns — do not edit it. A missing file (or one without a version) means version 0, the format of releases before 2.0.0.
+
+On startup the server converts the configuration files to the format of its version, and `install.sh` does the same on update. To do it manually, run:
+
+```bash
+sudo ./Charon.Dns settings migrate --dir /etc/charon-dns
+```
+
+Before a file is changed, its previous content is saved next to it as `<file>.v<old version>.bak` (comments are not preserved in converted files, they are kept in the backups). If the files can't be converted, nothing is changed, and the server doesn't start until the problem is fixed.
+
+Converting from 1.x (version 0):
+- the `Server:DnsRecords:A` records are moved to `zones.json`; each name becomes a zone of its own (with the cache TTL), unless it belongs to an existing zone. **The server is authoritative for these zones now**: other record types and subdomains of these names are not forwarded upstream anymore;
+- the `Routing` section is moved to `routing.json` (it must not be present in both files);
+- fields are renamed to the names above (`LogLevel` → `Logging:Console`, `DnsChain` → `Upstream`, `SecuredServers` → `RoutedServers`, `Items` → `Rules` etc.);
+- `ListenOn` items marked `"DebugOnly": true` are removed (1.x didn't listen on them in release builds), `ResolvingConcurrencyLimit` is removed (it had no effect).
 
 ## Requirements
 

@@ -22,7 +22,7 @@ public record ListeningSettings : ISettings<ListeningSettings>
     {
         var serverSection = config.GetSection("Server");
         var maxParallelRequestCount = serverSection
-            .GetSectionValue("MaxParallelRequestCount", 8)
+            .GetSectionValue("SocketsPerEndpoint", 8)
             .RestrictNotLessThen(1);
         var socketBufferSize = serverSection
             .GetSectionValue("SocketBufferSize", new ByteUnit(1024 * 1024));
@@ -33,7 +33,7 @@ public record ListeningSettings : ISettings<ListeningSettings>
             {
                 Address = x.GetSectionValue<IPAddress>("Address"),
                 Port = x.GetSectionValue<int>("Port"),
-                EnableIpV6 = x.GetSectionValue("EnableIpV6", false),
+                EnableIpV6 = x.GetSectionValue("EnableIPv6", false),
             })
             .ToArray();
 

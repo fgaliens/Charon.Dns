@@ -51,7 +51,7 @@ public class RouteUsageTracker<T> : IRouteUsageTracker<T> where T : IIpNetwork<T
 
     public async Task<RouteToUntrack<T>> FindNextRouteToUntrack()
     {
-        var outdatedPeriod = _dateTimeProvider.UtcNow - _routingSettings.RoutingPeriod;
+        var outdatedPeriod = _dateTimeProvider.UtcNow - _routingSettings.RouteIdleTimeout;
         var ipNetworks = _ipNetworks;
         foreach (var (ipNetwork, routeItem) in ipNetworks)
         {

@@ -1,8 +1,10 @@
 {
-  "LogLevel": "Debug",
-  "FileLogLevel": "Warning",
+  "Logging": {
+    "Console": "Debug",
+    "File": "Warning"
+  },
   "Server": {
-    "MaxParallelRequestCount": 16,
+    "SocketsPerEndpoint": 16,
     "SocketBufferSize": "4Mb",
     "ListenOn": [
       {
@@ -13,35 +15,34 @@
         "Address": "10.0.0.53",
         "Port": 53
       }
+    ]
+  },
+  "Upstream": {
+    "ResolvingStrategy": "RoundRobin",
+    "SocketBufferSize": "1Mb",
+    "DefaultServers": [
+      "77.88.8.8:53",
+      "77.88.8.1"
     ],
-    "DnsChain": {
-      "ResolvingStrategy": "RoundRobin",
-      "ResolvingConcurrencyLimit": 0,
-      "SocketBufferSize": "1Mb",
-      "DefaultServers": [
-        "77.88.8.8:53",
-        "77.88.8.1"
-      ],
-      "SecuredServers": [
-        {
-          "Ip": "1.1.1.1:53",
-          "RouteThroughInterface": "wg0"
-        },
-        {
-          "Ip": "8.8.8.8",
-          "RouteThroughInterface": "wg0"
-        }
-      ]
-    }
+    "RoutedServers": [
+      {
+        "Address": "1.1.1.1:53",
+        "Interface": "wg0"
+      },
+      {
+        "Address": "8.8.8.8",
+        "Interface": "wg0"
+      }
+    ]
   },
   "Cache": {
     "Enabled": true,
-    "TimeToLive": "00:05:00"
+    "Ttl": "00:05:00"
   },
   "UserAccessControl": {
     "Enabled": false,
     "InactivityThreshold": "00:30:00",
-    "ControlledIps": [
+    "ControlledSubnets": [
       "10.8.0.0/24"
     ]
   }

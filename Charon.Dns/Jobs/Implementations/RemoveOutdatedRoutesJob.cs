@@ -1,8 +1,6 @@
-using System.Net;
 using Charon.Dns.Net;
 using Charon.Dns.Routing;
 using Charon.Dns.Settings;
-using Serilog;
 
 namespace Charon.Dns.Jobs.Implementations;
 
@@ -11,11 +9,10 @@ public class RemoveOutdatedRoutesJob(
     IRouteManager<IpV6Network> ipV6NetworkManager,
     IRouteUsageTracker<IpV4Network> ipV4NetworkUsageTracker,
     IRouteUsageTracker<IpV6Network> ipV6NetworkUsageTracker,
-    RoutingSettings routingSettings,
-    ILogger logger) 
+    RoutingSettings routingSettings) 
     : IJob
 {
-    public TimeSpan Period { get; } = routingSettings.RoutingPeriod / 2;
+    public TimeSpan Period { get; } = routingSettings.RouteIdleTimeout / 2;
     
     public async Task Execute()
     {

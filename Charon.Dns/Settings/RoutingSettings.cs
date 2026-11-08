@@ -6,7 +6,7 @@ namespace Charon.Dns.Settings;
 
 public record RoutingSettings : ISettings<RoutingSettings>
 {
-    public required TimeSpan RoutingPeriod { get; init; }
+    public required TimeSpan RouteIdleTimeout { get; init; }
     public required IReadOnlyCollection<RoutingSettingsItem> Items { get; init; }
     public required IEnumerable<string> BlockedHostNames { get; init; }
 
@@ -14,14 +14,14 @@ public record RoutingSettings : ISettings<RoutingSettings>
     {
         var routingSection = config.GetSection("Routing");
         
-        var period = routingSection.GetSectionValue("Period", TimeSpan.Zero);
+        var routeIdleTimeout = routingSection.GetSectionValue("RouteIdleTimeout", TimeSpan.Zero);
 
         var routingSectionItems = routingSection
-            .GetSection("Items")
+            .GetSection("Rules")
             .GetChildren();
         
         var blockedHostNames = routingSection
-            .GetSection("BlockedHostNames")
+            .GetSection("BlockedHosts")
             .GetChildren()
             .Select(x => x.GetSectionValue())
             .TryResolveDataFromFiles();
@@ -29,17 +29,17 @@ public record RoutingSettings : ISettings<RoutingSettings>
         var routingSettingsItems = new List<RoutingSettingsItem>();
         foreach (var routingSectionItem in routingSectionItems)
         {
-            var interfaceToRouteThrough = routingSectionItem.GetSectionValue("InterfaceToRouteThrough");
-            var ipV4RoutingSubnet = routingSectionItem.GetSectionValue<byte>("IpV4RoutingSubnet");
-            var ipV6RoutingSubnet = routingSectionItem.GetSectionValue<byte>("IpV6RoutingSubnet");
+            var interfaceToRouteThrough = routingSectionItem.GetSectionValue("Interface");
+            var ipV4RoutingSubnet = routingSectionItem.GetSectionValue<byte>("IPv4PrefixLength");
+            var ipV6RoutingSubnet = routingSectionItem.GetSectionValue<byte>("IPv6PrefixLength");
             var matchedByDomainHostNames = routingSectionItem
-                .GetSection("HostNameMatches:ByDomainName")
+                .GetSection("Match:Domains")
                 .GetChildren()
                 .Select(x => x.GetSectionValue())
                 .TryResolveDataFromFiles()
                 .ToArray();
             var matchedBySubstringHostNames = routingSectionItem
-                .GetSection("HostNameMatches:BySubstring")
+                .GetSection("Match:Substrings")
                 .GetChildren()
                 .Select(x => x.GetSectionValue())
                 .TryResolveDataFromFiles()
@@ -64,7 +64,7 @@ public record RoutingSettings : ISettings<RoutingSettings>
 
         return new RoutingSettings
         {
-            RoutingPeriod = period,
+            RouteIdleTimeout = routeIdleTimeout,
             Items = routingSettingsItems,
             BlockedHostNames = blockedHostNames,
         };

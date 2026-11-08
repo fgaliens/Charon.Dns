@@ -22,7 +22,7 @@ public class HostNameAnalyzerTest
         // Arrange
         var settings = new RoutingSettings
         {
-            RoutingPeriod = TimeSpan.FromHours(1),
+            RouteIdleTimeout = TimeSpan.FromHours(1),
             Items = [
             new RoutingSettingsItem
             {
@@ -58,7 +58,7 @@ public class HostNameAnalyzerTest
         // Arrange
         var settings = new RoutingSettings
         {
-            RoutingPeriod = TimeSpan.FromHours(1),
+            RouteIdleTimeout = TimeSpan.FromHours(1),
             Items = [
                 new RoutingSettingsItem
                 {
@@ -95,7 +95,7 @@ public class HostNameAnalyzerTest
         // Arrange
         var settings = new RoutingSettings
         {
-            RoutingPeriod = TimeSpan.FromHours(1),
+            RouteIdleTimeout = TimeSpan.FromHours(1),
             Items = [
                 new RoutingSettingsItem
                 {
@@ -131,7 +131,7 @@ public class HostNameAnalyzerTest
         // Arrange
         var settings = new RoutingSettings
         {
-            RoutingPeriod = TimeSpan.FromHours(1),
+            RouteIdleTimeout = TimeSpan.FromHours(1),
             Items = [
                 new RoutingSettingsItem
                 {
@@ -166,7 +166,7 @@ public class HostNameAnalyzerTest
         // Arrange
         var settings = new RoutingSettings
         {
-            RoutingPeriod = TimeSpan.FromHours(1),
+            RouteIdleTimeout = TimeSpan.FromHours(1),
             Items = [
                 new RoutingSettingsItem
                 {
@@ -204,7 +204,7 @@ public class HostNameAnalyzerTest
         // Arrange
         var settings = new RoutingSettings
         {
-            RoutingPeriod = TimeSpan.FromHours(1),
+            RouteIdleTimeout = TimeSpan.FromHours(1),
             Items = [
                 new RoutingSettingsItem
                 {
