@@ -46,6 +46,10 @@ public sealed class DohRequestResolver : IRequestResolver, IDisposable
     {
     }
 
+    /// <param name="dnsEndpoint">Address and port to connect to.</param>
+    /// <param name="host">Host of the request URI, the server certificate is validated against it.</param>
+    /// <param name="path">Path of the request URI.</param>
+    /// <param name="logger">Logger.</param>
     /// <param name="certificateValidation">Replaces the certificate validation, for tests only.</param>
     internal DohRequestResolver(
         IPEndPoint dnsEndpoint,

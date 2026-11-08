@@ -33,6 +33,9 @@ public sealed class DotRequestResolver : StreamRequestResolver
     {
     }
 
+    /// <param name="dnsEndpoint">Address and port to connect to.</param>
+    /// <param name="host">Host name or IP address the server certificate is validated against.</param>
+    /// <param name="logger">Logger.</param>
     /// <param name="certificateValidation">Replaces the certificate validation, for tests only.</param>
     internal DotRequestResolver(
         IPEndPoint dnsEndpoint,
