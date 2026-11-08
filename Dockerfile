@@ -4,17 +4,17 @@ WORKDIR /app
 
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 ARG BUILD_CONFIGURATION=Release
-WORKDIR /src
-COPY ["Charon.Dns/Charon.Dns.csproj", "Charon.Dns/"]
-COPY ["Charon.Dns.Lib/Charon.Dns.Lib.csproj", "Charon.Dns.Lib/"]
-COPY ["Charon.Dns.Configuration/Charon.Dns.Configuration.csproj", "Charon.Dns.Configuration/"]
-RUN dotnet restore "Charon.Dns/Charon.Dns.csproj"
+WORKDIR /source
+COPY ["src/Charon.Dns/Charon.Dns.csproj", "src/Charon.Dns/"]
+COPY ["src/Charon.Dns.Lib/Charon.Dns.Lib.csproj", "src/Charon.Dns.Lib/"]
+COPY ["src/Charon.Dns.Configuration/Charon.Dns.Configuration.csproj", "src/Charon.Dns.Configuration/"]
+RUN dotnet restore "src/Charon.Dns/Charon.Dns.csproj"
 COPY . .
-RUN rm Charon.Dns/settings.json
-RUN mv Charon.Dns/settings.docker.json Charon.Dns/settings.json
-RUN rm Charon.Dns/zones.json
-RUN mv Charon.Dns/zones.docker.json Charon.Dns/zones.json
-WORKDIR "/src/Charon.Dns"
+RUN rm src/Charon.Dns/settings.json
+RUN mv src/Charon.Dns/settings.docker.json src/Charon.Dns/settings.json
+RUN rm src/Charon.Dns/zones.json
+RUN mv src/Charon.Dns/zones.docker.json src/Charon.Dns/zones.json
+WORKDIR "/source/src/Charon.Dns"
 RUN dotnet build "./Charon.Dns.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
 FROM build AS publish

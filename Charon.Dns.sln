@@ -3,31 +3,42 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.26403.0
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{C976F0F8-3743-4BBD-8A7C-53660F2C7B72}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Charon.Dns.Lib", "src\Charon.Dns.Lib\Charon.Dns.Lib.csproj", "{0F7004C7-BF98-49D4-8362-FC480E043256}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "DNS", "DNS", "{51F9AEF6-9501-46D2-B4DB-481D8B649866}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Charon.Dns.Lib.Tests", "tests\Charon.Dns.Lib.Tests\Charon.Dns.Lib.Tests.csproj", "{C158CC76-DE88-455A-B6A8-0E334CB47128}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Charon.Dns", "src\Charon.Dns\Charon.Dns.csproj", "{2DE7ECB7-E7D4-4206-8425-CA9F8EF67A9D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Charon.Dns.Tests", "tests\Charon.Dns.Tests\Charon.Dns.Tests.csproj", "{D23D6894-DF80-4128-95DC-4FB6951C8D80}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Charon.Dns.Tests.Utils", "tests\Charon.Dns.Tests.Utils\Charon.Dns.Tests.Utils.csproj", "{189EF015-71DB-4D7F-80A8-D05BCE5B4504}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Charon.Dns.EndToEndTests", "tests\Charon.Dns.EndToEndTests\Charon.Dns.EndToEndTests.csproj", "{F703E047-CCFC-4375-88FA-9761660CC5C5}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Charon.Dns.Utils", "src\Charon.Dns.Utils\Charon.Dns.Utils.csproj", "{2D21D540-7EC2-488C-9046-EFCA1159D2F0}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Charon.Dns.Configuration", "src\Charon.Dns.Configuration\Charon.Dns.Configuration.csproj", "{2C824A4B-DEFB-4629-B0C5-0F89623E9666}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Charon.Dns.Configuration.Tests", "tests\Charon.Dns.Configuration.Tests\Charon.Dns.Configuration.Tests.csproj", "{E4EE5193-91FD-47F4-9619-3CDE9BC196A6}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "items", "items", "{51F9AEF6-9501-46D2-B4DB-481D8B649866}"
 	ProjectSection(SolutionItems) = preProject
-		.editorconfig = .editorconfig
+		README.md = README.md
+		install.sh = install.sh
 		Dockerfile = Dockerfile
+		.dockerignore = .dockerignore
+		.gitignore = .gitignore
+		.gitattributes = .gitattributes
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Charon.Dns.Lib", "Charon.Dns.Lib\Charon.Dns.Lib.csproj", "{0F7004C7-BF98-49D4-8362-FC480E043256}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "workflows", "workflows", "{C976F0F8-3743-4BBD-8A7C-53660F2C7B72}"
+	ProjectSection(SolutionItems) = preProject
+		.github\workflows\release.yml = .github\workflows\release.yml
+	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Charon.Dns.Lib.Tests", "Charon.Dns.Lib.Tests\Charon.Dns.Lib.Tests.csproj", "{C158CC76-DE88-455A-B6A8-0E334CB47128}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{8A3D2F61-4C7B-4E2A-9B1D-3F5E6A7C8D90}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Charon.Dns", "Charon.Dns\Charon.Dns.csproj", "{2DE7ECB7-E7D4-4206-8425-CA9F8EF67A9D}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Charon.Dns.Tests", "Charon.Dns.Tests\Charon.Dns.Tests.csproj", "{D23D6894-DF80-4128-95DC-4FB6951C8D80}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Charon.Dns.Tests.Utils", "Charon.Dns.Tests.Utils\Charon.Dns.Tests.Utils.csproj", "{189EF015-71DB-4D7F-80A8-D05BCE5B4504}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Charon.Dns.EndToEndTests", "Charon.Dns.EndToEndTests\Charon.Dns.EndToEndTests.csproj", "{F703E047-CCFC-4375-88FA-9761660CC5C5}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Charon.Dns.Utils", "Charon.Dns.Utils\Charon.Dns.Utils.csproj", "{2D21D540-7EC2-488C-9046-EFCA1159D2F0}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Charon.Dns.Configuration", "Charon.Dns.Configuration\Charon.Dns.Configuration.csproj", "{2C824A4B-DEFB-4629-B0C5-0F89623E9666}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Charon.Dns.Configuration.Tests", "Charon.Dns.Configuration.Tests\Charon.Dns.Configuration.Tests.csproj", "{E4EE5193-91FD-47F4-9619-3CDE9BC196A6}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{4B6E9C12-7D3A-4F85-A0E2-1C9D8B7A6F54}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -148,17 +159,19 @@ Global
 		{E4EE5193-91FD-47F4-9619-3CDE9BC196A6}.Release|x64.ActiveCfg = Release|Any CPU
 		{E4EE5193-91FD-47F4-9619-3CDE9BC196A6}.Release|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{0F7004C7-BF98-49D4-8362-FC480E043256} = {8A3D2F61-4C7B-4E2A-9B1D-3F5E6A7C8D90}
+		{C158CC76-DE88-455A-B6A8-0E334CB47128} = {4B6E9C12-7D3A-4F85-A0E2-1C9D8B7A6F54}
+		{2DE7ECB7-E7D4-4206-8425-CA9F8EF67A9D} = {8A3D2F61-4C7B-4E2A-9B1D-3F5E6A7C8D90}
+		{D23D6894-DF80-4128-95DC-4FB6951C8D80} = {4B6E9C12-7D3A-4F85-A0E2-1C9D8B7A6F54}
+		{189EF015-71DB-4D7F-80A8-D05BCE5B4504} = {4B6E9C12-7D3A-4F85-A0E2-1C9D8B7A6F54}
+		{F703E047-CCFC-4375-88FA-9761660CC5C5} = {4B6E9C12-7D3A-4F85-A0E2-1C9D8B7A6F54}
+		{2D21D540-7EC2-488C-9046-EFCA1159D2F0} = {8A3D2F61-4C7B-4E2A-9B1D-3F5E6A7C8D90}
+		{2C824A4B-DEFB-4629-B0C5-0F89623E9666} = {8A3D2F61-4C7B-4E2A-9B1D-3F5E6A7C8D90}
+		{E4EE5193-91FD-47F4-9619-3CDE9BC196A6} = {4B6E9C12-7D3A-4F85-A0E2-1C9D8B7A6F54}
+		{C976F0F8-3743-4BBD-8A7C-53660F2C7B72} = {51F9AEF6-9501-46D2-B4DB-481D8B649866}
+	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
-	EndGlobalSection
-	GlobalSection(NestedProjects) = preSolution
-		{0F7004C7-BF98-49D4-8362-FC480E043256} = {51F9AEF6-9501-46D2-B4DB-481D8B649866}
-		{C158CC76-DE88-455A-B6A8-0E334CB47128} = {C976F0F8-3743-4BBD-8A7C-53660F2C7B72}
-		{2DE7ECB7-E7D4-4206-8425-CA9F8EF67A9D} = {51F9AEF6-9501-46D2-B4DB-481D8B649866}
-		{D23D6894-DF80-4128-95DC-4FB6951C8D80} = {C976F0F8-3743-4BBD-8A7C-53660F2C7B72}
-		{189EF015-71DB-4D7F-80A8-D05BCE5B4504} = {C976F0F8-3743-4BBD-8A7C-53660F2C7B72}
-		{F703E047-CCFC-4375-88FA-9761660CC5C5} = {C976F0F8-3743-4BBD-8A7C-53660F2C7B72}
-		{2D21D540-7EC2-488C-9046-EFCA1159D2F0} = {51F9AEF6-9501-46D2-B4DB-481D8B649866}
-		{E4EE5193-91FD-47F4-9619-3CDE9BC196A6} = {C976F0F8-3743-4BBD-8A7C-53660F2C7B72}
 	EndGlobalSection
 EndGlobal

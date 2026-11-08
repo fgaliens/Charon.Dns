@@ -21,7 +21,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Charon.Dns.Tests.Utils\Charon.Dns.Tests.Utils.csproj" />
-    <ProjectReference Include="..\Charon.Dns\Charon.Dns.csproj" />
+    <ProjectReference Include="..\..\src\Charon.Dns\Charon.Dns.csproj" />
   </ItemGroup>
 
   <ItemGroup>

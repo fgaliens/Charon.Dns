@@ -12,7 +12,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\Charon.Dns\Charon.Dns.csproj" />
+      <ProjectReference Include="..\..\src\Charon.Dns\Charon.Dns.csproj" />
     </ItemGroup>
 
 </Project>
